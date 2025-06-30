@@ -84,3 +84,339 @@ td {
 tr:nth-child(even) td {
   background-color: #252525;
 }
+
+#historico-img {
+  margin-top: 60px;
+  text-align: center;
+}
+
+#historico-img h2 {
+  font-size: 2em;
+  color: #FFD700;
+  text-shadow: 2px 2px 4px #000;
+  margin-bottom: 20px;
+}
+
+#historico-img img {
+  max-width: 90%;
+  height: auto;
+  border: 3px solid #FFD700;
+  border-radius: 10px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
+}
+
+
+/* ========================
+   HISTÓRICO GERAL
+======================== */
+#historico-js {
+  margin-top: 60px;
+  text-align: center;
+  width: 100%;
+  color: #f5f5dc;
+}
+
+#historico-js h2 {
+  font-size: 2.3em;
+  margin-top: 50px;
+  margin-bottom: 20px;
+  color: #FFD700;
+  text-shadow: 2px 2px 5px #000;
+}
+
+#historico-js h3 {
+  font-size: 1.6em;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  color: #FFD700;
+  text-shadow: 1px 1px 3px #000;
+}
+
+#historico-js table {
+  border-collapse: collapse;
+  margin: 0 auto 40px;
+  width: 90%;
+  max-width: 600px;
+  background-color: #2c2c2c;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+#historico-js th, 
+#historico-js td {
+  padding: 12px;
+  border: 1px solid #444;
+  text-align: center;
+}
+
+#historico-js th {
+  background-color: #444;
+  color: #FFD700;
+  font-size: 1.1em;
+}
+
+#historico-js td {
+  background-color: #1e1e1e;
+  color: #f5f5dc;
+}
+
+#historico-js tbody tr:nth-child(even) td {
+  background-color: #252525;
+}
+
+/* ========================
+   FILTRO E ESTATÍSTICAS
+======================== */
+#filtro-estatisticas {
+  margin-top: 60px;
+  text-align: center;
+  padding: 40px 20px;
+  background-color: rgba(20, 20, 20, 0.7);
+  border-top: 2px solid #FFD700;
+}
+
+#filtro-estatisticas h2 {
+  font-size: 2em;
+  color: #FFD700;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px #000;
+}
+
+#filtro-estatisticas label {
+  font-size: 1.1em;
+  margin-right: 10px;
+}
+
+#filtro-jogador {
+  padding: 8px 12px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: none;
+  margin-right: 10px;
+  width: 200px;
+}
+
+button {
+  background-color: #FFD700;
+  color: #000;
+  border: none;
+  padding: 8px 14px;
+  font-size: 1em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #e6c200;
+}
+
+/* ========================
+   ESTATÍSTICAS
+======================== */
+#estatisticas {
+  margin-top: 30px;
+  background-color: #1e1e1e;
+  color: #FFD700;
+  padding: 20px;
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+#estatisticas p {
+  margin: 6px 0;
+  font-size: 1.1em;
+}
+
+ 
+
+/* =========================
+   HISTÓRICO DE JOGOS - JS
+========================= */
+/* #historico-js {
+  margin-top: 60px;
+  text-align: center;
+  width: 100%;
+  color: #f5f5dc;
+}
+
+#historico-js h2 {
+  font-size: 2.5em;
+  color: #FFD700;
+  text-shadow: 2px 2px 5px #000;
+  margin-bottom: 30px;
+}
+
+#historico-js h3 {
+  font-size: 1.6em;
+  margin-top: 40px;
+  color: #FFD700;
+  text-shadow: 1px 1px 3px #000;
+}
+
+/* Tabela de rodadas */
+#historico-js table {
+  border-collapse: collapse;
+  margin: 0 auto 40px;
+  width: 90%;
+  max-width: 600px;
+  background-color: #2c2c2c;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+#historico-js th, 
+#historico-js td {
+  padding: 12px;
+  border: 1px solid #444;
+  text-align: center;
+}
+
+#historico-js th {
+  background-color: #444;
+  color: #FFD700;
+  font-size: 1.1em;
+}
+
+#historico-js td {
+  background-color: #1e1e1e;
+  color: #f5f5dc;
+}
+
+/* Alternância de cor em linhas */
+#historico-js tbody tr:nth-child(even) td {
+  background-color: #252525;
+}
+
+/* =========================
+   FILTRO E ESTATÍSTICAS
+========================= */
+#filtro-jogador {
+  padding: 8px 12px;
+  font-size: 1em;
+  border-radius: 6px;
+  border: none;
+  margin-right: 10px;
+}
+
+#estatisticas {
+  margin-top: 30px;
+  background-color: #1e1e1e;
+  color: #FFD700;
+  padding: 20px;
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
+}
+
+#estatisticas p {
+  margin: 6px 0;
+}
+
+button {
+  background-color: #FFD700;
+  color: #000;
+  border: none;
+  padding: 8px 14px;
+  font-size: 1em;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #e6c200;
+}
+
+/* Separando os dias */
+
+/* =============================
+   Estilização por Dia de Jogo
+============================= */
+
+.dia-de-jogo {
+  background-color: rgba(44, 44, 44, 0.85);
+  border: 2px solid #FFD700;
+  border-radius: 15px;
+  padding: 30px 20px;
+  margin: 40px auto;
+  max-width: 800px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+}
+
+.dia-de-jogo h2 {
+  font-size: 2em;
+  color: #FFD700;
+  text-shadow: 2px 2px 5px #000;
+  margin-bottom: 30px;
+}
+
+
+/* #jogos-filtrados {
+  margin: 60px auto 0;
+  max-width: 800px;
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(20, 20, 20, 0.75);
+  border: 2px solid #FFD700;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+} */
+
+#jogos-filtrados {
+  margin: 60px auto 0;
+  max-width: 800px;
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(20, 20, 20, 0.75);
+  border: 2px solid #FFD700;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+}
+
+/* Centraliza a tabela dentro da seção */
+#jogos-filtrados table {
+  margin: 0 auto;
+  width: 90%;
+  background-color: #2c2c2c;
+  border-radius: 10px;
+  overflow: hidden;
+  border-collapse: collapse;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
+}
+
+#jogos-filtrados th,
+#jogos-filtrados td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #444;
+  color: #f5f5dc;
+}
+
+#jogos-filtrados th {
+  background-color: #444;
+  color: #FFD700;
+  font-size: 1.1em;
+}
+
+#jogos-filtrados tr:nth-child(even) td {
+  background-color: #252525;
+}
+
+
+#jogos-filtrados h2 {
+  font-size: 1.8em;
+  color: #FFD700;
+  margin-bottom: 20px;
+  text-shadow: 1px 1px 3px black;
+}
+

@@ -64,7 +64,7 @@
         
             <tr>
                 <td>6º </td>
-                <td> MArcelo Perna de Pau </td>
+                <td> Marcelo </td>
                 <td> 9 </td>
             </tr>
 
@@ -112,8 +112,51 @@
             </tr>
 
         </tbody>
-        </thead>
+        </thead>     
     </table>
+
+
+
+    <!-- Aqui estou tentando inserir os dados como objeto javascript-->
+
+    <!-- Filtro e Estatísticas -->
+    <section id="filtro-estatisticas">
+        <h2>Buscar Estatísticas do Jogador</h2>
+        <label for="filtro-jogador">Nome do jogador:</label>
+        <input type="text" id="filtro-jogador" placeholder="Ex: Pablo">
+        <button onclick="filtrarJogos()">Filtrar</button>
+        <div id="estatisticas"></div>
+        <div id="jogos-filtrados"></div>
+
+    </section>
+    
+    <!-- Seção de Histórico Geral -->
+    <section id="historico-js">
+
+        <div class="dia-de-jogo"> 
+            <h2>Histórico de Jogos – Dia 1</h2>
+            <div id="tabelas-rodadas-dia1"></div>
+        </div>
+
+        <div class="dia-de-jogo"> 
+            <h2>Histórico de Jogos – Dia 2</h2>
+            <div id="tabelas-rodadas-dia2"></div>
+        </div>
+    </section>
+  
+  
+  
+      
+
+    <!-- Aqui eu tinha inserido os dados como imagem 
+        <section id="historico-img">
+        <h2>Histórico de Jogos – Dia 1</h2>
+        <img src="img/historico-dia1.png" alt="Histórico de partidas da Liga Magic Supermarket">
+      </section>
+    -->
+
+    <script src="jogos.js"></script>
+
 
 </body>
 </html>
