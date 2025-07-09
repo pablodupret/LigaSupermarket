@@ -2,53 +2,53 @@
 // Dados dos jogos – Dia 1
 // ========================
 const jogosDia1 = [
-    { rodada: 1, jogador1: "Eduardo", resultado: "1 x 2", jogador2: "Magno" },
-    { rodada: 1, jogador1: "Igor", resultado: "0 x 2", jogador2: "Joca" },
-    { rodada: 1, jogador1: "Marcelo", resultado: "2 x 1", jogador2: "Stenio" },
-    { rodada: 1, jogador1: "Alex", resultado: "2 x 0", jogador2: "Pablo" },
-    { rodada: 1, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Subzero" },
-    { rodada: 1, jogador1: "Sérgio", resultado: "2 x 0", jogador2: "Bye" },
+    { dia: 1, rodada: 1, jogador1: "Eduardo", resultado: "1 x 2", jogador2: "Magno" },
+    { dia: 1, rodada: 1, jogador1: "Igor", resultado: "0 x 2", jogador2: "Joca" },
+    { dia: 1, rodada: 1, jogador1: "Marcelo", resultado: "2 x 1", jogador2: "Stenio" },
+    { dia: 1, rodada: 1, jogador1: "Alex", resultado: "2 x 0", jogador2: "Pablo" },
+    { dia: 1, rodada: 1, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Subzero" },
+    { dia: 1, rodada: 1, jogador1: "Sérgio", resultado: "2 x 0", jogador2: "Bye" },
   
-    { rodada: 2, jogador1: "Magno", resultado: "2 x 1", jogador2: "Nagib" },
-    { rodada: 2, jogador1: "Joca", resultado: "0 x 2", jogador2: "Sérgio" },
-    { rodada: 2, jogador1: "Eduardo", resultado: "2 x 0", jogador2: "Subzero" },
-    { rodada: 2, jogador1: "Igor", resultado: "1 x 1", jogador2: "Pablo" },
-    { rodada: 2, jogador1: "Alex", resultado: "1 x 2", jogador2: "Marcelo" },
-    { rodada: 2, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Bye" },
+    { dia: 1, rodada: 2, jogador1: "Magno", resultado: "2 x 1", jogador2: "Nagib" },
+    { dia: 1, rodada: 2, jogador1: "Joca", resultado: "0 x 2", jogador2: "Sérgio" },
+    { dia: 1, rodada: 2, jogador1: "Eduardo", resultado: "2 x 0", jogador2: "Subzero" },
+    { dia: 1, rodada: 2, jogador1: "Igor", resultado: "1 x 1", jogador2: "Pablo" },
+    { dia: 1, rodada: 2, jogador1: "Alex", resultado: "1 x 2", jogador2: "Marcelo" },
+    { dia: 1, rodada: 2, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Bye" },
   
-    { rodada: 3, jogador1: "Magno", resultado: "2 x 0", jogador2: "Stenio" },
-    { rodada: 3, jogador1: "Joca", resultado: "2 x 0", jogador2: "Pablo" },
-    { rodada: 3, jogador1: "Marcelo", resultado: "2 x 0", jogador2: "Sérgio" },
-    { rodada: 3, jogador1: "Alex", resultado: "2 x 0", jogador2: "Eduardo" },
-    { rodada: 3, jogador1: "Igor", resultado: "0 x 2", jogador2: "Nagib" },
-    { rodada: 3, jogador1: "Subzero", resultado: "2 x 0", jogador2: "Bye" },
+    { dia: 1, rodada: 3, jogador1: "Magno", resultado: "2 x 0", jogador2: "Stenio" },
+    { dia: 1, rodada: 3, jogador1: "Joca", resultado: "2 x 0", jogador2: "Pablo" },
+    { dia: 1, rodada: 3, jogador1: "Marcelo", resultado: "2 x 0", jogador2: "Sérgio" },
+    { dia: 1, rodada: 3, jogador1: "Alex", resultado: "2 x 0", jogador2: "Eduardo" },
+    { dia: 1, rodada: 3, jogador1: "Igor", resultado: "0 x 2", jogador2: "Nagib" },
+    { dia: 1, rodada: 3, jogador1: "Subzero", resultado: "2 x 0", jogador2: "Bye" },
   
-    { rodada: 4, jogador1: "Magno", resultado: "2 x 0", jogador2: "Marcelo" },
-    { rodada: 4, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Sérgio" },
-    { rodada: 4, jogador1: "Alex", resultado: "2 x 1", jogador2: "Joca" },
-    { rodada: 4, jogador1: "Eduardo", resultado: "1 x 2", jogador2: "Stenio" },
-    { rodada: 4, jogador1: "Igor", resultado: "0 x 2", jogador2: "Subzero" },
-    { rodada: 4, jogador1: "Pablo", resultado: "2 x 0", jogador2: "Bye" }
+    { dia: 1, rodada: 4, jogador1: "Magno", resultado: "2 x 0", jogador2: "Marcelo" },
+    { dia: 1, rodada: 4, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Sérgio" },
+    { dia: 1, rodada: 4, jogador1: "Alex", resultado: "2 x 1", jogador2: "Joca" },
+    { dia: 1, rodada: 4, jogador1: "Eduardo", resultado: "1 x 2", jogador2: "Stenio" },
+    { dia: 1, rodada: 4, jogador1: "Igor", resultado: "0 x 2", jogador2: "Subzero" },
+    { dia: 1, rodada: 4, jogador1: "Pablo", resultado: "2 x 0", jogador2: "Bye" }
   ]
   
   // ========================
   // Dados dos jogos – Dia 2
   // ========================
   const jogosDia2 = [
-    { rodada: 1, jogador1: "Magno", resultado: "2 x 0", jogador2: "Qiu" },
-    { rodada: 1, jogador1: "Nagib", resultado: "2 x 1", jogador2: "Vinicios" },
-    { rodada: 1, jogador1: "Pablo", resultado: "0 x 2", jogador2: "Eduardo" },
-    { rodada: 1, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Bye" },
+    { dia: 2, rodada: 1, jogador1: "Magno", resultado: "2 x 0", jogador2: "Qiu" },
+    { dia: 2, rodada: 1, jogador1: "Nagib", resultado: "2 x 1", jogador2: "Vinicios" },
+    { dia: 2, rodada: 1, jogador1: "Pablo", resultado: "0 x 2", jogador2: "Eduardo" },
+    { dia: 2, rodada: 1, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Bye" },
   
-    { rodada: 2, jogador1: "Magno", resultado: "2 x 0", jogador2: "Stenio" },
-    { rodada: 2, jogador1: "Eduardo", resultado: "2 x 1", jogador2: "Nagib" },
-    { rodada: 2, jogador1: "Pablo", resultado: "1 x 1", jogador2: "Vinicios" },
-    { rodada: 2, jogador1: "Qiu", resultado: "2 x 0", jogador2: "Bye" },
+    { dia: 2, rodada: 2, jogador1: "Magno", resultado: "2 x 0", jogador2: "Stenio" },
+    { dia: 2, rodada: 2, jogador1: "Eduardo", resultado: "2 x 1", jogador2: "Nagib" },
+    { dia: 2, rodada: 2, jogador1: "Pablo", resultado: "1 x 1", jogador2: "Vinicios" },
+    { dia: 2, rodada: 2, jogador1: "Qiu", resultado: "2 x 0", jogador2: "Bye" },
   
-    { rodada: 3, jogador1: "Magno", resultado: "2 x 0", jogador2: "Eduardo" },
-    { rodada: 3, jogador1: "Qiu", resultado: "2 x 0", jogador2: "Vinicios" },
-    { rodada: 3, jogador1: "Nagib", resultado: "1 x 1", jogador2: "Stenio" },
-    { rodada: 3, jogador1: "Pablo", resultado: "2 x 0", jogador2: "Bye" }
+    { dia: 2, rodada: 3, jogador1: "Magno", resultado: "2 x 0", jogador2: "Eduardo" },
+    { dia: 2, rodada: 3, jogador1: "Qiu", resultado: "2 x 0", jogador2: "Vinicios" },
+    { dia: 2, rodada: 3, jogador1: "Nagib", resultado: "1 x 1", jogador2: "Stenio" },
+    { dia: 2, rodada: 3, jogador1: "Pablo", resultado: "2 x 0", jogador2: "Bye" }
   ]
   
   // =============================
@@ -177,6 +177,7 @@ const jogosDia1 = [
     let html = `<table>
       <thead>
         <tr>
+          <th> Dia </th>
           <th>Jogador 1</th>
           <th>Resultado</th>
           <th>Jogador 2</th>
@@ -186,6 +187,7 @@ const jogosDia1 = [
   
     jogos.forEach(jogo => {
       html += `<tr>
+        <td>${jogo.dia}</td>
         <td>${jogo.jogador1}</td>
         <td>${jogo.resultado}</td>
         <td>${jogo.jogador2}</td>
