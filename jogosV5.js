@@ -57,7 +57,7 @@ const jogosDia1 = [
     { dia: 3, rodada: 1, jogador1: "Magno", resultado: "1 x 0", jogador2: "Nagib" },
     { dia: 3, rodada: 1, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Pablo" },
     { dia: 3, rodada: 1, jogador1: "Marcelo", resultado: "1 x 2", jogador2: "Joca" },
-    { dia: 3, rodada: 1, jogador1: "Eduardo", resultado: "1 x 1", jogador2: "Sergio" },
+    { dia: 3, rodada: 1, jogador1: "Eduardo", resultado: "1 x 1", jogador2: "Sérgio" },
     { dia: 3, rodada: 1, jogador1: "Caio", resultado: "1 x 1", jogador2: "Jun" },
     { dia: 3, rodada: 1, jogador1: "Alex", resultado: "2 x 0", jogador2: "Bye" },
   
@@ -65,7 +65,7 @@ const jogosDia1 = [
     { dia: 3, rodada: 2, jogador1: "Alex", resultado: "0 x 2", jogador2: "Joca" },
     { dia: 3, rodada: 2, jogador1: "Magno", resultado: "2 x 0", jogador2: "Stenio" },
     { dia: 3, rodada: 2, jogador1: "Eduardo", resultado: "2 x 0", jogador2: "Caio" },
-    { dia: 3, rodada: 2, jogador1: "Jun", resultado: "2 x 0", jogador2: "Sergio" },
+    { dia: 3, rodada: 2, jogador1: "Jun", resultado: "2 x 0", jogador2: "Sérgio" },
     { dia: 3, rodada: 2, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Marcelo" },
     { dia: 3, rodada: 2, jogador1: "Pablo", resultado: "2 x 0", jogador2: "Bye" },
   
@@ -73,7 +73,7 @@ const jogosDia1 = [
     { dia: 3, rodada: 3, jogador1: "Magno", resultado: "2 x 1", jogador2: "Joca" },
     { dia: 3, rodada: 3, jogador1: "Eduardo", resultado: "0 x 2", jogador2: "Jun" },
     { dia: 3, rodada: 3, jogador1: "Nagib", resultado: "2 x 0", jogador2: "Caio" },
-    { dia: 3, rodada: 3, jogador1: "Sergio", resultado: "0 x 2", jogador2: "Stenio" },
+    { dia: 3, rodada: 3, jogador1: "Sérgio", resultado: "0 x 2", jogador2: "Stenio" },
     { dia: 3, rodada: 3, jogador1: "Pablo", resultado: "1 x 2", jogador2: "Alex" },
     { dia: 3, rodada: 3, jogador1: "Marcelo", resultado: "2 x 0", jogador2: "Bye" },
   
@@ -82,7 +82,7 @@ const jogosDia1 = [
     { dia: 3, rodada: 4, jogador1: "Joca", resultado: "0 x 2", jogador2: "Nagib" },
     { dia: 3, rodada: 4, jogador1: "Stenio", resultado: "2 x 0", jogador2: "Alex" },
     { dia: 3, rodada: 4, jogador1: "Eduardo", resultado: "0 x 2", jogador2: "Marcelo" },
-    { dia: 3, rodada: 4, jogador1: "Pablo", resultado: "0 x 2", jogador2: "Sergio" },
+    { dia: 3, rodada: 4, jogador1: "Pablo", resultado: "0 x 2", jogador2: "Sérgio" },
     { dia: 3, rodada: 4, jogador1: "Caio", resultado: "2 x 0", jogador2: "Bye" }
   ];
   
