@@ -1,0 +1,441 @@
+
+<!DOCTYPE html>
+
+<html lang="pt-br">
+<head>
+<meta charset="utf-8"/>
+<title>Torneio Suíço - Liga Magic</title>
+<link href="style.css" rel="stylesheet"/>
+<style>
+    body {
+      padding: 40px;
+      background-color: #121212;
+      font-family: sans-serif;
+    }
+
+    .container {
+      width: 50%;
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: rgba(20, 20, 20, 0.85);
+      padding: 30px;
+      border-radius: 15px;
+      border: 2px solid #FFD700;
+      color: #f5f5dc;
+    }
+
+    label, input, textarea {
+      display: block;
+      width: 100%;
+      margin-bottom: 15px;
+      font-size: 1em;
+      
+    }
+
+    textarea {
+      height: 80px;
+    }
+
+    button {
+      background-color: #FFD700;
+      color: #000;
+      padding: 12px 24px;
+      border: none;
+      font-size: 1.1em;
+      border-radius: 8px;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #FFD700;
+      padding: 10px;
+      text-align: center;
+    }
+
+    h2, h3 {
+      color: #FFD700;
+    }
+
+    .rodada-bloco {
+      margin-top: 40px;
+      padding: 20px;
+      background-color: rgba(30, 30, 30, 0.9);
+      border: 1px solid #FFD700;
+      border-radius: 12px;
+    }
+
+    .ranking {
+      margin-top: 40px;
+    }
+
+    .placar-input {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .placar-input input {
+      width: 40px;
+      text-align: center;
+    }
+
+    
+
+  </style>
+</head>
+<body>
+<div class="container">
+<h1>Início do Torneio</h1>
+<label>Data:</label>
+<input id="data" type="date"/>
+<label>Coleção:</label>
+<input id="colecao" type="text"/>
+<label>Selecione os jogadores:</label>
+<div id="lista-jogadores" style="background-color:#2c2c2c;padding:15px;border-radius:10px;max-height:150px;overflow-y:auto;color:#f5f5dc; margin-bottom: 20px;"> Carregando jogadores...</div>
+<label> Adicionar novo jogador:</label>
+<input id="novo-jogador" type="text"/>
+<button onclick="adicionarJogador()" style="margin-bottom: 30px; margin-top: 0px;"> Adicionar</button>
+<label>Número total de rodadas:</label>
+<input id="numRodadas" max="10" min="1" type="number"/>
+<button onclick="iniciarTorneio()">Iniciar Torneio</button>
+</div>
+<div class="container" id="torneio-area" style="display:none;"></div>
+<!-- Botão para salvar o HTML -->
+<button onclick="baixarPagina()">Salvar este Dia (HTML)</button>
+<script>
+function baixarPagina() {
+  const html = document.documentElement.outerHTML;
+  const blob = new Blob([html], { type: "text/html" });
+  const link = document.createElement("a");
+  const nomeArquivo = prompt("Digite o nome do arquivo (ex: dia-03.html):", "dia-03.html") || "dia-x.html";
+  link.href = URL.createObjectURL(blob);
+  link.download = nomeArquivo;
+  link.click();
+}
+</script>
+<!-- Selecionar Jogadores -->
+<script>
+async function carregarJogadores() {
+  try {
+    const res = await fetch("jogadores.json");
+    const lista = await res.json();
+    const div = document.getElementById("lista-jogadores");
+    div.innerHTML = "";
+    lista.forEach(nome => {
+      const id = "jog_" + nome.replace(/\s+/g, "_");
+      div.innerHTML += `
+        <div style="display: flex; align-items: center; margin-bottom: 0px;">
+        <input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;" />
+        <label for="${id}" style="color: #f5f5dc;">${nome}</label>
+       </div>`;
+
+    });
+  } catch (err) {
+    document.getElementById("lista-jogadores").innerText = "Erro ao carregar jogadores.";
+  }
+}
+
+function adicionarJogador() {
+  const nome = document.getElementById("novo-jogador").value.trim();
+  if (!nome) return;
+  const id = "jog_" + nome.replace(/\s+/g, "_");
+  if (document.getElementById(id)) {
+    alert("Jogador já está na lista.");
+    return;
+  }
+  const div = document.getElementById("lista-jogadores");
+  div.innerHTML += `
+        <div style="display: flex; align-items: center; margin-bottom: 1px;">
+        <input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;"  />
+        <label for="${id}" style="margin-left: 0px; color: #f5f5dc;">${nome}</label>
+        </div>`;
+  document.getElementById("novo-jogador").value = "";
+}
+
+carregarJogadores();
+</script>
+<script>
+let jogadores = [];
+let resultadosPorRodada = {};
+let rodadaAtual = 0;
+let totalRodadas = 0;
+let confrontosAnteriores = new Set();
+
+function iniciarTorneio() {
+  const data = document.getElementById("data").value;
+  const colecao = document.getElementById("colecao").value;
+  const checks = document.querySelectorAll("#lista-jogadores input[type=checkbox]:checked");
+  const selecionados = Array.from(checks).map(c => c.value);
+  totalRodadas = parseInt(document.getElementById("numRodadas").value);
+
+  if (!data || !colecao || !selecionados.length || !totalRodadas) {
+    alert("Preencha todos os campos corretamente.");
+    return;
+  }
+
+  jogadores = selecionados.map(nome => ({
+    nome,
+    pontos: 0,
+    saldo: 0,
+    historico: []
+  }));
+
+  rodadaAtual = 0;
+  resultadosPorRodada = {};
+  confrontosAnteriores = new Set();
+  document.getElementById("torneio-area").innerHTML = '';
+  document.getElementById("torneio-area").style.display = "block";
+  gerarRodada();
+}
+
+function gerarRodada() {
+  rodadaAtual++;
+  const area = document.getElementById("torneio-area");
+
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + rodadaAtual;
+  bloco.innerHTML = "<h2>Rodada " + rodadaAtual + "</h2>";
+
+  const jogadoresOrdenados = [...jogadores].filter(j => j.nome !== "Bye").sort((a, b) => {
+    return b.pontos - a.pontos || b.saldo - a.saldo;
+  });
+
+  let listaParear = [...jogadoresOrdenados];
+  const confrontos = [];
+
+  // Se número ímpar, sorteia aleatoriamente o jogador com Bye na primeira rodada
+  if (listaParear.length % 2 !== 0) {
+    let byePlayer;
+    if (rodadaAtual === 1) {
+      byePlayer = listaParear[Math.floor(Math.random() * listaParear.length)];
+    } else {
+      byePlayer = listaParear[listaParear.length - 1];
+    }
+    confrontos.push([byePlayer, { nome: "Bye" }]);
+    listaParear = listaParear.filter(j => j.nome !== byePlayer.nome);
+    byePlayer.pontos += 3;
+    byePlayer.historico.push({ contra: "Bye", placar: "2x0 (bye)" });
+    byePlayer.saldo += 2;
+  }
+
+  while (listaParear.length >= 2) {
+    const j1 = listaParear.shift();
+    let indice = listaParear.findIndex(j2 => !confrontosAnteriores.has(j1.nome + "|" + j2.nome));
+    if (indice === -1) indice = 0; // se não houver opção, permite repetição
+    const j2 = listaParear.splice(indice, 1)[0];
+    confrontos.push([j1, j2]);
+    confrontosAnteriores.add(j1.nome + "|" + j2.nome);
+    confrontosAnteriores.add(j2.nome + "|" + j1.nome);
+  }
+
+  resultadosPorRodada[rodadaAtual] = confrontos;
+
+  let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+  confrontos.forEach((par, i) => {
+    if (par[1].nome === "Bye") {
+      html += `<tr><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
+    } else {
+      html += `
+        <tr>
+          <td>${par[0].nome}</td>
+          <td class="placar-input">
+            <input type="number" min="0" id="r${rodadaAtual}_p${i * 2}">
+            <span>x</span>
+            <input type="number" min="0" id="r${rodadaAtual}_p${i * 2 + 1}">
+          </td>
+          <td>${par[1].nome}</td>
+        </tr>
+      `;
+    }
+  });
+
+  html += '</tbody></table>';
+  html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button> <button onclick="reabrirRodada(${rodadaAtual})">Reabrir Rodada</button>`;
+  bloco.innerHTML += html;
+  area.appendChild(bloco);
+}
+
+function finalizarRodada(rodada) {
+  const confrontos = resultadosPorRodada[rodada];
+  for (let i = 0; i < confrontos.length; i++) {
+    const j1 = confrontos[i][0];
+    const j2 = confrontos[i][1];
+    if (j2.nome === "Bye") continue;
+
+    const p1 = parseInt(document.getElementById(`r${rodada}_p${i * 2}`).value);
+    const p2 = parseInt(document.getElementById(`r${rodada}_p${i * 2 + 1}`).value);
+
+    if (isNaN(p1) || isNaN(p2)) {
+      alert("Preencha todos os placares antes de finalizar.");
+      return;
+    }
+
+    const input1 = document.getElementById(`r${rodada}_p${i * 2}`);
+    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}`);
+    const td = input1.parentElement;
+    td.innerHTML = `<span>${p1} x ${p2}</span>`;
+
+    if (p1 > p2) j1.pontos += 3;
+    else if (p2 > p1) j2.pontos += 3;
+    else {
+      j1.pontos += 1;
+      j2.pontos += 1;
+    }
+
+    j1.saldo += p1 - p2;
+    j2.saldo += p2 - p1;
+
+    j1.historico.push({ contra: j2.nome, placar: `${p1}x${p2}` });
+    j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}` });
+  }
+
+  mostrarRanking();
+
+  if (rodada < totalRodadas) {
+    const botao = document.createElement("button");
+    botao.textContent = "Gerar Próxima Rodada";
+    botao.onclick = gerarRodada;
+    document.getElementById("torneio-area").appendChild(botao);
+  } else {
+    const fim = document.createElement("h3");
+    fim.textContent = "Fim do Torneio!";
+    document.getElementById("torneio-area").appendChild(fim);
+  }
+}
+
+function mostrarRanking() {
+  const area = document.getElementById("torneio-area");
+  const ranking = [...jogadores].filter(j => j.nome !== "Bye").sort((a, b) => {
+    return b.pontos - a.pontos || b.saldo - a.saldo;
+  });
+
+  let html = "<div class='ranking'><h3>Ranking Atual</h3><table><tr><th>Jogador</th><th>Pontos</th><th>Saldo</th></tr>";
+  ranking.forEach(j => {
+    html += `<tr><td>${j.nome}</td><td>${j.pontos}</td><td>${j.saldo}</td></tr>`;
+  });
+  html += "</table></div>";
+  area.innerHTML += html;
+}
+
+
+
+
+
+function reabrirRodada(rodada) {
+  const confrontos = resultadosPorRodada[rodada];
+
+  // Remove pontos e saldo da rodada anterior
+  confrontos.forEach((par, i) => {
+    if (par[1].nome === "Bye") return;
+    const j1 = jogadores.find(j => j.nome === par[0].nome);
+    const j2 = jogadores.find(j => j.nome === par[1].nome);
+    const resultado = j1.historico.find(h => h.contra === j2.nome && h.placar.includes("x"));
+    if (!resultado) return;
+
+    const [g1, g2] = resultado.placar.split("x").map(Number);
+    if (g1 > g2) j1.pontos -= 3;
+    else if (g2 > g1) j2.pontos -= 3;
+    else {
+      j1.pontos -= 1;
+      j2.pontos -= 1;
+    }
+    j1.saldo -= g1 - g2;
+    j2.saldo -= g2 - g1;
+
+    // Remove do histórico
+    j1.historico = j1.historico.filter(h => h.contra !== j2.nome);
+    j2.historico = j2.historico.filter(h => h.contra !== j1.nome);
+  });
+
+  // Criar nova rodada com mesmo número
+  const area = document.getElementById("torneio-area");
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + rodada + "_reaberta";
+  bloco.innerHTML = `<h2>Rodada ${rodada} (Reaberta)</h2>`;
+
+  let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+  confrontos.forEach((par, i) => {
+    if (par[1].nome === "Bye") {
+      html += `<tr><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
+    } else {
+      html += `
+        <tr>
+          <td>${par[0].nome}</td>
+          <td class="placar-input">
+            <input type="number" min="0" id="r${rodada}_p${i * 2}_r">
+            <span>x</span>
+            <input type="number" min="0" id="r${rodada}_p${i * 2 + 1}_r">
+          </td>
+          <td>${par[1].nome}</td>
+        </tr>
+      `;
+    }
+  });
+  html += '</tbody></table>';
+  html += `<button onclick="finalizarRodadaReaberta(${rodada})">Finalizar Rodada ${rodada} (Reaberta)</button>`;
+  bloco.innerHTML += html;
+  area.appendChild(bloco);
+  alert("Rodada reaberta! Corrija os placares e finalize novamente.");
+}
+
+// Função para finalizar rodada reaberta
+
+function finalizarRodadaReaberta(rodada) {
+  const confrontos = resultadosPorRodada[rodada];
+  for (let i = 0; i < confrontos.length; i++) {
+    const j1 = confrontos[i][0];
+    const j2 = confrontos[i][1];
+    if (j2.nome === "Bye") continue;
+
+    const p1 = parseInt(document.getElementById(`r${rodada}_p${i * 2}_r`).value);
+    const p2 = parseInt(document.getElementById(`r${rodada}_p${i * 2 + 1}_r`).value);
+
+    if (isNaN(p1) || isNaN(p2)) {
+      alert("Preencha todos os placares antes de finalizar.");
+      return;
+    }
+
+    const input1 = document.getElementById(`r${rodada}_p${i * 2}_r`);
+    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}_r`);
+    const td = input1.parentElement;
+    td.innerHTML = `<span>${p1} x ${p2}</span>`;
+
+    if (p1 > p2) j1.pontos += 3;
+    else if (p2 > p1) j2.pontos += 3;
+    else {
+      j1.pontos += 1;
+      j2.pontos += 1;
+    }
+
+    j1.saldo += p1 - p2;
+    j2.saldo += p2 - p1;
+
+    j1.historico.push({ contra: j2.nome, placar: `${p1}x${p2}` });
+    j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}` });
+  }
+
+  mostrarRanking();
+
+  if (rodada < totalRodadas) {
+    const botao = document.createElement("button");
+    botao.textContent = "Gerar Próxima Rodada";
+    botao.onclick = gerarRodada;
+    document.getElementById("torneio-area").appendChild(botao);
+  } else {
+    const fim = document.createElement("h3");
+    fim.textContent = "Fim do Torneio!";
+    document.getElementById("torneio-area").appendChild(fim);
+  }
+}
+</script></body>
+</html>
