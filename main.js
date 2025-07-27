@@ -82,15 +82,29 @@ function gerarRanking(jogos) {
 
   const corpo = document.getElementById('tabela-ranking');
   corpo.innerHTML = '';
+  
   ranking.forEach((entry, i) => {
     const tr = document.createElement('tr');
+  
+    // Gera o nome do arquivo da imagem com base no padrão avatar_nome.jpg
+    const nomeImagem = `avatar_${entry.jogador.toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // remove acentos
+      .replace(/\s/g, "")}`; // remove espaços
+  
+    const imgHTML = `<img src="img/${nomeImagem}.jpg" onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';" alt="${entry.jogador}" class="avatar">`;
+
+  
     tr.innerHTML = `
       <td>${i + 1}º</td>
-      <td>${entry.jogador}</td>
+      <td class="td-nome">${imgHTML}<span>${entry.jogador}</span></td>
       <td>${entry.pontos}</td>
     `;
     corpo.appendChild(tr);
   });
+  
+  
+  
 }
 
 carregarJogos();
@@ -191,8 +205,9 @@ let html = "<h3>Desempenho contra adversários</h3><table><thead><tr><th>Advers�
 
 for (const [adversario, stats] of Object.entries(vs)) {
   let destaque = "";
-  if (adversario === carrasco) destaque = " 👑";
-  if (adversario === pato) destaque += " 🦆";
+  if (adversario === carrasco) destaque = ' <span title="Carrasco: jogador que mais venceu você">👑</span>';
+  if (adversario === pato) destaque += ' <span title="Pato: jogador que você mais venceu">🦆</span>';
+
   html += `<tr>
     <td>${adversario}${destaque}</td>
     <td>${stats.total}</td>

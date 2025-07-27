@@ -424,4 +424,31 @@ button {
     animation: pulse 1.5s infinite;
   }
   
+
+  /*Estilo para avatar*/
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 8px;
+    vertical-align: middle;
+    border: 2px solid #fff;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /*alinhamento do avatar*/
+
+  td {
+    vertical-align: middle;
+  }
+  
+  .td-nome {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+  
   
