@@ -425,7 +425,7 @@
     "rodada": 1,
     "jogador1": "Joca",
     "resultado": "1 x 2",
-    "jogador2": "Sergio"
+    "jogador2": "Sérgio"
   },
   {
     "dia": 4,
@@ -472,7 +472,7 @@
   {
     "dia": 4,
     "rodada": 2,
-    "jogador1": "Sergio",
+    "jogador1": "Sérgio",
     "resultado": "0 x 2",
     "jogador2": "Nagib"
   },
@@ -516,7 +516,7 @@
     "rodada": 3,
     "jogador1": "Magno",
     "resultado": "2 x 0",
-    "jogador2": "Sergio"
+    "jogador2": "Sérgio"
   },
   {
     "dia": 4,
@@ -570,7 +570,7 @@
   {
     "dia": 4,
     "rodada": 4,
-    "jogador1": "Sergio",
+    "jogador1": "Sérgio",
     "resultado": "2 x 1",
     "jogador2": "Caio"
   },
