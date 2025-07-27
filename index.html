@@ -1,99 +1,53 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Liga Magic Supermarket</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&display=swap" rel="stylesheet"> 
-  
-
-  <link rel="stylesheet" href="style.css">
-
- 
+  <meta charset="UTF-8" />
+  <title>Ranking Liga Magic</title>
+  <link rel="stylesheet" href="style2.css" />
 </head>
 <body>
 
-    <header>
-        <img class="mana" src="img/black_mana.png" alt="mana preto">
-        <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
-        <img class="mana" src="img/Green_mana.png" alt="mana verde">
-        <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
-        <img class="mana" src="img/white_mana.png" alt="">
 
-    </header>
+  <header>
+    <img class="mana" src="img/black_mana.png" alt="mana preto">
+    <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
+    <img class="mana" src="img/Green_mana.png" alt="mana verde">
+    <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
+    <img class="mana" src="img/white_mana.png" alt="">
 
-    <h1>Liga Magic Supermarket</h1>
+</header>
 
-    <table>
-        <thead>
-        <tr>
-            <th>Posição</th>
-            <th>Nome do Jogador</th>
-            <th>Pontuação</th>
-            <th> Aproveitamento </th>
-        </tr>
-        </thead>
-        <tbody>
-            
-        </tbody>
-           
-    </table>
+<h1>Liga Magic Supermarket</h1>
 
-    <a href="novo-dia-suico-V6.html">
-        <button>Gerar Novo Dia de Competição</button>
-    </a>
-      
-    
-      
+  <table>
+    <thead>
+      <tr>
+        <th>Posição</th>
+        <th>Jogador</th>
+        <th>Pontos</th>
+      </tr>
+    </thead>
+    <tbody id="tabela-ranking"></tbody>
+  </table>
 
-    <!-- Aqui estou tentando inserir os dados como objeto javascript-->
+<a href="novo-torneio-V6.html">
+    <button>Gerar Novo Dia de Competição</button>
+</a>
 
     <!-- Filtro e Estatísticas -->
     <section id="filtro-estatisticas">
-        <h2>Buscar Estatísticas do Jogador</h2>
-        <label for="filtro-jogador">Nome do jogador:</label>
-        <input type="text" id="filtro-jogador" placeholder="Ex: Pablo">
-        <button onclick="filtrarJogos()">Filtrar</button>
-        <div id="estatisticas"></div>
-        <div id="jogos-filtrados"></div>
+      <h2>Buscar Estatísticas do Jogador</h2>
+      <label for="filtro-jogador">Nome do jogador:</label>
+      <input type="text" id="filtro-jogador" placeholder="Ex: Pablo">
+      <button onclick="filtrarJogos()">Filtrar</button>
+      <div id="estatisticas"></div>
+      <div id="jogos-filtrados"></div>
 
-    </section>
-    
-    <!-- Seção de Histórico Geral -->
-    <section id="historico-js">
-
-        <div class="dia-de-jogo"> 
-            <h2>Histórico de Jogos – Dia 1</h2>
-            <h4> Dia 15/06/2025</h4>
-            <h4> Draft Final Fantasy</h4>
-            <div id="tabelas-rodadas-dia1"></div>
-        </div>
-
-        <div class="dia-de-jogo"> 
-            <h2>Histórico de Jogos – Dia 2</h2>
-            <h4> Dia 29/06/2025</h4>
-            <h4> Draft Aetherdrift </h4>
-            <div id="tabelas-rodadas-dia2"></div>
-        </div>
-
-        <div class="dia-de-jogo"> 
-            <h2>Histórico de Jogos – Dia 3</h2>
-            <h4> Dia 12/07/2025</h4>
-            <h4> Draft Chaos Final Fantasy / Karlov </h4>
-            <div id="tabelas-rodadas-dia3"></div>
-        </div>
+  </section>
 
 
-    </section>
-  
-  
-  
-      
+  <div id="rodadas-container"></div>
 
-    <!-- Script com o resultado das partindas e calculo do ranking -->
-    <script src="jogosV5.js"></script>
-
-
+  <script src="main.js"></script>
 </body>
 </html>
