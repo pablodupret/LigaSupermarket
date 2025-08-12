@@ -196,6 +196,66 @@ function iniciarTorneio() {
   gerarRodada();
 }
 
+
+// Função para ordenação usando critérios do Appendix C
+function ordenarJogadoresSuico(jogadores) {
+  const stats = jogadores.map(j => {
+    let vitorias = 0, empates = 0, derrotas = 0, gamesGanhos = 0, gamesTotais = 0;
+    let adversarios = [];
+
+    j.historico.forEach(h => {
+      const [g1, g2] = h.placar.replace("(bye)", "").split("x").map(Number);
+      if (isNaN(g1) || isNaN(g2)) return;
+
+      gamesGanhos += g1;
+      gamesTotais += g1 + g2;
+
+      if (g1 > g2) vitorias++;
+      else if (g1 === g2) empates++;
+      else derrotas++;
+
+      adversarios.push(h.contra);
+    });
+
+    const matchPoints = j.pontos;
+    const matchWinPerc = Math.max(0.33, (vitorias * 3 + empates) / ((vitorias + empates + derrotas) * 3 || 1));
+    const gameWinPerc = Math.max(0.33, gamesGanhos / (gamesTotais || 1));
+
+    return {
+      ...j,
+      matchPoints,
+      matchWinPerc,
+      gameWinPerc,
+      adversarios
+    };
+  });
+
+  // Calcula OMWP
+  stats.forEach(s => {
+    const lista = s.adversarios.map(nome => {
+      const adv = stats.find(j => j.nome === nome);
+      return adv ? adv.matchWinPerc : 0.33;
+    });
+    const media = lista.reduce((a, b) => a + Math.max(0.33, b), 0) / (lista.length || 1);
+    s.omwp = media;
+  });
+
+  // Embaralha a lista inicialmente
+  stats.sort(() => Math.random() - 0.5);
+
+  // Agora ordena com critérios, mantendo aleatoriedade em empates
+  stats.sort((a, b) => {
+    return b.matchPoints - a.matchPoints ||
+           b.omwp - a.omwp ||
+           b.matchWinPerc - a.matchWinPerc ||
+           b.gameWinPerc - a.gameWinPerc ||
+           b.saldo - a.saldo;
+  });
+
+  return stats;
+}
+
+
 function gerarRodada() {
   rodadaAtual++;
   const area = document.getElementById("torneio-area");
@@ -205,9 +265,20 @@ function gerarRodada() {
   bloco.id = "rodada_" + rodadaAtual;
   bloco.innerHTML = "<h2>Rodada " + rodadaAtual + "</h2>";
 
-  const jogadoresOrdenados = [...jogadores].filter(j => j.nome !== "Bye").sort((a, b) => {
-    return b.pontos - a.pontos || b.saldo - a.saldo;
-  });
+  let jogadoresOrdenados;
+
+if (rodadaAtual === 1) {
+  // Primeira rodada: usar ordem aleatória ou simples
+  jogadoresOrdenados = [...jogadores].filter(j => j.nome !== "Bye");
+    for (let i = jogadoresOrdenados.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [jogadoresOrdenados[i], jogadoresOrdenados[j]] = [jogadoresOrdenados[j], jogadoresOrdenados[i]];
+    }
+} else {
+  // Demais rodadas: usar ordenação do Appendix C
+  jogadoresOrdenados = ordenarJogadoresSuico(jogadores.filter(j => j.nome !== "Bye"));
+}
+
 
   let listaParear = [...jogadoresOrdenados];
   const confrontos = [];
@@ -299,6 +370,8 @@ function finalizarRodada(rodada) {
   }
 
   mostrarRanking();
+  mostrarEstatisticasAppendixC();
+
 
   if (rodada < totalRodadas) {
     const botao = document.createElement("button");
@@ -312,19 +385,49 @@ function finalizarRodada(rodada) {
   }
 }
 
+
 function mostrarRanking() {
   const area = document.getElementById("torneio-area");
-  const ranking = [...jogadores].filter(j => j.nome !== "Bye").sort((a, b) => {
+  const existente = document.getElementById("ranking-atual");
+  if (existente) existente.remove();
+
+  const ranking = jogadores.map(j => {
+    let pontos = 0;
+    let saldo = 0;
+
+    j.historico.forEach(h => {
+      const placar = h.placar.replace("(bye)", "").trim();
+      if (!placar.includes("x")) return;
+
+      const [g1, g2] = placar.split("x").map(Number);
+      if (isNaN(g1) || isNaN(g2)) return;
+
+      if (g1 > g2) pontos += 3;
+      else if (g1 < g2) pontos += 0;
+      else pontos += 1;
+
+      saldo += g1 - g2;
+    });
+
+    return {
+      nome: j.nome,
+      pontos,
+      saldo
+    };
+  }).filter(j => j.nome !== "Bye");
+
+  ranking.sort((a, b) => {
     return b.pontos - a.pontos || b.saldo - a.saldo;
   });
 
-  let html = "<div class='ranking'><h3>Ranking Atual</h3><table><tr><th>Jogador</th><th>Pontos</th><th>Saldo</th></tr>";
+  let html = "<div class='ranking' id='ranking-atual'><h3>Ranking Atual</h3><table><tr><th>Jogador</th><th>Pontos</th><th>Saldo</th></tr>";
   ranking.forEach(j => {
     html += `<tr><td>${j.nome}</td><td>${j.pontos}</td><td>${j.saldo}</td></tr>`;
   });
   html += "</table></div>";
   area.innerHTML += html;
 }
+
 
 
 
@@ -425,6 +528,7 @@ function finalizarRodadaReaberta(rodada) {
   }
 
   mostrarRanking();
+  mostrarEstatisticasAppendixC();
 
   if (rodada < totalRodadas) {
     const botao = document.createElement("button");
@@ -437,5 +541,167 @@ function finalizarRodadaReaberta(rodada) {
     document.getElementById("torneio-area").appendChild(fim);
   }
 }
+
+
+//Função para calculo do Appendix_c
+
+function mostrarEstatisticasAppendixC() {
+  const area = document.getElementById("torneio-area");
+  const existente = document.getElementById("appendix-c");
+  if (existente) existente.remove(); // Remove tabela anterior
+
+  const stats = jogadores.map(j => ({
+    nome: j.nome,
+    matchPoints: 0,
+    vitorias: 0,
+    empates: 0,
+    derrotas: 0,
+    gamesGanhos: 0,
+    gamesTotais: 0,
+    adversarios: []
+  }));
+
+  const statsMap = Object.fromEntries(stats.map(s => [s.nome, s]));
+
+  jogadores.forEach(j => {
+    const s = statsMap[j.nome];
+    j.historico.forEach(h => {
+      const adversario = h.contra;
+      const placar = h.placar.replace("(bye)", "").trim();
+      if (!placar.includes("x")) return;
+
+      const [g1, g2] = placar.split("x").map(Number);
+      if (isNaN(g1) || isNaN(g2)) return;
+
+      const sAdv = statsMap[adversario];
+      if (adversario !== "Bye" && !s.adversarios.includes(adversario)) {
+        s.adversarios.push(adversario);
+      }
+
+      s.gamesGanhos += g1;
+      s.gamesTotais += g1 + g2;
+
+      if (g1 > g2) {
+        s.vitorias++;
+        s.matchPoints += 3;
+      } else if (g1 < g2) {
+        s.derrotas++;
+      } else {
+        s.empates++;
+        s.matchPoints += 1;
+      }
+    });
+  });
+
+  // Cálculo dos percentuais
+  stats.forEach(s => {
+    const totalMatches = s.vitorias + s.empates + s.derrotas;
+    s.matchWinPerc = Math.max(0.33, (s.vitorias * 3 + s.empates) / ((totalMatches * 3) || 1));
+    s.gameWinPerc = Math.max(0.33, s.gamesGanhos / (s.gamesTotais || 1));
+  });
+
+  // Cálculo do OMWP
+  stats.forEach(s => {
+    const lista = s.adversarios.map(nome => {
+      const adv = statsMap[nome];
+      return adv ? adv.matchWinPerc : 0.33;
+    });
+    const media = lista.reduce((a, b) => a + b, 0) / (lista.length || 1);
+    s.omwp = Math.max(0.33, media);
+  });
+
+  // Exibir a tabela
+  let html = `<div class='ranking' id='appendix-c'>
+    <h3>📊 Estatísticas Avançadas (Appendix C)</h3>
+    <table><tr><th>Jogador</th><th>MP</th><th>MW%</th><th>GW%</th><th>OMWP</th></tr>`;
+
+      stats.forEach(s => {
+    html += `<tr>
+      <td>${s.nome}</td>
+      <td>${s.matchPoints}</td>
+      <td>${(s.matchWinPerc * 100).toFixed(1)}%</td>
+      <td>${(s.gameWinPerc * 100).toFixed(1)}%</td>
+      <td>${(s.omwp * 100).toFixed(1)}%</td>
+    </tr>`;
+  });
+
+  html += "</table>";
+
+  // 🔍 Identifica o campeão com base nos critérios oficiais
+  const campeao = [...stats]
+    .sort((a, b) =>
+      b.matchPoints - a.matchPoints ||
+      b.omwp - a.omwp ||
+      b.matchWinPerc - a.matchWinPerc ||
+      b.gameWinPerc - a.gameWinPerc ||
+      (jogadores.find(j => j.nome === b.nome)?.saldo || 0) -
+      (jogadores.find(j => j.nome === a.nome)?.saldo || 0)
+    )[0];
+
+  html += `
+    <h3 style="margin-top: 30px; color: gold;">🏆 Campeão: ${campeao.nome}</h3>
+  </div>`;
+
+  area.innerHTML += html;
+}
+
+
+function exportarResultadosParaJSON() {
+  const jogosExportados = [];
+  const numeroDia = prompt("Digite o número do dia (ex: 5):", "5");
+  if (!numeroDia) return;
+
+  for (const rodada in resultadosPorRodada) {
+    const confrontos = resultadosPorRodada[rodada];
+    confrontos.forEach((par, i) => {
+      const j1 = par[0];
+      const j2 = par[1];
+
+      if (j2.nome === "Bye") return;
+
+      // Identifica o elemento da célula com placar
+      const linhaIndex = i;
+      const blocoRodada = document.getElementById(`rodada_${rodada}`) || document.getElementById(`rodada_${rodada}_reaberta`);
+      if (!blocoRodada) return;
+
+      const placarCells = blocoRodada.querySelectorAll("tbody tr");
+      const linha = placarCells[linhaIndex];
+      if (!linha) return;
+
+      const placarSpan = linha.querySelector("td.placar-input, td span");
+      if (!placarSpan) return;
+
+      const texto = placarSpan.innerText || "";
+      const [p1, p2] = texto.replace("(bye)", "").split("x").map(str => parseInt(str.trim()));
+      if (isNaN(p1) || isNaN(p2)) return;
+
+      
+
+      jogosExportados.push({
+      dia: parseInt(numeroDia),
+      rodada: parseInt(rodada),
+      jogador1: j1.nome,
+      jogador2: j2.nome,
+      resultado: `${p1} x ${p2}`
+      });
+
+    });
+  }
+
+  const blob = new Blob([JSON.stringify(jogosExportados, null, 2)], { type: "application/json" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = "resultados_28-07-2025.json";
+  link.click();
+}
+
+
+
+
+
 </script></body>
+
+<button onclick="exportarResultadosParaJSON()">📤 Exportar Resultados (JSON)</button>
+
+
 </html>
