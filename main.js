@@ -14,7 +14,10 @@ async function carregarJogos() {
   const info = {
 1: { data: "15/06/2025", draft: "Draft Final Fantasy" },
 2: { data: "29/06/2025", draft: "Draft Aetherdrift" },
-3: { data: "12/07/2025", draft: "Draft Chaos Final Fantasy / Karlov" }
+3: { data: "12/07/2025", draft: "Draft Chaos Final Fantasy / Karlov" },
+4: { data: "26/07/2025", draft: "Pre-release Edge of Ethernities"},
+5: { data: "09/08/2025", draft: "Draft Edge of Ethernities"}
+
 };
 
   for (const [dia, jogosDia] of porDia.entries()) {
@@ -51,6 +54,40 @@ async function carregarJogos() {
       html += `</tbody></table>`;
       divDia.innerHTML += html;
     });
+
+    // Ranking do dia usando appendix_c.js
+const rankingDoDia = gerarRankingDoDia(dia, jogos);
+
+let htmlRanking = `<h3>🏆 Ranking do Dia ${dia}</h3>
+<table class="tabela-estilizada">
+  <thead>
+    <tr>
+      <th>Jogador</th>
+      <th>Match Points</th>
+      <th>Match Win %</th>
+      <th>Game Win %</th>
+      <th>OMWP</th>
+    </tr>
+  </thead>
+  <tbody>`;
+
+rankingDoDia.forEach(j => {
+  htmlRanking += `
+    <tr>
+      <td>${j.jogador}</td>
+      <td>${j.matchPoints}</td>
+      <td>${(j.matchWinPerc * 100).toFixed(1)}%</td>
+      <td>${(j.gameWinPerc * 100).toFixed(1)}%</td>
+      <td>${(j.omwp * 100).toFixed(1)}%</td>
+    </tr>`;
+});
+
+htmlRanking += `</tbody></table>`;
+divDia.innerHTML += htmlRanking;
+
+
+
+
     container.appendChild(divDia);
   }
 
