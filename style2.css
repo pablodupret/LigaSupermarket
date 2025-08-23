@@ -427,16 +427,23 @@ button {
 
   /*Estilo para avatar*/
 
+  /* Avatar base: sobe para 48x48 e mantém estilos atuais */
   .avatar {
-    width: 32px;
-    height: 32px;
+    width: 48px;              /* era 32px */
+    height: 48px;             /* era 32px */
     border-radius: 50%;
     object-fit: cover;
     margin-right: 8px;
     vertical-align: middle;
     border: 2px solid #fff;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-  }
+
+  /* suave e pronto para ampliar */
+  transition: width 120ms ease, height 120ms ease, box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
+  will-change: width, height, transform;
+  z-index: 0;
+}
+
 
   /*alinhamento do avatar*/
 
@@ -450,5 +457,90 @@ button {
     gap: 8px;
     justify-content: flex-start;
   }
+  
+  .posicao { font-weight: 700; }
+
+.delta {
+  display: inline-flex;
+  flex-direction: column;   /* seta em cima, número embaixo */
+  align-items: center;
+  justify-content: center;
+  margin-left: .4rem;
+  line-height: 1;
+  font-size: 0.95rem;
+  vertical-align: middle;
+}
+
+.delta-num {
+  font-size: 0.70rem;
+  margin-top: -1px;    /* aproxima do triângulo */
+  font-weight: 700;
+  opacity: .9;
+}
+
+.delta.up    { color: #3ddc84; }  /* verde */
+.delta.down  { color: #ff6b6b; }  /* vermelho */
+.delta.same  { color: #bbb; }
+.delta.neutro{ color: #666; opacity: .7; }
+
+
+/* Permite que a imagem cresça sem “achatar” a linha */
+/* a célula pode receber um overlay sem cortar a imagem */
+.td-nome {
+  position: relative;
+  overflow: visible;
+}
+
+/* Hover: aumenta de fato para 96x96, absoluto para não reflow */
+.td-nome .avatar:hover,
+.avatar.avatar--enlarged {           /* mesma regra para mobile (clique) */
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  left: 0;                           /* ancorado à esquerda do nome */
+  top: 50%;
+  transform: translateY(-50%);       /* centraliza verticalmente na célula */
+  z-index: 5;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.35);
+}
+
+/* acessibilidade: menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .avatar { transition: none; }
+}
+
+
+/* Avatar atual: só adicionamos transição e origem de transformação */
+.avatar {
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease; /* novo */
+  transform-origin: left center;   /* novo: cresce “para fora” */
+  will-change: transform;          /* novo: suaviza */
+  z-index: 0;                      /* novo */
+}
+
+/* HOVER: dobra o tamanho visual (32px -> ~64px) sem reflow */
+.td-nome .avatar:hover {
+  transform: scale(2);             /* novo */
+  z-index: 5;                      /* novo: fica por cima */
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);  /* novo */
+  border-color: rgba(255,255,255,.35);     /* novo */
+}
+
+/* Acessibilidade: se o usuário prefere menos movimento */
+@media (prefers-reduced-motion: reduce) {
+  .avatar { transition: none; }    /* novo */
+}
+
+/* Mesmo efeito do hover, mas por classe (mobile/click) */
+.avatar.avatar--enlarged {
+  transform: scale(2);
+  z-index: 5;
+  box-shadow: 0 6px 20px rgba(0,0,0,.35);
+  border-color: rgba(255,255,255,.35);
+}
+
+
+
   
   

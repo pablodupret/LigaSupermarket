@@ -1,3 +1,32 @@
+// Calcula ranking simples (pontos totais) e devolve array ordenado
+function calcularRankingArray(jogos) {
+  const pontuacoes = {};
+  jogos.forEach(jogo => {
+    const [g1, g2] = jogo.resultado.split(" x ").map(Number);
+    const j1 = jogo.jogador1;
+    const j2 = jogo.jogador2;
+
+    if (!pontuacoes[j1]) pontuacoes[j1] = 0;
+    if (!pontuacoes[j2]) pontuacoes[j2] = 0;
+
+    if (g1 > g2) pontuacoes[j1] += 3;
+    else if (g1 < g2) pontuacoes[j2] += 3;
+    else {
+      pontuacoes[j1] += 1;
+      pontuacoes[j2] += 1;
+    }
+  });
+
+  // transforma em array e ordena por pontos desc, depois nome asc (desempate estável)
+  const arr = Object.entries(pontuacoes).map(([jogador, pontos]) => ({ jogador, pontos }));
+  arr.sort((a, b) => b.pontos - a.pontos || a.jogador.localeCompare(b.jogador));
+  return arr;
+}
+
+
+// PArte origianl abaixo. Acima nova versao para visualizar alteração de posição
+
+
 async function carregarJogos() {
   const resposta = await fetch('jogos.json');
   const jogos = await resposta.json();
@@ -91,10 +120,22 @@ divDia.innerHTML += htmlRanking;
     container.appendChild(divDia);
   }
 
-  gerarRanking(jogos);
-}
+    // Descobre o último "dia" registrado
+    const ultimoDia = Math.max(...jogos.map(j => j.dia));
 
-function gerarRanking(jogos) {
+    // Jogos até o PENÚLTIMO dia (para comparar posição)
+    const jogosAtePenultimo = jogos.filter(j => j.dia < ultimoDia);
+  
+    // Calcula ranking anterior e cria um mapa jogador -> posição anterior (1-based)
+    const rankingAnterior = calcularRankingArray(jogosAtePenultimo);
+    const posAnteriorMap = new Map(rankingAnterior.map((e, i) => [e.jogador, i + 1]));
+  
+    // Gera o ranking atual com informações de mudança de posição
+    gerarRanking(jogos, posAnteriorMap);
+  }
+  
+
+function gerarRanking(jogos, posAnteriorMap = null) {
   const pontuacoes = {};
 
   jogos.forEach(jogo => {
@@ -131,12 +172,46 @@ function gerarRanking(jogos) {
   
     const imgHTML = `<img src="img/${nomeImagem}.jpg" onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';" alt="${entry.jogador}" class="avatar">`;
 
-  
-    tr.innerHTML = `
-      <td>${i + 1}º</td>
-      <td class="td-nome">${imgHTML}<span>${entry.jogador}</span></td>
-      <td>${entry.pontos}</td>
-    `;
+  // calcula variação de posição em relação ao ranking anterior (com número)
+  let indicadorHTML = `<span class="delta neutro" title="sem variação">•</span>`;
+  if (posAnteriorMap && posAnteriorMap.has(entry.jogador)) {
+    const posAnterior = posAnteriorMap.get(entry.jogador);   // posição anterior (1-based)
+    const posAtual = i + 1;
+    const delta = posAnterior - posAtual; // positivo = subiu; negativo = caiu
+    const abs = Math.abs(delta);
+
+    if (delta > 0) {
+      // subiu
+      indicadorHTML = `
+        <span class="delta up" title="+${abs} posição(ões)">
+          ▲
+          <span class="delta-num">${abs}</span>
+        </span>`;
+    } else if (delta < 0) {
+      // caiu
+      indicadorHTML = `
+        <span class="delta down" title="-${abs} posição(ões)">
+          ▼
+          <span class="delta-num">${abs}</span>
+        </span>`;
+    } else {
+      // ficou igual
+      indicadorHTML = `
+        <span class="delta same" title="sem variação">
+          —
+          <span class="delta-num">0</span>
+        </span>`;
+    }
+  }
+
+
+tr.innerHTML = `
+  <td><span class="posicao">${i + 1}º</span> ${indicadorHTML}</td>
+  <td class="td-nome">${imgHTML}<span>${entry.jogador}</span></td>
+  <td>${entry.pontos}</td>
+`;
+
+    
     corpo.appendChild(tr);
   });
   
@@ -337,4 +412,12 @@ function calcularVsAdversarios(nome, jogos) {
 
   return vs;
 }
+
+// crescer a foto do ranking geral no mobile//
+
+  document.addEventListener('click', function (e) {
+    const img = e.target.closest('.avatar');
+    if (!img) return;
+    img.classList.toggle('avatar--enlarged');
+  });
 
