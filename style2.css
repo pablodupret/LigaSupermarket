@@ -483,54 +483,49 @@ button {
 .delta.same  { color: #bbb; }
 .delta.neutro{ color: #666; opacity: .7; }
 
-
 /* Permite que a imagem cresça sem “achatar” a linha */
-/* a célula pode receber um overlay sem cortar a imagem */
 .td-nome {
   position: relative;
   overflow: visible;
 }
 
-/* Hover: aumenta de fato para 96x96, absoluto para não reflow */
-.td-nome .avatar:hover,
-.avatar.avatar--enlarged {           /* mesma regra para mobile (clique) */
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  left: 0;                           /* ancorado à esquerda do nome */
-  top: 50%;
-  transform: translateY(-50%);       /* centraliza verticalmente na célula */
-  z-index: 5;
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-  border-color: rgba(255,255,255,.35);
+/* Avatar base */
+.avatar {
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+  transform-origin: left center;
+  will-change: transform;
+  z-index: 0;
 }
 
-/* acessibilidade: menos movimento */
+/* Acessibilidade: menos movimento */
 @media (prefers-reduced-motion: reduce) {
   .avatar { transition: none; }
 }
 
-
-/* Avatar atual: só adicionamos transição e origem de transformação */
-.avatar {
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease; /* novo */
-  transform-origin: left center;   /* novo: cresce “para fora” */
-  will-change: transform;          /* novo: suaviza */
-  z-index: 0;                      /* novo */
+/* 1) Só permite ampliar em dispositivos que têm hover (desktop) */
+@media (hover: hover) {
+  .td-nome .avatar:hover {
+    transform: scale(2);
+    z-index: 5;
+    box-shadow: 0 6px 20px rgba(0,0,0,.35);
+    border-color: rgba(255,255,255,.35);
+  }
 }
 
-/* HOVER: dobra o tamanho visual (32px -> ~64px) sem reflow */
-.td-nome .avatar:hover {
-  transform: scale(2);             /* novo */
-  z-index: 5;                      /* novo: fica por cima */
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);  /* novo */
-  border-color: rgba(255,255,255,.35);     /* novo */
+/* 2) Em dispositivos sem hover (mobile), neutraliza QUALQUER ampliação */
+@media (hover: none) {
+  .td-nome .avatar:hover,
+  .avatar.avatar--enlarged {
+    position: static !important;
+    width: auto !important;   /* mantém o tamanho padrão */
+    height: auto !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: #fff !important;
+    z-index: 0 !important;
+  }
 }
 
-/* Acessibilidade: se o usuário prefere menos movimento */
-@media (prefers-reduced-motion: reduce) {
-  .avatar { transition: none; }    /* novo */
-}
 
 
 
