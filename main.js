@@ -415,9 +415,16 @@ function calcularVsAdversarios(nome, jogos) {
 
 // crescer a foto do ranking geral no mobile//
 
-  document.addEventListener('click', function (e) {
-    const img = e.target.closest('.avatar');
-    if (!img) return;
-    img.classList.toggle('avatar--enlarged');
-  });
+document.addEventListener('click', function (e) {
+  const img = e.target.closest('.avatar');
+  if (!img) return;
+
+  // Adiciona a classe de ampliação
+  img.classList.add('avatar--enlarged');
+
+  // Remove automaticamente após 1 segundo (1000ms)
+  setTimeout(() => {
+    img.classList.remove('avatar--enlarged');
+  }, 1000);
+});
 
