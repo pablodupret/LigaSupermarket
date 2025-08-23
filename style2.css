@@ -532,14 +532,6 @@ button {
   .avatar { transition: none; }    /* novo */
 }
 
-/* Mesmo efeito do hover, mas por classe (mobile/click) */
-.avatar.avatar--enlarged {
-  transform: scale(2);
-  z-index: 5;
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-  border-color: rgba(255,255,255,.35);
-}
-
 
 
 
