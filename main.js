@@ -413,25 +413,5 @@ function calcularVsAdversarios(nome, jogos) {
   return vs;
 }
 
-// crescer a foto do ranking geral no mobile//
 
-// Amplia no toque e volta sozinho depois de 1s
-document.addEventListener('pointerdown', function (e) {
-  const img = e.target.closest('.avatar');
-  if (!img) return;
-
-  // Adiciona classe de ampliação
-  img.classList.add('avatar--enlarged');
-
-  // Se já houver um timer pendurado neste elemento, limpa antes
-  if (img._enlargeTimer) {
-    clearTimeout(img._enlargeTimer);
-  }
-
-  // Agenda remoção em 1s
-  img._enlargeTimer = setTimeout(() => {
-    img.classList.remove('avatar--enlarged');
-    img._enlargeTimer = null;
-  }, 1000);
-}, { passive: true });
 
