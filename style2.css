@@ -427,23 +427,16 @@ button {
 
   /*Estilo para avatar*/
 
-  /* Avatar base: sobe para 48x48 e mantém estilos atuais */
   .avatar {
-    width: 48px;              /* era 32px */
-    height: 48px;             /* era 32px */
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     object-fit: cover;
     margin-right: 8px;
     vertical-align: middle;
     border: 2px solid #fff;
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-
-  /* suave e pronto para ampliar */
-  transition: width 120ms ease, height 120ms ease, box-shadow 120ms ease, border-color 120ms ease, transform 120ms ease;
-  will-change: width, height, transform;
-  z-index: 0;
-}
-
+  }
 
   /*alinhamento do avatar*/
 
@@ -482,51 +475,6 @@ button {
 .delta.down  { color: #ff6b6b; }  /* vermelho */
 .delta.same  { color: #bbb; }
 .delta.neutro{ color: #666; opacity: .7; }
-
-/* Permite que a imagem cresça sem “achatar” a linha */
-.td-nome {
-  position: relative;
-  overflow: visible;
-}
-
-/* Avatar base */
-.avatar {
-  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-  transform-origin: left center;
-  will-change: transform;
-  z-index: 0;
-}
-
-/* Acessibilidade: menos movimento */
-@media (prefers-reduced-motion: reduce) {
-  .avatar { transition: none; }
-}
-
-/* 1) Só permite ampliar em dispositivos que têm hover (desktop) */
-@media (hover: hover) {
-  .td-nome .avatar:hover {
-    transform: scale(2);
-    z-index: 5;
-    box-shadow: 0 6px 20px rgba(0,0,0,.35);
-    border-color: rgba(255,255,255,.35);
-  }
-}
-
-/* 2) Em dispositivos sem hover (mobile), neutraliza QUALQUER ampliação */
-@media (hover: none) {
-  .td-nome .avatar:hover,
-  .avatar.avatar--enlarged {
-    position: static !important;
-    width: auto !important;   /* mantém o tamanho padrão */
-    height: auto !important;
-    transform: none !important;
-    box-shadow: none !important;
-    border-color: #fff !important;
-    z-index: 0 !important;
-  }
-}
-
-
 
 
 

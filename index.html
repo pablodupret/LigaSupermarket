@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ranking Liga Magic</title>
+  <link rel="stylesheet" href="style2.css" />
+</head>
+<body>
+
+
+  <header>
+    <img class="mana" src="img/black_mana.png" alt="mana preto">
+    <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
+    <img class="mana" src="img/Green_mana.png" alt="mana verde">
+    <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
+    <img class="mana" src="img/white_mana.png" alt="">
+
+</header>
+
+<h1>Liga Magic Supermarket</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Posição</th>
+        <th>Jogador</th>
+        <th>Pontos</th>
+      </tr>
+    </thead>
+    <tbody id="tabela-ranking"></tbody>
+  </table>
+
+<a href="novo-torneio-V6.html">
+    <button>Gerar Novo Dia de Competição</button>
+</a>
+
+    <!-- Filtro e Estatísticas -->
+    <section id="filtro-estatisticas">
+      <h2>Buscar Estatísticas do Jogador</h2>
+      <label for="filtro-jogador">Nome do jogador:</label>
+      <input type="text" id="filtro-jogador" placeholder="Ex: Pablo">
+      <button onclick="filtrarJogos()">Filtrar</button>
+      <div id="estatisticas"></div>
+      <div id="jogos-filtrados"></div>
+
+  </section>
+
+
+  <div id="rodadas-container"></div>
+
+  <script src="appendix_c.js"></script>
+  <script src="main.js"></script>
+  
+
+</body>
+</html>
