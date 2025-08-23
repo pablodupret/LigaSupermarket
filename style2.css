@@ -540,19 +540,6 @@ button {
   border-color: rgba(255,255,255,.35);
 }
 
-/* Ampliar enquanto mantém o toque/press (mobile) — sem JS */
-.td-nome .avatar:active {
-  position: absolute;
-  width: 96px;
-  height: 96px;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 5;
-  box-shadow: 0 6px 20px rgba(0,0,0,.35);
-  border-color: rgba(255,255,255,.35);
-  -webkit-tap-highlight-color: transparent; /* melhora sensação no mobile */
-}
 
 
 
