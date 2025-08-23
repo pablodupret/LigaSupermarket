@@ -45,8 +45,9 @@ async function carregarJogos() {
 2: { data: "29/06/2025", draft: "Draft Aetherdrift" },
 3: { data: "12/07/2025", draft: "Draft Chaos Final Fantasy / Karlov" },
 4: { data: "26/07/2025", draft: "Pre-release Edge of Ethernities"},
-5: { data: "09/08/2025", draft: "Draft Edge of Ethernities"}
-
+5: { data: "09/08/2025", draft: "Draft Edge of Ethernities"},
+6: { data: "23/08/2025", draft: "Foundations"}
+    
 };
 
   for (const [dia, jogosDia] of porDia.entries()) {
