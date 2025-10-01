@@ -1303,7 +1303,7 @@
         "resultado": "0 x 1",
         "jogador2": "Marcelo"
       },
-      
+
       {
         "dia": 9,
         "rodada": 2,
@@ -1311,7 +1311,7 @@
         "resultado": "1 x 1",
         "jogador2": "Subzero"
       },
-  
+
       {
         "dia": 9,
         "rodada": 2,
@@ -1333,7 +1333,6 @@
         "resultado": "0 x 2",
         "jogador2": "Magno"
       },
- 
       {
         "dia": 9,
         "rodada": 3,
@@ -1348,6 +1347,9 @@
         "resultado": "0 x 1",
         "jogador2": "Sérgio"
       },
+
+    
+ 
       {
         "dia": 9,
         "rodada": 3,
