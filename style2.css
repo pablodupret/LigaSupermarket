@@ -26,15 +26,13 @@
   body {
     margin: 0;
     padding: 0;
-    background-image: url(img/fundo.jpg);
-    background-position: center;
-    background-size: cover;
     color: var(--cor-texto-principal);
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
   }
+  
   
   header {
     margin-top: 50px;
@@ -482,6 +480,35 @@ html, body {
     radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
     url('img/fundo.jpg') center / cover no-repeat fixed !important;
   background-color: #1e1e1e; /* fallback */
+}
+
+
+/* === WALLPAPER COMPATÍVEL: DESKTOP + MOBILE (iOS/Android) === */
+html, body {
+  /* duas camadas: [0]=gradiente (escurece), [1]=imagem */
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo.jpg');
+  background-position: center, center;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  /* desktop fica fixo; mobile será ajustado abaixo */
+  background-attachment: scroll, fixed;
+  background-color: #0e0e0e; /* fallback */
+}
+
+/* MOBILE (iOS/Android): desativa o 'fixed' para evitar a imagem sumir */
+@media (hover: none) and (pointer: coarse), (max-width: 820px) {
+  html, body {
+    background-attachment: scroll, scroll !important;
+    background-position: center center, center center;
+    background-size: cover, cover;
+  }
+}
+
+/* iOS específico – força o fallback mesmo em versões mais chatas */
+@supports (-webkit-touch-callout: none) {
+  html, body { background-attachment: scroll, scroll !important; }
 }
 
 
