@@ -476,6 +476,14 @@ button {
 .delta.same  { color: #bbb; }
 .delta.neutro{ color: #666; opacity: .7; }
 
+/* Força o wallpaper a prevalecer */
+html, body {
+  background:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo.jpg') center / cover no-repeat fixed !important;
+  background-color: #1e1e1e; /* fallback */
+}
+
 
 
   
