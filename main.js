@@ -51,6 +51,7 @@ async function carregarJogos() {
 8: { data: "20/09/2025", draft: "Draft Aetherdrift"},
 9: { data: "28/09/2025", draft: "Pré-release Homem Aranha"},
 10: {data: "04/10/2025", draft: "Draft Homem Aranha"},
+11: {data: "18/10/2025", draft: "Draft Duskmourn"},
 
 };
 

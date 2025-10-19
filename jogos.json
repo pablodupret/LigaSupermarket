@@ -1460,9 +1460,33 @@
         { "dia": 10, "rodada": 4, "jogador1": "Rates",    "resultado": "2 x 0", "jogador2": "Vini" },
         { "dia": 10, "rodada": 4, "jogador1": "Sérgio",   "resultado": "2 x 1", "jogador2": "Nagib" },
         { "dia": 10, "rodada": 4, "jogador1": "Alex",     "resultado": "2 x 0", "jogador2": "Stenio" },
-        { "dia": 10, "rodada": 4, "jogador1": "Subzero",  "resultado": "2 x 0", "jogador2": "Pablo" }
-      
-      
+        { "dia": 10, "rodada": 4, "jogador1": "Subzero",  "resultado": "2 x 0", "jogador2": "Pablo" },
+
+        { "dia": 11, "rodada": 1, "jogador1": "Alex", "resultado": "0 x 2", "jogador2": "Sérgio" },
+        { "dia": 11, "rodada": 1, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 1, "jogador1": "Rates", "resultado": "1 x 2", "jogador2": "Joca" },
+        { "dia": 11, "rodada": 1, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Vini" },
+        { "dia": 11, "rodada": 1, "jogador1": "Nagib", "resultado": "2 x 0", "jogador2": "Eduardo" },
+
+        { "dia": 11, "rodada": 2, "jogador1": "Rates", "resultado": "0 x 2", "jogador2": "Vini" },
+        { "dia": 11, "rodada": 2, "jogador1": "Alex", "resultado": "0 x 2", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 2, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Joca" },
+        { "dia": 11, "rodada": 2, "jogador1": "Sérgio", "resultado": "1 x 2", "jogador2": "Eduardo" },
+        { "dia": 11, "rodada": 2, "jogador1": "Marcelo", "resultado": "1 x 1", "jogador2": "Nagib" },
+
+        { "dia": 11, "rodada": 3, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Alex" },
+        { "dia": 11, "rodada": 3, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 3, "jogador1": "Magno", "resultado": "2 x 0", "jogador2": "Marcelo" },
+        { "dia": 11, "rodada": 3, "jogador1": "Sérgio", "resultado": "2 x 1", "jogador2": "Nagib" },
+        { "dia": 11, "rodada": 3, "jogador1": "Eduardo", "resultado": "1 x 2", "jogador2": "Joca" },
+
+        { "dia": 11, "rodada": 4, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Nagib" },
+        { "dia": 11, "rodada": 4, "jogador1": "Marcelo", "resultado": "2 x 0", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 4, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Magno" },
+        { "dia": 11, "rodada": 4, "jogador1": "Alex", "resultado": "2 x 0", "jogador2": "Eduardo" },
+        { "dia": 11, "rodada": 4, "jogador1": "Sérgio", "resultado": "0 x 2", "jogador2": "Joca" }
+
+        
 
     ]
     
