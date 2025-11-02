@@ -1,0 +1,1525 @@
+[
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Eduardo",
+    "resultado": "1 x 2",
+    "jogador2": "Magno"
+  },
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Igor",
+    "resultado": "0 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Marcelo",
+    "resultado": "2 x 1",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 1,
+    "rodada": 1,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "2 x 1",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Joca",
+    "resultado": "0 x 2",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Eduardo",
+    "resultado": "2 x 0",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Igor",
+    "resultado": "1 x 1",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Alex",
+    "resultado": "1 x 2",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 1,
+    "rodada": 2,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Joca",
+    "resultado": "2 x 0",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Marcelo",
+    "resultado": "2 x 0",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Igor",
+    "resultado": "0 x 2",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 1,
+    "rodada": 3,
+    "jogador1": "Subzero",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Alex",
+    "resultado": "2 x 1",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Eduardo",
+    "resultado": "1 x 2",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Igor",
+    "resultado": "0 x 2",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 1,
+    "rodada": 4,
+    "jogador1": "Pablo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 2,
+    "rodada": 1,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Qiu"
+  },
+  {
+    "dia": 2,
+    "rodada": 1,
+    "jogador1": "Nagib",
+    "resultado": "2 x 1",
+    "jogador2": "Vini"
+  },
+  {
+    "dia": 2,
+    "rodada": 1,
+    "jogador1": "Pablo",
+    "resultado": "0 x 2",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 2,
+    "rodada": 1,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 2,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 2,
+    "rodada": 2,
+    "jogador1": "Eduardo",
+    "resultado": "2 x 1",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 2,
+    "rodada": 2,
+    "jogador1": "Pablo",
+    "resultado": "1 x 1",
+    "jogador2": "Vini"
+  },
+  {
+    "dia": 2,
+    "rodada": 2,
+    "jogador1": "Qiu",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 2,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 2,
+    "rodada": 3,
+    "jogador1": "Qiu",
+    "resultado": "2 x 0",
+    "jogador2": "Vini"
+  },
+  {
+    "dia": 2,
+    "rodada": 3,
+    "jogador1": "Nagib",
+    "resultado": "1 x 1",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 2,
+    "rodada": 3,
+    "jogador1": "Pablo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Magno",
+    "resultado": "1 x 0",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Marcelo",
+    "resultado": "1 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Eduardo",
+    "resultado": "1 x 1",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Caio",
+    "resultado": "1 x 1",
+    "jogador2": "Jun"
+  },
+  {
+    "dia": 3,
+    "rodada": 1,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Alex",
+    "resultado": "0 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Eduardo",
+    "resultado": "2 x 0",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Jun",
+    "resultado": "2 x 0",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 3,
+    "rodada": 2,
+    "jogador1": "Pablo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "2 x 1",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Eduardo",
+    "resultado": "0 x 2",
+    "jogador2": "Jun"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Sérgio",
+    "resultado": "0 x 2",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Pablo",
+    "resultado": "1 x 2",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 3,
+    "rodada": 3,
+    "jogador1": "Marcelo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Jun"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Joca",
+    "resultado": "0 x 2",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Eduardo",
+    "resultado": "0 x 2",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Pablo",
+    "resultado": "0 x 2",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 3,
+    "rodada": 4,
+    "jogador1": "Caio",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Joca",
+    "resultado": "1 x 2",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Marcelo",
+    "resultado": "0 x 2",
+    "jogador2": "Gabriel"
+  },
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Eduardo",
+    "resultado": "1 x 1",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Will",
+    "resultado": "1 x 2",
+    "jogador2": "Magno"
+  },
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Caio",
+    "resultado": "0 x 2",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 4,
+    "rodada": 1,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Joca",
+    "resultado": "2 x 1",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Sérgio",
+    "resultado": "0 x 2",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Eduardo",
+    "resultado": "0 x 2",
+    "jogador2": "Will"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Pablo",
+    "resultado": "0 x 2",
+    "jogador2": "Gabriel"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 4,
+    "rodada": 2,
+    "jogador1": "Marcelo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Gabriel"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Will",
+    "resultado": "2 x 0",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Joca",
+    "resultado": "0 x 2",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Alex",
+    "resultado": "2 x 1",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 4,
+    "rodada": 3,
+    "jogador1": "Caio",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Will",
+    "resultado": "2 x 1",
+    "jogador2": "Gabriel"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Alex",
+    "resultado": "0 x 1",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 1",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Marcelo",
+    "resultado": "1 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 4,
+    "rodada": 4,
+    "jogador1": "Pablo",
+    "resultado": "2 x 0",
+    "jogador2": "Bye"
+  },
+
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Caio",
+    "resultado": "1 x 1",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Pablo",
+    "resultado": "0 x 2",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Eduardo",
+    "resultado": "0 x 2",
+    "jogador2": "Magno"
+  },
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Jun"
+  },
+  {
+    "dia": 5,
+    "rodada": 1,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 1",
+    "jogador2": "Pedro"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Stenio",
+    "resultado": "0 x 2",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 0",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "2 x 1",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Alex",
+    "resultado": "0 x 2",
+    "jogador2": "Pedro"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Jun",
+    "resultado": "1 x 1",
+    "jogador2": "Pablo"
+  },
+  {
+    "dia": 5,
+    "rodada": 2,
+    "jogador1": "Eduardo",
+    "resultado": "0 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "2 x 0",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 0",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Stenio",
+    "resultado": "2 x 0",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Alex",
+    "resultado": "0 x 2",
+    "jogador2": "Jun"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Pedro",
+    "resultado": "1 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 5,
+    "rodada": 3,
+    "jogador1": "Pablo",
+    "resultado": "0 x 2",
+    "jogador2": "Eduardo"
+  },
+  { "dia": 5, 
+    "rodada": 4, 
+    "jogador1": "Magno",    
+    "resultado": "2 x 1", 
+    "jogador2": "Sérgio"
+  },
+
+  { "dia": 5, 
+    "rodada": 4, 
+    "jogador1": "Pablo",    
+    "resultado": "2 x 1", 
+    "jogador2": "Caio"
+  },
+
+  { "dia": 5,
+    "rodada": 4, 
+    "jogador1": "Nagib",    
+    "resultado": "2 x 1",
+    "jogador2": "Jun"
+  },
+
+  { "dia": 5, 
+  "rodada": 4, 
+  "jogador1": "Joca",     
+  "resultado": "2 x 1", 
+  "jogador2": "Stenio" 
+},
+  { "dia": 5, 
+  "rodada": 4, 
+  "jogador1": "Eduardo", 
+  "resultado": "2 x 1", 
+  "jogador2": "Pedro"
+},
+  { "dia": 5, 
+  "rodada": 4, 
+  "jogador1": "Subzero",  
+  "resultado": "2 x 0", 
+  "jogador2": "Alex"
+},
+{
+  "dia": 6,
+  "rodada": 1,
+  "jogador1": "Magno",
+  "resultado": "2 x 1",
+  "jogador2": "Nagib"
+},
+{
+  "dia": 6,
+  "rodada": 1,
+  "jogador1": "Pablo",
+  "resultado": "2 x 1",
+  "jogador2": "Rates"
+},
+{
+  "dia": 6,
+  "rodada": 1,
+  "jogador1": "Vini",
+  "resultado": "2 x 0",
+  "jogador2": "Marcelo"
+},
+{
+  "dia": 6,
+  "rodada": 1,
+  "jogador1": "Eduardo",
+  "resultado": "1 x 2",
+  "jogador2": "Stenio"
+},
+{
+  "dia": 6,
+  "rodada": 1,
+  "jogador1": "Alex",
+  "resultado": "2 x 0",
+  "jogador2": "Bye"
+},
+{
+  "dia": 6,
+  "rodada": 2,
+  "jogador1": "Rates",
+  "resultado": "2 x 0",
+  "jogador2": "Eduardo"
+},
+{
+  "dia": 6,
+  "rodada": 2,
+  "jogador1": "Magno",
+  "resultado": "0 x 2",
+  "jogador2": "Vini"
+},
+{
+  "dia": 6,
+  "rodada": 2,
+  "jogador1": "Stenio",
+  "resultado": "2 x 0",
+  "jogador2": "Alex"
+},
+{
+  "dia": 6,
+  "rodada": 2,
+  "jogador1": "Nagib",
+  "resultado": "2 x 0",
+  "jogador2": "Pablo"
+},
+{
+  "dia": 6,
+  "rodada": 2,
+  "jogador1": "Marcelo",
+  "resultado": "2 x 0",
+  "jogador2": "Bye"
+},
+{
+  "dia": 6,
+  "rodada": 3,
+  "jogador1": "Magno",
+  "resultado": "2 x 0",
+  "jogador2": "Rates"
+},
+{
+  "dia": 6,
+  "rodada": 3,
+  "jogador1": "Vini",
+  "resultado": "2 x 1",
+  "jogador2": "Stenio"
+},
+{
+  "dia": 6,
+  "rodada": 3,
+  "jogador1": "Pablo",
+  "resultado": "2 x 1",
+  "jogador2": "Alex"
+},
+{
+  "dia": 6,
+  "rodada": 3,
+  "jogador1": "Marcelo",
+  "resultado": "0 x 2",
+  "jogador2": "Nagib"
+},
+{
+  "dia": 6,
+  "rodada": 3,
+  "jogador1": "Eduardo",
+  "resultado": "2 x 0",
+  "jogador2": "Bye"
+},
+{
+  "dia": 6,
+  "rodada": 4,
+  "jogador1": "Alex",
+  "resultado": "2 x 0",
+  "jogador2": "Eduardo"
+},
+{
+  "dia": 6,
+  "rodada": 4,
+  "jogador1": "Magno",
+  "resultado": "1 x 2",
+  "jogador2": "Stenio"
+},
+{
+  "dia": 6,
+  "rodada": 4,
+  "jogador1": "Pablo",
+  "resultado": "0 x 2",
+  "jogador2": "Marcelo"
+},
+{
+  "dia": 6,
+  "rodada": 4,
+  "jogador1": "Vini",
+  "resultado": "1 x 2",
+  "jogador2": "Nagib"
+},
+{
+  "dia": 6,
+  "rodada": 4,
+  "jogador1": "Rates",
+  "resultado": "2 x 0",
+  "jogador2": "Bye"
+},
+
+{
+ "dia": 7,
+  "rodada": 1,
+  "jogador1": "Nagib",
+  "resultado": "0 x 2",
+  "jogador2": "Rates"
+},
+  {
+    "dia": 7,
+    "rodada": 1,
+    "jogador1": "Eduardo",
+    "resultado": "1 x 2",
+    "jogador2": "Magno"
+  },
+  {
+    "dia": 7,
+    "rodada": 1,
+    "jogador1": "Subzero",
+    "resultado": "1 x 2",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 7,
+    "rodada": 1,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Sérgio"
+  },
+  {
+    "dia": 7,
+    "rodada": 1,
+    "jogador1": "Caio",
+    "resultado": "0 x 2",
+    "jogador2": "Vini"
+  },
+  {
+    "dia": 7,
+    "rodada": 1,
+    "jogador1": "Stenio",
+    "resultado": "0 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Rates"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Magno",
+    "resultado": "0 x 2",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Vini",
+    "resultado": "2 x 1",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Nagib",
+    "resultado": "2 x 0",
+    "jogador2": "Stenio"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Subzero",
+    "resultado": "1 x 2",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 7,
+    "rodada": 2,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 0",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Vini",
+    "resultado": "2 x 0",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Alex",
+    "resultado": "2 x 0",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Sérgio",
+    "resultado": "1 x 2",
+    "jogador2": "Rates"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Magno",
+    "resultado": "1 x 2",
+    "jogador2": "Marcelo"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Nagib",
+    "resultado": "2 x 1",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 7,
+    "rodada": 3,
+    "jogador1": "Stenio",
+    "resultado": "1 x 2",
+    "jogador2": "Subzero"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Marcelo",
+    "resultado": "0 x 2",
+    "jogador2": "Nagib"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Rates",
+    "resultado": "2 x 0",
+    "jogador2": "Joca"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Vini",
+    "resultado": "2 x 1",
+    "jogador2": "Alex"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Sérgio",
+    "resultado": "2 x 0",
+    "jogador2": "Caio"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Stenio",
+    "resultado": "2 x 1",
+    "jogador2": "Eduardo"
+  },
+  {
+    "dia": 7,
+    "rodada": 4,
+    "jogador1": "Magno",
+    "resultado": "2 x 1",
+    "jogador2": "Subzero"
+  },
+
+    {
+      "dia": 8,
+      "rodada": 1,
+      "jogador1": "Rates",
+      "resultado": "2 x 1",
+      "jogador2": "Sérgio"
+    },
+    {
+      "dia": 8,
+      "rodada": 1,
+      "jogador1": "Magno",
+      "resultado": "2 x 0",
+      "jogador2": "Stenio"
+    },
+    {
+      "dia": 8,
+      "rodada": 1,
+      "jogador1": "Alex",
+      "resultado": "0 x 2",
+      "jogador2": "Marcelo"
+    },
+    {
+      "dia": 8,
+      "rodada": 1,
+      "jogador1": "Nagib",
+      "resultado": "2 x 0",
+      "jogador2": "Caio"
+    },
+    {
+      "dia": 8,
+      "rodada": 1,
+      "jogador1": "Pablo",
+      "resultado": "1 x 0",
+      "jogador2": "Eduardo"
+    },
+    {
+      "dia": 8,
+      "rodada": 2,
+      "jogador1": "Rates",
+      "resultado": "2 x 1",
+      "jogador2": "Marcelo"
+    },
+    {
+      "dia": 8,
+      "rodada": 2,
+      "jogador1": "Eduardo",
+      "resultado": "2 x 0",
+      "jogador2": "Alex"
+    },
+    {
+      "dia": 8,
+      "rodada": 2,
+      "jogador1": "Magno",
+      "resultado": "1 x 2",
+      "jogador2": "Nagib"
+    },
+    {
+      "dia": 8,
+      "rodada": 2,
+      "jogador1": "Caio",
+      "resultado": "0 x 2",
+      "jogador2": "Stenio"
+    },
+    {
+      "dia": 8,
+      "rodada": 2,
+      "jogador1": "Pablo",
+      "resultado": "1 x 2",
+      "jogador2": "Sérgio"
+    },
+    {
+      "dia": 8,
+      "rodada": 3,
+      "jogador1": "Rates",
+      "resultado": "2 x 0",
+      "jogador2": "Nagib"
+    },
+    {
+      "dia": 8,
+      "rodada": 3,
+      "jogador1": "Sérgio",
+      "resultado": "2 x 0",
+      "jogador2": "Magno"
+    },
+    {
+      "dia": 8,
+      "rodada": 3,
+      "jogador1": "Caio",
+      "resultado": "0 x 2",
+      "jogador2": "Eduardo"
+    },
+    {
+      "dia": 8,
+      "rodada": 3,
+      "jogador1": "Alex",
+      "resultado": "2 x 0",
+      "jogador2": "Pablo"
+    },
+    {
+      "dia": 8,
+      "rodada": 3,
+      "jogador1": "Marcelo",
+      "resultado": "1 x 2",
+      "jogador2": "Stenio"
+    },
+    {
+      "dia": 8,
+      "rodada": 4,
+      "jogador1": "Rates",
+      "resultado": "2 x 0",
+      "jogador2": "Eduardo"
+    },
+    {
+      "dia": 8,
+      "rodada": 4,
+      "jogador1": "Magno",
+      "resultado": "0 x 2",
+      "jogador2": "Marcelo"
+    },
+    {
+      "dia": 8,
+      "rodada": 4,
+      "jogador1": "Alex",
+      "resultado": "2 x 0",
+      "jogador2": "Caio"
+    },
+    {
+      "dia": 8,
+      "rodada": 4,
+      "jogador1": "Sérgio",
+      "resultado": "2 x 0",
+      "jogador2": "Nagib"
+    },
+    {
+      "dia": 8,
+      "rodada": 4,
+      "jogador1": "Stenio",
+      "resultado": "2 x 0",
+      "jogador2": "Pablo"
+    },
+    
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Rates",
+        "resultado": "0 x 2",
+        "jogador2": "Magno"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Will",
+        "resultado": "1 x 2",
+        "jogador2": "Jun"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Stenio",
+        "resultado": "0 x 2",
+        "jogador2": "Eduardo"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Joca",
+        "resultado": "2 x 0",
+        "jogador2": "Marcos"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Nagib",
+        "resultado": "2 x 0",
+        "jogador2": "Subzero"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Pablo",
+        "resultado": "1 x 1",
+        "jogador2": "Qiu"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Sérgio",
+        "resultado": "2 x 0",
+        "jogador2": "Caio"
+      },
+      {
+        "dia": 9,
+        "rodada": 1,
+        "jogador1": "Marcelo",
+        "resultado": "2 x 0",
+        "jogador2": "Bye"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Stenio",
+        "resultado": "0 x 2",
+        "jogador2": "Qiu"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Marcos",
+        "resultado": "0 x 2",
+        "jogador2": "Will"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Magno",
+        "resultado": "2 x 1",
+        "jogador2": "Sérgio"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Joca",
+        "resultado": "2 x 0",
+        "jogador2": "Jun"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Nagib",
+        "resultado": "2 x 0",
+        "jogador2": "Eduardo"
+      },
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Pablo",
+        "resultado": "0 x 1",
+        "jogador2": "Marcelo"
+      },
+
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Caio",
+        "resultado": "1 x 1",
+        "jogador2": "Subzero"
+      },
+
+      {
+        "dia": 9,
+        "rodada": 2,
+        "jogador1": "Rates",
+        "resultado": "2 x 0",
+        "jogador2": "Bye"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Joca",
+        "resultado": "2 x 1",
+        "jogador2": "Marcelo"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Nagib",
+        "resultado": "0 x 2",
+        "jogador2": "Magno"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Qiu",
+        "resultado": "2 x 0",
+        "jogador2": "Jun"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Will",
+        "resultado": "0 x 1",
+        "jogador2": "Sérgio"
+      },
+
+    
+ 
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Rates",
+        "resultado": "2 x 0",
+        "jogador2": "Eduardo"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Caio",
+        "resultado": "1 x 1",
+        "jogador2": "Pablo"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Stenio",
+        "resultado": "0 x 1",
+        "jogador2": "Subzero"
+      },
+      {
+        "dia": 9,
+        "rodada": 3,
+        "jogador1": "Marcos",
+        "resultado": "2 x 0",
+        "jogador2": "Bye"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Rates",
+        "resultado": "2 x 0",
+        "jogador2": "Nagib"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Joca",
+        "resultado": "0 x 2",
+        "jogador2": "Magno"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Pablo",
+        "resultado": "0 x 2",
+        "jogador2": "Eduardo"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Sérgio",
+        "resultado": "2 x 1",
+        "jogador2": "Subzero"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Qiu",
+        "resultado": "2 x 0",
+        "jogador2": "Marcelo"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Caio",
+        "resultado": "2 x 1",
+        "jogador2": "Will"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Marcos",
+        "resultado": "2 x 1",
+        "jogador2": "Jun"
+      },
+      {
+        "dia": 9,
+        "rodada": 4,
+        "jogador1": "Stenio",
+        "resultado": "2 x 0",
+        "jogador2": "Bye"
+      },
+        { "dia": 10, "rodada": 1, "jogador1": "Stenio",   "resultado": "0 x 2", "jogador2": "Sérgio" },
+        { "dia": 10, "rodada": 1, "jogador1": "Eduardo",  "resultado": "2 x 0", "jogador2": "Pablo" },
+        { "dia": 10, "rodada": 1, "jogador1": "Nagib",    "resultado": "2 x 1", "jogador2": "Alex" },
+        { "dia": 10, "rodada": 1, "jogador1": "Rates",    "resultado": "1 x 2", "jogador2": "Joca" },
+        { "dia": 10, "rodada": 1, "jogador1": "Qiu",      "resultado": "2 x 0", "jogador2": "Vini" },
+        { "dia": 10, "rodada": 1, "jogador1": "Subzero",  "resultado": "0 x 2", "jogador2": "Magno" },
+      
+        { "dia": 10, "rodada": 2, "jogador1": "Eduardo",  "resultado": "2 x 1", "jogador2": "Joca" },
+        { "dia": 10, "rodada": 2, "jogador1": "Magno",    "resultado": "2 x 1", "jogador2": "Sérgio" },
+        { "dia": 10, "rodada": 2, "jogador1": "Qiu",      "resultado": "2 x 1", "jogador2": "Nagib" },
+        { "dia": 10, "rodada": 2, "jogador1": "Subzero",  "resultado": "0 x 2", "jogador2": "Rates" },
+        { "dia": 10, "rodada": 2, "jogador1": "Alex",     "resultado": "2 x 0", "jogador2": "Pablo" },
+        { "dia": 10, "rodada": 2, "jogador1": "Stenio",   "resultado": "0 x 2", "jogador2": "Vini" },
+      
+        { "dia": 10, "rodada": 3, "jogador1": "Eduardo",  "resultado": "2 x 0", "jogador2": "Qiu" },
+        { "dia": 10, "rodada": 3, "jogador1": "Magno",    "resultado": "2 x 0", "jogador2": "Nagib" },
+        { "dia": 10, "rodada": 3, "jogador1": "Rates",    "resultado": "2 x 1", "jogador2": "Sérgio" },
+        { "dia": 10, "rodada": 3, "jogador1": "Joca",     "resultado": "2 x 0", "jogador2": "Alex" },
+        { "dia": 10, "rodada": 3, "jogador1": "Vini",     "resultado": "2 x 1", "jogador2": "Subzero" },
+        { "dia": 10, "rodada": 3, "jogador1": "Stenio",   "resultado": "2 x 0", "jogador2": "Pablo" },
+      
+        { "dia": 10, "rodada": 4, "jogador1": "Eduardo",  "resultado": "0 x 2", "jogador2": "Magno" },
+        { "dia": 10, "rodada": 4, "jogador1": "Joca",     "resultado": "1 x 2", "jogador2": "Qiu" },
+        { "dia": 10, "rodada": 4, "jogador1": "Rates",    "resultado": "2 x 0", "jogador2": "Vini" },
+        { "dia": 10, "rodada": 4, "jogador1": "Sérgio",   "resultado": "2 x 1", "jogador2": "Nagib" },
+        { "dia": 10, "rodada": 4, "jogador1": "Alex",     "resultado": "2 x 0", "jogador2": "Stenio" },
+        { "dia": 10, "rodada": 4, "jogador1": "Subzero",  "resultado": "2 x 0", "jogador2": "Pablo" },
+
+        { "dia": 11, "rodada": 1, "jogador1": "Alex", "resultado": "0 x 2", "jogador2": "Sérgio" },
+        { "dia": 11, "rodada": 1, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 1, "jogador1": "Rates", "resultado": "1 x 2", "jogador2": "Joca" },
+        { "dia": 11, "rodada": 1, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Vini" },
+        { "dia": 11, "rodada": 1, "jogador1": "Nagib", "resultado": "2 x 0", "jogador2": "Eduardo" },
+
+        { "dia": 11, "rodada": 2, "jogador1": "Rates", "resultado": "0 x 2", "jogador2": "Vini" },
+        { "dia": 11, "rodada": 2, "jogador1": "Alex", "resultado": "0 x 2", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 2, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Joca" },
+        { "dia": 11, "rodada": 2, "jogador1": "Sérgio", "resultado": "1 x 2", "jogador2": "Eduardo" },
+        { "dia": 11, "rodada": 2, "jogador1": "Marcelo", "resultado": "1 x 1", "jogador2": "Nagib" },
+
+        { "dia": 11, "rodada": 3, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Alex" },
+        { "dia": 11, "rodada": 3, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 3, "jogador1": "Magno", "resultado": "2 x 0", "jogador2": "Marcelo" },
+        { "dia": 11, "rodada": 3, "jogador1": "Sérgio", "resultado": "2 x 1", "jogador2": "Nagib" },
+        { "dia": 11, "rodada": 3, "jogador1": "Eduardo", "resultado": "1 x 2", "jogador2": "Joca" },
+
+        { "dia": 11, "rodada": 4, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Nagib" },
+        { "dia": 11, "rodada": 4, "jogador1": "Marcelo", "resultado": "2 x 0", "jogador2": "Stenio" },
+        { "dia": 11, "rodada": 4, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Magno" },
+        { "dia": 11, "rodada": 4, "jogador1": "Alex", "resultado": "2 x 0", "jogador2": "Eduardo" },
+        { "dia": 11, "rodada": 4, "jogador1": "Sérgio", "resultado": "0 x 2", "jogador2": "Joca" },
+
+        { "dia": 12, "rodada": 1, "jogador1": "Alex", "resultado": "2 x 1", "jogador2": "Vini" },
+        { "dia": 12, "rodada": 1, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Stenio" },
+        { "dia": 12, "rodada": 1, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Rates" },
+        { "dia": 12, "rodada": 1, "jogador1": "Sérgio", "resultado": "1 x 2", "jogador2": "Eduardo" },
+
+        { "dia": 12, "rodada": 2, "jogador1": "Alex", "resultado": "2 x 0", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 2, "jogador1": "Magno", "resultado": "2 x 0", "jogador2": "Marcelo" },
+        { "dia": 12, "rodada": 2, "jogador1": "Stenio", "resultado": "0 x 2", "jogador2": "Rates" },
+        { "dia": 12, "rodada": 2, "jogador1": "Sérgio", "resultado": "2 x 1", "jogador2": "Vini" },
+
+        { "dia": 12, "rodada": 3, "jogador1": "Magno", "resultado": "1 x 2", "jogador2": "Alex" },
+        { "dia": 12, "rodada": 3, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 3, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Sérgio" },
+        { "dia": 12, "rodada": 3, "jogador1": "Stenio", "resultado": "2 x 1", "jogador2": "Vini" },
+
+        { "dia": 12, "rodada": 4, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Alex" },
+        { "dia": 12, "rodada": 4, "jogador1": "Vini", "resultado": "1 x 2", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 4, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Magno" },
+        { "dia": 12, "rodada": 4, "jogador1": "Stenio", "resultado": "2 x 0", "jogador2": "Sérgio" }
+
+        
+
+    ]
+    
+
+
+      
+    
+
+
+
+  
+  
+
+
+
+
