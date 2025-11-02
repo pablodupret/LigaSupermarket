@@ -905,7 +905,7 @@
   {
     "dia": 7,
     "rodada": 1,
-    "jogador1": "Edu",
+    "jogador1": "Eduardo",
     "resultado": "1 x 2",
     "jogador2": "Magno"
   },
@@ -1259,7 +1259,7 @@
         "rodada": 1,
         "jogador1": "Marcelo",
         "resultado": "2 x 0",
-        "jogador2": "BYE"
+        "jogador2": "Bye"
       },
       {
         "dia": 9,
@@ -1317,7 +1317,7 @@
         "rodada": 2,
         "jogador1": "Rates",
         "resultado": "2 x 0",
-        "jogador2": "BYE"
+        "jogador2": "Bye"
       },
       {
         "dia": 9,
@@ -1376,7 +1376,7 @@
         "rodada": 3,
         "jogador1": "Marcos",
         "resultado": "2 x 0",
-        "jogador2": "BYE"
+        "jogador2": "Bye"
       },
       {
         "dia": 9,
@@ -1432,7 +1432,7 @@
         "rodada": 4,
         "jogador1": "Stenio",
         "resultado": "2 x 0",
-        "jogador2": "BYE"
+        "jogador2": "Bye"
       },
         { "dia": 10, "rodada": 1, "jogador1": "Stenio",   "resultado": "0 x 2", "jogador2": "Sérgio" },
         { "dia": 10, "rodada": 1, "jogador1": "Eduardo",  "resultado": "2 x 0", "jogador2": "Pablo" },
@@ -1484,7 +1484,27 @@
         { "dia": 11, "rodada": 4, "jogador1": "Marcelo", "resultado": "2 x 0", "jogador2": "Stenio" },
         { "dia": 11, "rodada": 4, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Magno" },
         { "dia": 11, "rodada": 4, "jogador1": "Alex", "resultado": "2 x 0", "jogador2": "Eduardo" },
-        { "dia": 11, "rodada": 4, "jogador1": "Sérgio", "resultado": "0 x 2", "jogador2": "Joca" }
+        { "dia": 11, "rodada": 4, "jogador1": "Sérgio", "resultado": "0 x 2", "jogador2": "Joca" },
+
+        { "dia": 12, "rodada": 1, "jogador1": "Alex", "resultado": "2 x 1", "jogador2": "Vini" },
+        { "dia": 12, "rodada": 1, "jogador1": "Magno", "resultado": "2 x 1", "jogador2": "Stenio" },
+        { "dia": 12, "rodada": 1, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Rates" },
+        { "dia": 12, "rodada": 1, "jogador1": "Sérgio", "resultado": "1 x 2", "jogador2": "Eduardo" },
+
+        { "dia": 12, "rodada": 2, "jogador1": "Alex", "resultado": "2 x 0", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 2, "jogador1": "Magno", "resultado": "2 x 0", "jogador2": "Marcelo" },
+        { "dia": 12, "rodada": 2, "jogador1": "Stenio", "resultado": "0 x 2", "jogador2": "Rates" },
+        { "dia": 12, "rodada": 2, "jogador1": "Sérgio", "resultado": "2 x 1", "jogador2": "Vini" },
+
+        { "dia": 12, "rodada": 3, "jogador1": "Magno", "resultado": "1 x 2", "jogador2": "Alex" },
+        { "dia": 12, "rodada": 3, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 3, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Sérgio" },
+        { "dia": 12, "rodada": 3, "jogador1": "Stenio", "resultado": "2 x 1", "jogador2": "Vini" },
+
+        { "dia": 12, "rodada": 4, "jogador1": "Marcelo", "resultado": "2 x 1", "jogador2": "Alex" },
+        { "dia": 12, "rodada": 4, "jogador1": "Vini", "resultado": "1 x 2", "jogador2": "Eduardo" },
+        { "dia": 12, "rodada": 4, "jogador1": "Rates", "resultado": "2 x 0", "jogador2": "Magno" },
+        { "dia": 12, "rodada": 4, "jogador1": "Stenio", "resultado": "2 x 0", "jogador2": "Sérgio" }
 
         
 
