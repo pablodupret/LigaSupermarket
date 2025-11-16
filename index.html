@@ -3,23 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <title>Ranking Liga Magic</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="style2.css" />
 </head>
-<body>
+<body class="liga-1">
 
 
-  <header>
-    <img class="mana" src="img/black_mana.png" alt="mana preto">
-    <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
-    <img class="mana" src="img/Green_mana.png" alt="mana verde">
-    <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
-    <img class="mana" src="img/white_mana.png" alt="">
+  <!-- CABEÇALHO DA LIGA -->
+  <header class="liga-header">
+    <div class="liga-logo">
+      <span class="liga-logo-main">Liga Magic Supermarket</span>
+      </div>
+  
+    <nav class="liga-nav">
+      <a href="index.html" class="active"> Home </a>
+      <a href="bookLiga1.html">eBook 1ª Liga</a>
+    </nav>
 
-</header>
+        <!-- SELETOR DE LIGA / TEMPORADA -->
+        <section class="liga-selector">
+          <select id="select-liga">
+            <!-- Opções serão preenchidas via JavaScript -->
+          </select>
+        </section>
+
+  </header>
+
+
+<div class="mana-row">
+  <img class="mana" src="img/black_mana.png" alt="mana preto">
+  <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
+  <img class="mana" src="img/Green_mana.png" alt="mana verde">
+  <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
+  <img class="mana" src="img/white_mana.png" alt="">
+</div>
 
 <h1>Liga Magic Supermarket</h1>
 
-  <table>
+  <!-- <table>
     <thead>
       <tr>
         <th>Posição</th>
@@ -28,14 +50,24 @@
       </tr>
     </thead>
     <tbody id="tabela-ranking"></tbody>
+  </table> -->
+
+<div class="tabela-wrapper"> 
+  <table id="tabela-ranking-geral">
+    <thead>
+      <tr>
+        <th>Posição</th>
+        <th>Jogador</th>
+        <th>Pontos</th>
+        <th>Campanha</th> <!-- NOVO -->
+      </tr>
+    </thead>
+    <tbody id="tabela-ranking"></tbody>
   </table>
+</div>  
 
 <a href="novo-torneio-V6.html">
     <button>Gerar Novo Dia de Competição</button>
-</a>
-
-<a href="./Liga-1-Finalizada/1-index-Liga-1-Finalizada.html">
-  <button>PRIMEIRA LIGA FINALIZADA </button>
 </a>
 
 

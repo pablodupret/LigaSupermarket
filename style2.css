@@ -17,6 +17,11 @@
     --fundo-jogo: rgba(44, 44, 44, 0.85);
     --fundo-estatistica-final: rgba(20, 20, 20, 0.85);
     --fundo-filtrado: rgba(20, 20, 20, 0.75);
+    --bg-main: #000000;
+    --bg-header: #111111;
+    --accent: #f5d27a;
+    --text: #f5f5f5;
+    --text-muted: #aaaaaa;
   }
   
 
@@ -30,14 +35,79 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    min-height: 100vh;
+    position: relative;   /* NOVO – cria contexto para o ::before */
+    min-height: 100vh;    /* NOVO – garante altura de tela */
+    
+
   }
-  
-  
-  header {
-    margin-top: 50px;
-    padding: 20px;
+  /* === AJUSTES DE ESTABILIDADE VISUAL === */
+
+    /* 2. reforça largura total do cabeçalho */
+  header.liga-header {
+    width: 100%;
   }
+
+  /* 3. ajustes no pseudo-elemento do fundo */
+  body::before {
+    pointer-events: none;        /* evita cliques/seleções no fundo */
+    backface-visibility: hidden; /* evita flickers em Safari/iOS */
+  }
+
+
+  /* ===== FUNDO EM PSEUDO-ELEMENTO (PLANO B) ===== */
+body::before{
+  content: "";
+  position: fixed;             /* cobre a viewport inteira e fica “fixo” no desktop */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transform: translateZ(0); /* força o re-render fixo e evita deslocamento no zoom */
+  z-index: 0;                 
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo.jpg');
+  background-position: center center, center center;
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-color: #0e0e0e;   /* fallback */
+  backface-visibility: hidden; /* pode ficar aqui */
+  will-change: transform;      /* suaviza em alguns browsers */
+  transition: opacity 0.6s ease, filter 0.6s ease;
+}
+
+/* Fundo da Liga 1 */
+body.liga-1::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo-liga1.jpg');
+}
+
+/* Fundo da Liga 2 */
+body.liga-2::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo-liga2.jpg');
+}
+
+/* Classe temporária para animar troca de fundo */
+body.bg-transition::before {
+  opacity: 0;
+  filter: blur(8px);
+}
+
+
+
+/* MOBILE/TABLET: só troca em dispositivos touch */
+@media (hover: none) and (pointer: coarse){
+  body::before{
+    position: absolute;
+  }
+}
+
+
+  
+   
   
   .mana {
     background-color: black;
@@ -93,6 +163,21 @@
   tr:nth-child(even) td {
     background-color: var(--cor-fundo-tabela-alternada);
   }
+
+  /* Coluna compacta de campanha (V–D–E) no ranking geral */
+  #tabela-ranking-geral th:nth-child(4) {
+    text-align: center;
+  }
+
+  .campanha-cell {
+    text-align: center;
+    width: 90px;             /* pode ajustar depois */
+    letter-spacing: 1px;     /* dá aquela carinha de placar */
+    font-weight: 600;
+    white-space: nowrap;     /* evita quebrar o 4–1–0 em duas linhas */
+    font-variant-numeric: tabular-nums; /* se o navegador suportar, alinha os números bonitinho */
+  }
+
 
 
 
@@ -474,44 +559,316 @@ button {
 .delta.same  { color: #bbb; }
 .delta.neutro{ color: #666; opacity: .7; }
 
-/* Força o wallpaper a prevalecer */
-html, body {
-  background:
-    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
-    url('img/fundo.jpg') center / cover no-repeat fixed !important;
-  background-color: #1e1e1e; /* fallback */
+
+
+
+
+/*Cabeçalho*/
+
+
+
+
+/* símbolos de mana agora abaixo do header, com respiro */
+.mana-row{
+  display:flex; align-items:center; justify-content:center;
+  gap:10px; margin:30px 0 0;
+}
+
+ /* CABEÇALHO LIGA */
+
+ header.liga-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(90deg, #000000 0%, #171717 50%, #000000 100%);
+  border-bottom: 1px solid #333;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.liga-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.liga-logo-main {
+  font-size: 1.0rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-left: 20px;
+}
+
+.liga-logo-sub {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+}
+
+nav.liga-nav {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+nav.liga-nav a {
+  text-decoration: none;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+nav.liga-nav a:hover {
+  color: var(--accent);
+  border-color: rgba(245, 210, 122, 0.4);
+  background: rgba(245, 210, 122, 0.06);
+}
+
+nav.liga-nav a.active {
+  color: #000;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
 }
 
 
-/* === WALLPAPER COMPATÍVEL: DESKTOP + MOBILE (iOS/Android) === */
-html, body {
-  /* duas camadas: [0]=gradiente (escurece), [1]=imagem */
-  background-image:
-    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
-    url('img/fundo.jpg');
-  background-position: center, center;
-  background-size: cover, cover;
-  background-repeat: no-repeat, no-repeat;
-  /* desktop fica fixo; mobile será ajustado abaixo */
-  background-attachment: scroll, fixed;
-  background-color: #0e0e0e; /* fallback */
+/* garante que todo conteúdo fique acima do wallpaper (z-index:0) */
+body > * { position: relative; z-index: 1; }
+
+
+/* Container do seletor dentro do header */
+.liga-selector {
+  margin-left: auto;                  /* empurra para a direita */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  justify-content: flex-end;
+  color: #f5d481;                     /* dourado do tema */
+  position: relative;
 }
 
-/* MOBILE (iOS/Android): desativa o 'fixed' para evitar a imagem sumir */
-@media (hover: none) and (pointer: coarse), (max-width: 820px) {
-  html, body {
-    background-attachment: scroll, scroll !important;
-    background-position: center center, center center;
-    background-size: cover, cover;
+
+/* SELECT estilizado como "pill" moderno */
+#select-liga {
+  background: #050505;
+  border: 1px solid #f5d481;
+  border-radius: 999px;               /* pílula */
+  padding: 4px 28px 4px 12px;         /* espaço extra à direita por causa da setinha */
+  font-size: 0.8rem;
+  color: #f5d481;
+  cursor: pointer;
+
+  /* remove visual padrão dos navegadores */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  outline: none;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+/* Efeito de hover/focus */
+#select-liga:hover {
+  border-color: #ffd773;
+  box-shadow: 0 0 10px rgba(255, 215, 115, 0.4);
+}
+
+#select-liga:focus {
+  border-color: #ffffff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+}
+
+/* Seta customizada (▾) sobre o select */
+.liga-selector::after {
+  content: "▾";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  pointer-events: none;          /* clique passa para o select */
+  color: #f5d481;
+}
+
+/* Opcional: deixar menor em telas muito pequenas */
+@media (max-width: 600px) {
+  .liga-selector {
+    font-size: 0.75rem;
+  }
+
+  #select-liga {
+    font-size: 0.7rem;
+    padding: 3px 24px 3px 10px;
   }
 }
 
-/* iOS específico – força o fallback mesmo em versões mais chatas */
-@supports (-webkit-touch-callout: none) {
-  html, body { background-attachment: scroll, scroll !important; }
+/* ====== HEADER RESPONSIVO ====== */
+@media (max-width: 900px) {
+  header.liga-header {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    padding: 12px;
+    text-align: center;
+  }
+
+  .liga-logo {
+    width: 100%;
+    text-align: center;
+    padding: 0;
+  }
+
+  nav.liga-nav {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .liga-selector {
+    order: 3;
+    width: 100%;
+    margin-left: 0px;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+/* TELAS MUITO PEQUENAS (< 500px) */
+@media (max-width: 500px) {
+
+  header.liga-header {
+    flex-direction: column;
+    padding: 10px;
+  }
+
+  nav.liga-nav a {
+    padding: 5px 8px;
+    font-size: 0.7rem;
+  }
+
+  #select-liga {
+    font-size: 0.7rem;
+    padding: 3px 26px 3px 10px;
+  }
+
+  .liga-selector::after {
+    right: 8px;
+    font-size: 0.6rem;
+  }
+}
+
+/* Reduz mana icons abaixo de 900px */
+@media (max-width: 900px) {
+
+  .mana-row {
+    gap: 6px;
+    margin-top: 20px;
+  }
+
+  .mana {
+    width: 40px;   /* antes 64px */
+    height: 40px;
+    padding: 4px;
+  }
+}
+
+@media (max-width: 500px) {
+
+  .mana-row {
+    gap: 4px;
+    margin-top: 14px;
+  }
+
+  .mana {
+    width: 28px;
+    height: 28px;
+    padding: 3px;
+  }
+}
+
+/* Reduz h1 abaixo de 900px */
+@media (max-width: 900px) {
+  h1 {
+    font-size: 2.2em;
+    margin: 28px 0 16px;
+  }
+}
+
+/* Reduz ainda mais abaixo de 500px */
+@media (max-width: 500px) {
+  h1 {
+    font-size: 1.8em;
+    margin: 22px 0 14px;
+  }
+}
+
+/* Cores sutis para V–D–E estilo Magic Arena */
+.campanha-cell {
+  text-align: center;
+  width: 90px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.camp-v { color: #90ee90; }   /* verde suave – vitórias */
+.camp-d { color: #ff8080; }   /* vermelho suave – derrotas */
+.camp-e { color: #9a9a9a; }   /* branco – empates */
+
+/* Tooltip estilo Magic Arena */
+.campanha-wrapper {
+  position: relative;
+  cursor: help;
+}
+
+/* Container do tooltip */
+.campanha-wrapper:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  z-index: 10;
+
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 0 8px rgba(0,0,0,0.6);
+}
+
+/* Pequena setinha para baixo */
+.campanha-wrapper:hover::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent rgba(0,0,0,0.85) transparent;
+  z-index: 11;
 }
 
 
 
-  
-  
+
