@@ -430,41 +430,63 @@ divDia.innerHTML += htmlRanking;
         }
       }
   
-      // ícones extra: líder e streak
-      let iconsHTML = '';
-  
-      // líder (primeiro colocado)
-      if (i === 0) {
-        iconsHTML += `<span class="icon-leader" title="Líder da Liga">👑</span>`;
-      }
-  
-      // streak atual de vitórias (3+)
-      if (entry.streakVitorias >= 3) {
-        iconsHTML += `<span class="icon-streak" title="${entry.streakVitorias} vitórias seguidas">⚡</span>`;
-      }
+      
+    // ícones extra: líder + streaks de vitória + streaks de derrota
+    let iconsHTML = '';
 
-      // foguete para 6+ vitórias seguidas
-      if (entry.streakVitorias >= 6) {
-        iconsHTML += `<span class="icon-rocket" title="${entry.streakVitorias} vitórias seguidas (Sequência INCRÍVEL!)">🚀</span>`;
-      }
-
-      // explosão para streak absurdo de 10+ vitórias seguidas
-      if (entry.streakVitorias >= 10) {
-        iconsHTML += `<span class="icon-explosion" title="${entry.streakVitorias} vitórias seguidas (Sequência LENDÁRIA!)">💥</span>`;
-      }
-          // 3 derrotas seguidas → pato
-      if (entry.streakDerrotas >= 3) {
-        iconsHTML += `<span class="icon-duck" title="${entry.streakDerrotas} derrotas seguidas (Tá na hora de reagir 🦆)">🦆</span>`;
-      }
-
-      // 6 derrotas seguidas → cocô
-      if (entry.streakDerrotas >= 6) {
-        iconsHTML += `<span class="icon-poop" title="${entry.streakDerrotas} derrotas seguidas (Situação crítica 💩)">💩</span>`;
+    // líder da liga
+    if (i === 0) {
+      iconsHTML += `
+        <span class="icon-badge icon-leader"
+              data-tooltip="Líder da Liga">
+          👑
+        </span>`;
     }
 
+    // 3+ vitórias seguidas → raio
+    if (entry.streakVitorias >= 3) {
+      iconsHTML += `
+        <span class="icon-badge icon-streak"
+              data-tooltip="${entry.streakVitorias} vitórias seguidas">
+          ⚡
+        </span>`;
+    }
 
+    // 6+ vitórias seguidas → foguete
+    if (entry.streakVitorias >= 6) {
+      iconsHTML += `
+        <span class="icon-badge icon-rocket"
+              data-tooltip="${entry.streakVitorias} vitórias seguidas (Sequência INCRÍVEL!)">
+          🚀
+        </span>`;
+    }
 
+    // 10+ vitórias seguidas → explosão lendária
+    if (entry.streakVitorias >= 10) {
+      iconsHTML += `
+        <span class="icon-badge icon-explosion"
+              data-tooltip="${entry.streakVitorias} vitórias seguidas (Sequência LENDÁRIA!)">
+          💥
+        </span>`;
+    }
 
+    // 3+ derrotas seguidas → pato
+    if (entry.streakDerrotas >= 3) {
+      iconsHTML += `
+        <span class="icon-badge icon-duck"
+              data-tooltip="${entry.streakDerrotas} derrotas seguidas (Modo pato 🦆)">
+          🦆
+        </span>`;
+    }
+
+    // 6+ derrotas seguidas → cocô
+    if (entry.streakDerrotas >= 6) {
+      iconsHTML += `
+        <span class="icon-badge icon-poop"
+              data-tooltip="${entry.streakDerrotas} derrotas seguidas (Situação CRÍTICA 💩)">
+          💩
+        </span>`;
+    }
 
   
       // campanha V–D–E
