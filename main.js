@@ -2,6 +2,7 @@
 
 let ligaAtualId = 2;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
+let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
 
 // Carrega ligas a partir de ligas.json e preenche o seletor
 async function carregarLigas() {
@@ -95,7 +96,159 @@ function calcularRankingArray(jogos) {
 }
 
 
-// PArte origianl abaixo. Acima nova versao para visualizar alteração de posição
+  // Grafico de evolucao por rodadas
+function atualizarGraficoEvolucao(jogos) {
+  const canvas = document.getElementById('grafico-evolucao');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+
+  if (!jogos || jogos.length === 0) {
+    if (graficoEvolucao) {
+      graficoEvolucao.destroy();
+      graficoEvolucao = null;
+    }
+    return;
+  }
+
+  // Descobre o maior "dia" existente (número da rodada/dia)
+  const maxDia = Math.max(...jogos.map(j => j.dia));
+
+  // Lista de jogadores que aparecem em algum jogo
+  const jogadoresSet = new Set();
+  jogos.forEach(j => {
+    jogadoresSet.add(j.jogador1);
+    jogadoresSet.add(j.jogador2);
+  });
+  const jogadores = Array.from(jogadoresSet).sort();
+
+  // Inicializa estrutura de evolução por jogador
+  const evolucao = {};
+  jogadores.forEach(j => {
+    evolucao[j] = [];
+  });
+
+  // Para cada dia, calcula ranking até aquele dia
+  for (let dia = 1; dia <= maxDia; dia++) {
+    const jogosAteDia = jogos.filter(j => j.dia <= dia);
+    const rankingDia = calcularRankingArray(jogosAteDia); // usa mesma lógica de pontos
+
+    const posMap = new Map(
+      rankingDia.map((e, idx) => [e.jogador, idx + 1]) // 1-based
+    );
+
+    jogadores.forEach(jogador => {
+      const pos = posMap.get(jogador);
+      if (pos) {
+        evolucao[jogador].push(pos);
+      } else {
+        // Se quiser "manter" a posição anterior, use a linha abaixo:
+        // const arr = evolucao[jogador];
+        // const ultima = arr.length ? arr[arr.length - 1] : null;
+        // arr.push(ultima);
+
+        // Versão simples: sem posição até jogar:
+        evolucao[jogador].push(null);
+      }
+    });
+  }
+
+  // Labels do eixo X: R1, R2, R3...
+  const labels = [];
+  for (let dia = 1; dia <= maxDia; dia++) {
+    labels.push(`R${dia}`);
+  }
+
+  // Paleta simples de cores para linhas (repete se tiver muitos jogadores)
+  const cores = [
+    'rgba(255, 159, 64, 1)',
+    'rgba(54, 162, 235, 1)',
+    'rgba(255, 99, 132, 1)',
+    'rgba(75, 192, 192, 1)',
+    'rgba(153, 102, 255, 1)',
+    'rgba(255, 206, 86, 1)',
+    'rgba(0, 200, 140, 1)',
+    'rgba(200, 200, 200, 1)'
+  ];
+
+  const datasets = jogadores.map((jogador, idx) => ({
+    label: jogador,
+    data: evolucao[jogador],
+    borderColor: cores[idx % cores.length],
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    tension: 0.25,
+    spanGaps: true,
+    pointRadius: 3,
+    pointHoverRadius: 5
+  }));
+
+  // Se já existe um gráfico, destrói antes de criar outro
+  if (graficoEvolucao) {
+    graficoEvolucao.destroy();
+  }
+
+  graficoEvolucao = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#f5f5dc',
+            font: {
+              size: 11
+            }
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              const pos = context.parsed.y;
+              if (!pos) {
+                return `${context.dataset.label}: sem posição`;
+              }
+              return `${context.dataset.label}: ${pos}º lugar`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#f5f5dc'
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          }
+        },
+        y: {
+          reverse: true, // 1º lugar fica em cima
+          ticks: {
+            color: '#f5f5dc',
+            precision: 0,
+            stepSize: 1
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.05)'
+          }
+        }
+      }
+    }
+  });
+}
+
+
+
+
+
+
+
 
 // Informações de data e tipo de draft por LIGA e por DIA
 const infoPorLiga = {
@@ -223,6 +376,7 @@ divDia.innerHTML += htmlRanking;
   
     // Gera o ranking atual com informações de mudança de posição
     gerarRanking(jogos, posAnteriorMap);
+    atualizarGraficoEvolucao(jogos);   // 👈 NOVO
   }
   
   function gerarRanking(jogos, posAnteriorMap = null) {

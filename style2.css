@@ -181,6 +181,35 @@ body.bg-transition::before {
     font-variant-numeric: tabular-nums; /* se o navegador suportar, alinha os números bonitinho */
   }
 
+/* Bloco do gráfico de evolução por rodada */
+#grafico-evolucao-section {
+  max-width: 960px;
+  margin: 40px auto 0;
+  padding: 20px 24px;
+  background: rgba(0, 0, 0, 0.70);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 16px var(--sombra-escura);
+}
+
+#grafico-evolucao-section h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  color: var(--cor-texto-principal);
+  text-transform: uppercase;
+}
+
+#grafico-evolucao {
+  width: 100%;
+  max-height: 380px;
+}
+
+
+
+
+
 
 
 
