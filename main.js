@@ -228,49 +228,161 @@ divDia.innerHTML += htmlRanking;
   function gerarRanking(jogos, posAnteriorMap = null) {
     // guarda pontos + estatísticas por jogador
     const statsPorJogador = {};
+    const currentWinStreak = {}; // streak atual de vitórias
+    const currentLoseStreak = {}; // novo streak de derrotas
+
+
   
+    function ensureJogador(nome) {
+      if (!statsPorJogador[nome]) {
+        statsPorJogador[nome] = {
+          pontos: 0,
+          vitorias: 0,
+          derrotas: 0,
+          empates: 0,
+          matchesJogos: 0,
+          gamesVencidos: 0,
+          gamesPerdidos: 0,
+          gamesJogos: 0,
+          oponentes: new Set()
+        };
+      }
+      if (currentWinStreak[nome] == null) {
+        currentWinStreak[nome] = 0;
+      }
+      if (currentLoseStreak[nome] == null) {   // 👈 NOVO
+        currentLoseStreak[nome] = 0;
+      }
+    }
+  
+    
+  
+    // 1) percorre todos os jogos da liga e acumula stats + streak atual
     jogos.forEach(jogo => {
       const [g1, g2] = jogo.resultado.split(" x ").map(Number);
       const j1 = jogo.jogador1;
       const j2 = jogo.jogador2;
   
-      // inicializa se ainda não existir
-      if (!statsPorJogador[j1]) {
-        statsPorJogador[j1] = { pontos: 0, vitorias: 0, derrotas: 0, empates: 0 };
-      }
-      if (!statsPorJogador[j2]) {
-        statsPorJogador[j2] = { pontos: 0, vitorias: 0, derrotas: 0, empates: 0 };
-      }
+      ensureJogador(j1);
+      ensureJogador(j2);
   
+      const s1 = statsPorJogador[j1];
+      const s2 = statsPorJogador[j2];
+  
+      // matches jogados
+      s1.matchesJogos++;
+      s2.matchesJogos++;
+  
+      // games (para Game Win %)
+      s1.gamesVencidos += g1;
+      s1.gamesPerdidos += g2;
+      s1.gamesJogos += g1 + g2;
+  
+      s2.gamesVencidos += g2;
+      s2.gamesPerdidos += g1;
+      s2.gamesJogos += g1 + g2;
+  
+      // oponentes (para OMWP)
+      s1.oponentes.add(j2);
+      s2.oponentes.add(j1);
+  
+      // pontos, V–D–E e streak
       if (g1 > g2) {
-        // jogador 1 vence
-        statsPorJogador[j1].pontos += 3;
-        statsPorJogador[j1].vitorias++;
-        statsPorJogador[j2].derrotas++;
+        // pontos e V/D/E
+        s1.pontos += 3;
+        s1.vitorias++;
+        s2.derrotas++;
+  
+        // streak de vitórias
+        currentWinStreak[j1] = (currentWinStreak[j1] || 0) + 1;
+        currentWinStreak[j2] = 0;
+  
+        // streak de derrotas
+        currentLoseStreak[j1] = 0;
+        currentLoseStreak[j2] = (currentLoseStreak[j2] || 0) + 1;
+  
       } else if (g1 < g2) {
-        // jogador 2 vence
-        statsPorJogador[j2].pontos += 3;
-        statsPorJogador[j2].vitorias++;
-        statsPorJogador[j1].derrotas++;
+        // pontos e V/D/E
+        s2.pontos += 3;
+        s2.vitorias++;
+        s1.derrotas++;
+  
+        // streak de vitórias
+        currentWinStreak[j2] = (currentWinStreak[j2] || 0) + 1;
+        currentWinStreak[j1] = 0;
+  
+        // streak de derrotas
+        currentLoseStreak[j2] = 0;
+        currentLoseStreak[j1] = (currentLoseStreak[j1] || 0) + 1;
+  
       } else {
-        // empate
-        statsPorJogador[j1].pontos += 1;
-        statsPorJogador[j2].pontos += 1;
-        statsPorJogador[j1].empates++;
-        statsPorJogador[j2].empates++;
+        // pontos e V/D/E
+        s1.pontos += 1;
+        s2.pontos += 1;
+        s1.empates++;
+        s2.empates++;
+  
+        // empate quebra qualquer streak
+        currentWinStreak[j1] = 0;
+        currentWinStreak[j2] = 0;
+        currentLoseStreak[j1] = 0;
+        currentLoseStreak[j2] = 0;
       }
     });
   
-    // transforma em array e ordena por pontos
+    const jogadores = Object.keys(statsPorJogador);
+  
+    // 2) Match Win % e Game Win %
+    jogadores.forEach(nome => {
+      const s = statsPorJogador[nome];
+      const mJ = s.matchesJogos;
+      const gJ = s.gamesJogos;
+  
+      s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
+      s.gameWinPerc  = gJ > 0 ? s.gamesVencidos / gJ : 0;
+    });
+  
+    // 3) OMWP (média do Match Win % dos oponentes, com floor 33%)
+    jogadores.forEach(nome => {
+      const s = statsPorJogador[nome];
+      const oponentes = Array.from(s.oponentes);
+  
+      if (oponentes.length === 0) {
+        s.omwp = 0;
+        return;
+      }
+  
+      let soma = 0;
+      oponentes.forEach(opp => {
+        let mw = statsPorJogador[opp]?.matchWinPerc || 0;
+        if (mw < 1 / 3) mw = 1 / 3;
+        soma += mw;
+      });
+  
+      s.omwp = soma / oponentes.length;
+    });
+  
+    // 4) monta ranking com stats e streak
     const ranking = Object.entries(statsPorJogador)
       .map(([jogador, s]) => ({
         jogador,
         pontos: s.pontos,
         vitorias: s.vitorias,
         derrotas: s.derrotas,
-        empates: s.empates
+        empates: s.empates,
+        matchWinPerc: s.matchWinPerc || 0,
+        gameWinPerc: s.gameWinPerc || 0,
+        omwp: s.omwp || 0,
+        streakVitorias: currentWinStreak[jogador] || 0,
+        streakDerrotas: currentLoseStreak[jogador] || 0   // 👈 NOVO
       }))
-      .sort((a, b) => b.pontos - a.pontos);
+      .sort((a, b) => {
+        if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+        if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
+        if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
+        if (b.omwp !== a.omwp) return b.omwp - a.omwp;
+        return a.jogador.localeCompare(b.jogador, 'pt-BR');
+      });
   
     const corpo = document.getElementById('tabela-ranking');
     corpo.innerHTML = '';
@@ -278,38 +390,38 @@ divDia.innerHTML += htmlRanking;
     ranking.forEach((entry, i) => {
       const tr = document.createElement('tr');
   
-      // avatar do jogador (mesma lógica de antes)
+      // avatar
       const nomeImagem = `avatar_${entry.jogador.toLowerCase()
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // remove acentos
-        .replace(/\s/g, "")}`;          // remove espaços
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s/g, "")}`;
   
-      const imgHTML = `<img src="img/${nomeImagem}.jpg" onerror="this.src='img/avatar_padrao.jpg';" alt="${entry.jogador}" class="avatar">`;
+      const imgHTML =
+        `<img src="img/${nomeImagem}.jpg" ` +
+        `onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';" ` +
+        `alt="${entry.jogador}" class="avatar">`;
   
-      // indicador de variação de posição (mantém o seu código)
+      // variação de posição
       let indicadorHTML = `<span class="delta neutro" title="sem variação">•</span>`;
       if (posAnteriorMap && posAnteriorMap.has(entry.jogador)) {
-        const posAnterior = posAnteriorMap.get(entry.jogador);   // posição anterior (1-based)
+        const posAnterior = posAnteriorMap.get(entry.jogador);
         const posAtual = i + 1;
-        const delta = posAnterior - posAtual; // positivo = subiu; negativo = caiu
+        const delta = posAnterior - posAtual;
         const abs = Math.abs(delta);
   
         if (delta > 0) {
-          // subiu
           indicadorHTML = `
             <span class="delta up" title="+${abs} posição(ões)">
               ▲
               <span class="delta-num">${abs}</span>
             </span>`;
         } else if (delta < 0) {
-          // caiu
           indicadorHTML = `
             <span class="delta down" title="-${abs} posição(ões)">
               ▼
               <span class="delta-num">${abs}</span>
             </span>`;
         } else {
-          // ficou igual
           indicadorHTML = `
             <span class="delta same" title="sem variação">
               —
@@ -318,30 +430,84 @@ divDia.innerHTML += htmlRanking;
         }
       }
   
-      // string compacta estilo Magic Arena: V–D–E
-      
-      const tooltip = `${entry.vitorias} vitórias, ${entry.derrotas} derrotas, ${entry.empates} empates`;
+      // ícones extra: líder e streak
+      let iconsHTML = '';
+  
+      // líder (primeiro colocado)
+      if (i === 0) {
+        iconsHTML += `<span class="icon-leader" title="Líder da Liga">👑</span>`;
+      }
+  
+      // streak atual de vitórias (3+)
+      if (entry.streakVitorias >= 3) {
+        iconsHTML += `<span class="icon-streak" title="${entry.streakVitorias} vitórias seguidas">⚡</span>`;
+      }
 
+      // foguete para 6+ vitórias seguidas
+      if (entry.streakVitorias >= 6) {
+        iconsHTML += `<span class="icon-rocket" title="${entry.streakVitorias} vitórias seguidas (Sequência INCRÍVEL!)">🚀</span>`;
+      }
+
+      // explosão para streak absurdo de 10+ vitórias seguidas
+      if (entry.streakVitorias >= 10) {
+        iconsHTML += `<span class="icon-explosion" title="${entry.streakVitorias} vitórias seguidas (Sequência LENDÁRIA!)">💥</span>`;
+      }
+          // 3 derrotas seguidas → pato
+      if (entry.streakDerrotas >= 3) {
+        iconsHTML += `<span class="icon-duck" title="${entry.streakDerrotas} derrotas seguidas (Tá na hora de reagir 🦆)">🦆</span>`;
+      }
+
+      // 6 derrotas seguidas → cocô
+      if (entry.streakDerrotas >= 6) {
+        iconsHTML += `<span class="icon-poop" title="${entry.streakDerrotas} derrotas seguidas (Situação crítica 💩)">💩</span>`;
+    }
+
+
+
+
+
+  
+      // campanha V–D–E
+      const tooltipCamp =
+        `${entry.vitorias} vitórias, ${entry.derrotas} derrotas, ${entry.empates} empates`;
+  
       const campanha = `
-        <span class="campanha-wrapper" title="${tooltip}">
+        <span class="campanha-wrapper" title="${tooltipCamp}">
           <span class="camp-v">${entry.vitorias}</span>–
           <span class="camp-d">${entry.derrotas}</span>–
           <span class="camp-e">${entry.empates}</span>
         </span>
       `;
-
-
+  
+      // MW–GW–OM
+      const mw = (entry.matchWinPerc * 100).toFixed(1);
+      const gw = (entry.gameWinPerc * 100).toFixed(1);
+      const om = (entry.omwp * 100).toFixed(1);
+  
+      const tooltipTB =
+        `Match Win %: ${mw}% | Game Win %: ${gw}% | OMWP: ${om}%`;
+  
+      const tiebreaks = `
+        <span class="tb-wrapper" title="${tooltipTB}">
+          <span class="tb-mw">${mw}</span>–
+          <span class="tb-gw">${gw}</span>–
+          <span class="tb-om">${om}</span>
+        </span>
+      `;
   
       tr.innerHTML = `
         <td><span class="posicao">${i + 1}º</span> ${indicadorHTML}</td>
-        <td class="td-nome">${imgHTML}<span>${entry.jogador}</span></td>
+        <td class="td-nome">${imgHTML}<span>${entry.jogador}</span>${iconsHTML}</td>
         <td>${entry.pontos}</td>
         <td class="campanha-cell">${campanha}</td>
+        <td class="tb-cell">${tiebreaks}</td>
       `;
   
       corpo.appendChild(tr);
     });
   }
+  
+  
   
 
 
