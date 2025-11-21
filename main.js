@@ -127,6 +127,7 @@ function preencherSelectJogadores(jogos) {
 
 
   // Grafico de evolucao por rodadas
+// Gráfico de evolução por rodadas
 function atualizarGraficoEvolucao(jogos) {
   const canvas = document.getElementById('grafico-evolucao');
   if (!canvas) return;
@@ -141,32 +142,87 @@ function atualizarGraficoEvolucao(jogos) {
     return;
   }
 
-  // Descobre o maior "dia" existente (número da rodada/dia)
+  // ---------- NOVO: ranking por dia respeitando "pontos válidos" na Liga 2 ----------
+  function calcularRankingParaGrafico(jogosAteDia) {
+    const pontosTotais = {};
+    const pontosPorDia = {};
+
+    jogosAteDia.forEach(jogo => {
+      const [g1, g2] = jogo.resultado.split(" x ").map(Number);
+      const j1 = jogo.jogador1;
+      const j2 = jogo.jogador2;
+      const dia = jogo.dia;
+
+      if (!pontosTotais[j1]) pontosTotais[j1] = 0;
+      if (!pontosTotais[j2]) pontosTotais[j2] = 0;
+
+      if (!pontosPorDia[j1]) pontosPorDia[j1] = {};
+      if (!pontosPorDia[j2]) pontosPorDia[j2] = {};
+
+      // vitória / derrota / empate
+      if (g1 > g2) {
+        pontosTotais[j1] += 3;
+        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 3;
+        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 0;
+      } else if (g1 < g2) {
+        pontosTotais[j2] += 3;
+        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 3;
+        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 0;
+      } else {
+        pontosTotais[j1] += 1;
+        pontosTotais[j2] += 1;
+        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 1;
+        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 1;
+      }
+    });
+
+    const arr = Object.keys(pontosTotais).map(jogador => {
+      const total = pontosTotais[jogador] || 0;
+      let pontosValidos = total;
+
+      if (ligaAtualId === 2) {
+        const mapaDias = pontosPorDia[jogador] || {};
+        const valoresDias = Object.values(mapaDias);
+
+        if (valoresDias.length > 1) {
+          const piorDia = Math.min(...valoresDias);
+          pontosValidos = total - piorDia;
+        }
+      }
+
+      return {
+        jogador,
+        pontos: total,
+        pontosValidos
+      };
+    });
+
+    arr.sort((a, b) => {
+      // Na Liga 2, ordena pelos pontos válidos
+      if (ligaAtualId === 2) {
+        if (b.pontosValidos !== a.pontosValidos) {
+          return b.pontosValidos - a.pontosValidos;
+        }
+      }
+      // fallback: pontos totais e nome
+      if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+      return a.jogador.localeCompare(b.jogador, 'pt-BR');
+    });
+
+    return arr;
+  }
+  // -------------------------------------------------------------------
+
+  // Descobre o maior "dia" existente
   const maxDia = Math.max(...jogos.map(j => j.dia));
 
   // Lista de jogadores que aparecem em algum jogo
- // Coleta todos os jogadores que aparecem em pelo menos um jogo
-const jogadoresSet = new Set();
-jogos.forEach(j => {
-  jogadoresSet.add(j.jogador1);
-  jogadoresSet.add(j.jogador2);
-});
-
-// Ranking final da liga, usando todos os jogos já disputados
-const rankingFinal = calcularRankingArray(jogos);
-
-// Primeiro, jogadores na ordem do ranking (1º, 2º, 3º...)
-const jogadoresRanking = rankingFinal.map(e => e.jogador);
-
-// Se por algum motivo existir alguém em jogosSet que não entrou no rankingFinal,
-// colocamos esses extras no final, só por segurança.
-const jogadoresExtras = Array.from(jogadoresSet).filter(
-  j => !jogadoresRanking.includes(j)
-);
-
-// Ordem final usada pelo gráfico (e pela legenda)
-const jogadores = [...jogadoresRanking, ...jogadoresExtras];
-
+  const jogadoresSet = new Set();
+  jogos.forEach(j => {
+    jogadoresSet.add(j.jogador1);
+    jogadoresSet.add(j.jogador2);
+  });
+  const jogadores = Array.from(jogadoresSet).sort();
 
   // Inicializa estrutura de evolução por jogador
   const evolucao = {};
@@ -177,7 +233,9 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
   // Para cada dia, calcula ranking até aquele dia
   for (let dia = 1; dia <= maxDia; dia++) {
     const jogosAteDia = jogos.filter(j => j.dia <= dia);
-    const rankingDia = calcularRankingArray(jogosAteDia); // usa mesma lógica de pontos
+
+    // 👇 agora usa a função nova que respeita "pontos válidos" na Liga 2
+    const rankingDia = calcularRankingParaGrafico(jogosAteDia);
 
     const posMap = new Map(
       rankingDia.map((e, idx) => [e.jogador, idx + 1]) // 1-based
@@ -185,17 +243,7 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
 
     jogadores.forEach(jogador => {
       const pos = posMap.get(jogador);
-      if (pos) {
-        evolucao[jogador].push(pos);
-      } else {
-        // Se quiser "manter" a posição anterior, use a linha abaixo:
-        // const arr = evolucao[jogador];
-        // const ultima = arr.length ? arr[arr.length - 1] : null;
-        // arr.push(ultima);
-
-        // Versão simples: sem posição até jogar:
-        evolucao[jogador].push(null);
-      }
+      evolucao[jogador].push(pos || null);
     });
   }
 
@@ -205,7 +253,7 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
     labels.push(`R${dia}`);
   }
 
-  // Paleta simples de cores para linhas (repete se tiver muitos jogadores)
+  // Paleta de cores para as linhas
   const cores = [
     'rgba(255, 159, 64, 1)',
     'rgba(54, 162, 235, 1)',
@@ -244,10 +292,10 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
       responsive: true,
       maintainAspectRatio: false,
       layout: {
-    padding: {
-      right: 10
-    }
-  },
+        padding: {
+          right: 10
+        }
+      },
       plugins: {
         legend: {
           position: 'right',
@@ -280,7 +328,7 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
           }
         },
         y: {
-          reverse: true, // 1º lugar fica em cima
+          reverse: true, // 1º lugar em cima
           ticks: {
             color: '#f5f5dc',
             precision: 0,
@@ -294,6 +342,7 @@ const jogadores = [...jogadoresRanking, ...jogadoresExtras];
     }
   });
 }
+
 
 
 
@@ -325,6 +374,96 @@ const infoPorLiga = {
     // 2: { data: "29/11/2025", draft: "Draft XYZ" },
   }
 };
+
+// Mostra uma tabela com os pontos de cada dia para cada jogador
+function renderizarPontosPorDia(pontosPorDiaPorJogador) {
+  const section = document.getElementById('pontos-por-dia-section');
+  const container = document.getElementById('pontos-por-dia');
+
+  if (!section || !container) return;
+
+  // 👉 Só mostra na Liga 2; na Liga 1 a seção fica escondida
+  if (ligaAtualId !== 2) {
+    section.style.display = 'none';
+    return;
+  } else {
+    section.style.display = 'block';
+  }
+
+  // Coleta todos os dias existentes
+  const diasSet = new Set();
+  Object.values(pontosPorDiaPorJogador).forEach(mapa => {
+    Object.keys(mapa).forEach(diaStr => {
+      diasSet.add(Number(diaStr));
+    });
+  });
+
+  const dias = Array.from(diasSet).sort((a, b) => a - b);
+
+  if (dias.length === 0) {
+    container.innerHTML = '<p>Nenhum dia de jogo registrado ainda.</p>';
+    return;
+  }
+
+  let html = `
+    <table class="tabela-estilizada pontos-dia-tabela">
+      <thead>
+        <tr>
+          <th>Jogador</th>
+  `;
+
+  dias.forEach(dia => {
+    html += `<th>Dia ${dia}</th>`;
+  });
+
+  html += `
+          <th>Dia descartado</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  const jogadores = Object.keys(pontosPorDiaPorJogador)
+    .filter(nome => nome.toLowerCase() !== 'bye')
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  jogadores.forEach(jogador => {
+    const mapa = pontosPorDiaPorJogador[jogador] || {};
+    const pontosDias = dias.map(dia => mapa[dia] || 0);
+
+    // Encontrar APENAS UM pior dia (primeira ocorrência do menor valor)
+    let indicePior = -1;
+    if (pontosDias.length > 1) {
+      let minVal = pontosDias[0];
+      indicePior = 0;
+      for (let i = 1; i < pontosDias.length; i++) {
+        if (pontosDias[i] < minVal) {
+          minVal = pontosDias[i];
+          indicePior = i;
+        }
+      }
+    }
+
+    html += `<tr><td>${jogador}</td>`;
+
+    pontosDias.forEach((pontos, idx) => {
+      const classe = (idx === indicePior && pontosDias.length > 1)
+        ? ' class="pior-dia"'
+        : '';
+      html += `<td${classe}>${pontos}</td>`;
+    });
+
+    const valorDescartado =
+      indicePior >= 0 ? pontosDias[indicePior] : '-';
+
+    html += `<td>${valorDescartado}</td></tr>`;
+  });
+
+  html += '</tbody></table>';
+
+  container.innerHTML = html;
+}
+
 
 
 
@@ -439,6 +578,7 @@ divDia.innerHTML += htmlRanking;
     const statsPorJogador = {};
     const currentWinStreak = {}; // streak atual de vitórias
     const currentLoseStreak = {}; // novo streak de derrotas
+    const pontosPorDiaPorJogador = {}; // pontos acumulados por dia para cada jogador
 
 
   
@@ -460,9 +600,22 @@ divDia.innerHTML += htmlRanking;
         currentWinStreak[nome] = 0;
       }
       if (currentLoseStreak[nome] == null) {   // 👈 NOVO
-        currentLoseStreak[nome] = 0;
+        currentLoseStreak[nome] = 0; 
+      }
+
+      if (!pontosPorDiaPorJogador[nome]) {
+        pontosPorDiaPorJogador[nome] = {};
       }
     }
+
+    // NOVO: soma pontos de um jogador em um determinado dia
+    function adicionarPontosNoDia(nome, dia, pontos) {
+      const mapa = pontosPorDiaPorJogador[nome];
+      mapa[dia] = (mapa[dia] || 0) + pontos;
+    }
+
+
+
   
     
   
@@ -471,6 +624,7 @@ divDia.innerHTML += htmlRanking;
       const [g1, g2] = jogo.resultado.split(" x ").map(Number);
       const j1 = jogo.jogador1;
       const j2 = jogo.jogador2;
+      const dia = jogo.dia;   // 👈 NOVO
   
       ensureJogador(j1);
       ensureJogador(j2);
@@ -501,6 +655,10 @@ divDia.innerHTML += htmlRanking;
         s1.pontos += 3;
         s1.vitorias++;
         s2.derrotas++;
+
+      // NOVO: pontos por dia
+      adicionarPontosNoDia(j1, dia, 3);
+      adicionarPontosNoDia(j2, dia, 0);
   
         // streak de vitórias
         currentWinStreak[j1] = (currentWinStreak[j1] || 0) + 1;
@@ -515,6 +673,12 @@ divDia.innerHTML += htmlRanking;
         s2.pontos += 3;
         s2.vitorias++;
         s1.derrotas++;
+
+      // NOVO: pontos por dia
+      adicionarPontosNoDia(j2, dia, 3);
+      adicionarPontosNoDia(j1, dia, 0);
+
+
   
         // streak de vitórias
         currentWinStreak[j2] = (currentWinStreak[j2] || 0) + 1;
@@ -530,6 +694,10 @@ divDia.innerHTML += htmlRanking;
         s2.pontos += 1;
         s1.empates++;
         s2.empates++;
+
+      // NOVO: empate conta 1 ponto em cada dia
+      adicionarPontosNoDia(j1, dia, 1);
+      adicionarPontosNoDia(j2, dia, 1);
   
         // empate quebra qualquer streak
         currentWinStreak[j1] = 0;
@@ -573,9 +741,24 @@ divDia.innerHTML += htmlRanking;
   
     // 4) monta ranking com stats e streak
     const ranking = Object.entries(statsPorJogador)
-      .map(([jogador, s]) => ({
+    .map(([jogador, s]) => {
+      const pontosDiasMap = pontosPorDiaPorJogador[jogador] || {};
+      const pontosDias = Object.values(pontosDiasMap);
+
+      // por padrão, pontos válidos = total
+      let pontosValidos = s.pontos;
+
+      // se tiver 2 ou mais dias, remove o pior dia
+      if (pontosDias.length > 1) {
+        const piorDia = Math.min(...pontosDias);
+        const totalDias = pontosDias.reduce((acc, v) => acc + v, 0);
+        pontosValidos = totalDias - piorDia;
+      }
+
+      return {
         jogador,
-        pontos: s.pontos,
+        pontos: s.pontos,            // total
+        pontosValidos,               // NOVO
         vitorias: s.vitorias,
         derrotas: s.derrotas,
         empates: s.empates,
@@ -583,15 +766,39 @@ divDia.innerHTML += htmlRanking;
         gameWinPerc: s.gameWinPerc || 0,
         omwp: s.omwp || 0,
         streakVitorias: currentWinStreak[jogador] || 0,
-        streakDerrotas: currentLoseStreak[jogador] || 0   // 👈 NOVO
-      }))
-      .sort((a, b) => {
-        if (b.pontos !== a.pontos) return b.pontos - a.pontos;
-        if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
-        if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
-        if (b.omwp !== a.omwp) return b.omwp - a.omwp;
-        return a.jogador.localeCompare(b.jogador, 'pt-BR');
-      });
+        streakDerrotas: currentLoseStreak[jogador] || 0
+      };
+    })
+
+    .filter(entry => entry.jogador.toLowerCase() !== "bye")
+
+    .sort((a, b) => {
+      const usaPontosValidos = (ligaAtualId === 2); // só Liga 2 usa essa regra
+
+      if (usaPontosValidos) {
+        if (b.pontosValidos !== a.pontosValidos) {
+          return b.pontosValidos - a.pontosValidos;
+        }
+      } else {
+        if (b.pontos !== a.pontos) {
+          return b.pontos - a.pontos;
+        }
+      }
+
+      // se empatar na regra principal, usa os mesmos critérios antigos:
+      if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+      if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
+      if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
+      if (b.omwp !== a.omwp) return b.omwp - a.omwp;
+      return a.jogador.localeCompare(b.jogador, 'pt-BR');
+    });
+
+    
+    renderizarPontosPorDia(pontosPorDiaPorJogador);
+
+
+
+
   
     const corpo = document.getElementById('tabela-ranking');
     corpo.innerHTML = '';
@@ -727,12 +934,14 @@ divDia.innerHTML += htmlRanking;
       `;
   
       tr.innerHTML = `
-        <td><span class="posicao">${i + 1}º</span> ${indicadorHTML}</td>
-        <td class="td-nome">${imgHTML}<span>${entry.jogador}</span>${iconsHTML}</td>
-        <td>${entry.pontos}</td>
-        <td class="campanha-cell">${campanha}</td>
-        <td class="tb-cell">${tiebreaks}</td>
-      `;
+      <td><span class="posicao">${i + 1}º</span> ${indicadorHTML}</td>
+      <td class="td-nome">${imgHTML}<span>${entry.jogador}</span>${iconsHTML}</td>
+      <td class="pontos-validos">${entry.pontosValidos}</td>
+      <td>${entry.pontos}</td>
+      <td class="campanha-cell">${campanha}</td>
+      <td class="tb-cell">${tiebreaks}</td>
+    `;
+    
   
       corpo.appendChild(tr);
     });
@@ -743,6 +952,9 @@ divDia.innerHTML += htmlRanking;
 
 
 initPagina();
+
+
+
 
 /*Filtro e estatisticas */
 

@@ -1117,6 +1117,90 @@ transform: translateX(-50%) translateY(0);
 }
 
 
+.pontos-validos {
+  font-weight: 700;
+  color: #ffd700; /* dourado */
+}
+
+.pontos-validos {
+  font-weight: 700;
+  color: #ffd700;          /* você já tinha isso, mantém */
+  position: relative;
+  }
+
+  /* Card de pontos por dia */
+#pontos-por-dia-section {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 24px 20px;
+  background: rgba(0, 0, 0, 0.70);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  box-shadow: 0 0 16px var(--sombra-escura);
+}
+
+#pontos-por-dia-section h2 {
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+  color: var(--cor-texto-principal);
+}
+
+.pontos-por-dia-nota {
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(245, 245, 220, 0.85);
+  margin-bottom: 16px;
+}
+
+/* tabela reaproveita .tabela-estilizada, aqui só complemento */
+#pontos-por-dia table {
+  width: 100%;
+}
+
+/* célula do pior dia descartado */
+.pior-dia {
+  background-color: rgba(255, 0, 0, 0.18);
+  font-weight: 600;
+}
+
+/* --- Estilo compacto para a tabela Pontos por Dia --- */
+
+.pontos-dia-tabela {
+  font-size: 0.85rem;       /* texto menor */
+}
+
+.pontos-dia-tabela th {
+  font-size: 0.9rem;        /* cabeçalho um pouco maior */
+  padding: 6px 8px;         /* menos padding */
+}
+
+.pontos-dia-tabela td {
+  padding: 6px 8px;         /* células menores */
+  font-size: 0.85rem;
+}
+
+#pontos-por-dia-section {
+  max-width: 750px;         /* deixa o card todo mais estreito */
+  padding: 16px 16px;       /* compacta o card */
+}
+
+#pontos-por-dia-section h2 {
+  font-size: 1.25rem;       /* título menor */
+  margin-bottom: 8px;
+}
+
+.pontos-por-dia-nota {
+  font-size: 0.75rem; 
+  margin-bottom: 12px;
+}
+
+
+
+
+
+
 
 
 
