@@ -41,16 +41,7 @@
 
 <h1>Liga Magic Supermarket</h1>
 
-  <!-- <table>
-    <thead>
-      <tr>
-        <th>Posição</th>
-        <th>Jogador</th>
-        <th>Pontos</th>
-      </tr>
-    </thead>
-    <tbody id="tabela-ranking"></tbody>
-  </table> -->
+
 
 <div class="tabela-wrapper"> 
   <table id="tabela-ranking-geral">
@@ -73,16 +64,19 @@
   <canvas id="grafico-evolucao"></canvas>
 </section>
 
-<a href="novo-torneio-V6.html">
-    <button>Gerar Novo Dia de Competição</button>
-</a>
-
+<div class="btn-gerar-dia-wrapper">
+  <a href="novo-torneio-V6.html">
+      <button>Gerar Novo Dia de Competição</button>
+  </a>
+</div>
 
     <!-- Filtro e Estatísticas -->
     <section id="filtro-estatisticas">
       <h2>Buscar Estatísticas do Jogador</h2>
       <label for="filtro-jogador">Nome do jogador:</label>
-      <input type="text" id="filtro-jogador" placeholder="Ex: Pablo">
+      <select id="filtro-jogador">
+      <option value="">Selecione um jogador</option>
+      </select>
       <button onclick="filtrarJogos()">Filtrar</button>
       <div id="estatisticas"></div>
       <div id="jogos-filtrados"></div>

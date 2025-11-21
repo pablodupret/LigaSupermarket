@@ -96,6 +96,36 @@ function calcularRankingArray(jogos) {
 }
 
 
+// Preenche o select de jogadores com todos os nomes da liga atual
+function preencherSelectJogadores(jogos) {
+  const select = document.getElementById('filtro-jogador');
+  if (!select) return;
+
+  const jogadoresSet = new Set();
+
+  jogos.forEach(jogo => {
+    jogadoresSet.add(jogo.jogador1);
+    jogadoresSet.add(jogo.jogador2);
+  });
+
+  const jogadores = Array.from(jogadoresSet)
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+  // limpa opções atuais
+  select.innerHTML = '<option value="">Selecione um jogador</option>';
+
+  // adiciona uma option pra cada jogador
+  jogadores.forEach(nome => {
+    const opt = document.createElement('option');
+    opt.value = nome;
+    opt.textContent = nome;
+    select.appendChild(opt);
+  });
+}
+
+
+
+
   // Grafico de evolucao por rodadas
 function atualizarGraficoEvolucao(jogos) {
   const canvas = document.getElementById('grafico-evolucao');
@@ -115,12 +145,28 @@ function atualizarGraficoEvolucao(jogos) {
   const maxDia = Math.max(...jogos.map(j => j.dia));
 
   // Lista de jogadores que aparecem em algum jogo
-  const jogadoresSet = new Set();
-  jogos.forEach(j => {
-    jogadoresSet.add(j.jogador1);
-    jogadoresSet.add(j.jogador2);
-  });
-  const jogadores = Array.from(jogadoresSet).sort();
+ // Coleta todos os jogadores que aparecem em pelo menos um jogo
+const jogadoresSet = new Set();
+jogos.forEach(j => {
+  jogadoresSet.add(j.jogador1);
+  jogadoresSet.add(j.jogador2);
+});
+
+// Ranking final da liga, usando todos os jogos já disputados
+const rankingFinal = calcularRankingArray(jogos);
+
+// Primeiro, jogadores na ordem do ranking (1º, 2º, 3º...)
+const jogadoresRanking = rankingFinal.map(e => e.jogador);
+
+// Se por algum motivo existir alguém em jogosSet que não entrou no rankingFinal,
+// colocamos esses extras no final, só por segurança.
+const jogadoresExtras = Array.from(jogadoresSet).filter(
+  j => !jogadoresRanking.includes(j)
+);
+
+// Ordem final usada pelo gráfico (e pela legenda)
+const jogadores = [...jogadoresRanking, ...jogadoresExtras];
+
 
   // Inicializa estrutura de evolução por jogador
   const evolucao = {};
@@ -197,8 +243,14 @@ function atualizarGraficoEvolucao(jogos) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: {
+    padding: {
+      right: 10
+    }
+  },
       plugins: {
         legend: {
+          position: 'right',
           labels: {
             color: '#f5f5dc',
             font: {
@@ -280,6 +332,9 @@ async function carregarJogos() {
   const resposta = await fetch('jogos.json');
   const todosJogos = await resposta.json();
   const jogos = todosJogos.filter(jogo => (jogo.liga || 1) === ligaAtualId);
+
+  // 👇 novo: preenche o select com os jogadores desta liga
+  preencherSelectJogadores(jogos);
 
   const porDia = new Map();
   jogos.forEach(jogo => {
@@ -840,7 +895,7 @@ function animarContagem(id, valorFinal) {
 
 
 function filtrarJogos() {
-  const nome = document.getElementById("filtro-jogador").value.trim();
+  const nome = document.getElementById("filtro-jogador").value;
   if (!nome) return;
   fetch("jogos.json")
     .then(res => res.json())
@@ -849,6 +904,7 @@ function filtrarJogos() {
       filtrarJogosPorJogador(nome, jogosDaLiga);
     });
 }
+
 
 
 
@@ -883,6 +939,5 @@ function calcularVsAdversarios(nome, jogos) {
 
   return vs;
 }
-
 
 
