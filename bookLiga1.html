@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>eBook 1ª Liga Supermarket</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg-main: #000000;
+      --bg-header: #111111;
+      --accent: #f5d27a;
+      --text: #f5f5f5;
+      --text-muted: #aaaaaa;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body { height: 100%; }   /* NOVO: permite o flex ocupar a tela toda */
+
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: var(--bg-main);
+      color: var(--text);
+      display: flex;            
+      flex-direction: column;
+    }
+
+    /* CABEÇALHO LIGA */
+
+    header.liga-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(90deg, #000000 0%, #171717 50%, #000000 100%);
+      border-bottom: 1px solid #333;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .liga-logo {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .liga-logo-main {
+      font-size: 1.0rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .liga-logo-sub {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 3px;
+    }
+
+    nav.liga-nav {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    nav.liga-nav a {
+      text-decoration: none;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--text-muted);
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    nav.liga-nav a:hover {
+      color: var(--accent);
+      border-color: rgba(245, 210, 122, 0.4);
+      background: rgba(245, 210, 122, 0.06);
+    }
+
+    nav.liga-nav a.active {
+      color: #000;
+      background: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+
+
+  /* CONTEÚDO DO EBOOK */
+    main.ebook-container {
+      width: 100%;
+      flex: 1;         /* NOVO: ocupa todo o espaço restante */
+      min-height: 0;   /* NOVO: evita overflow do iframe em flexbox */
+      padding: 8px 0;
+      display: flex;   /* NOVO: para o iframe poder usar flex:1 */
+    }
+
+
+    .ebook-frame {
+      width: 100%;
+      flex: 1;
+      border: none;
+      display: block;
+    }
+
+    @media (max-width: 600px) {
+      header.liga-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+     
+    }
+
+    @media (max-width: 900px) {
+      .liga-logo-main { font-size: 0.95rem; }
+      .liga-logo-sub  { font-size: 0.68rem; }
+      nav.liga-nav a  { font-size: 0.78rem; padding: 3px 8px; }
+    }
+
+    @media (max-width: 400px) {
+      .liga-logo-main { font-size: 0.9rem; }
+      nav.liga-nav a  { font-size: 0.75rem; }
+    }
+
+  </style>
+</head>
+<body>
+  
+  <!-- CABEÇALHO DA LIGA -->
+<header class="liga-header">
+  <div class="liga-logo">
+    <span class="liga-logo-main">Liga Magic Supermarket</span>
+    <span class="liga-logo-sub">Resultados Oficiais • 1ª Edição 2025</span>
+  </div>
+
+  <nav class="liga-nav">
+    <a href="index.html"> Home </a>
+    <a href="bookLiga1.html" class="active">eBook 1ª Liga</a>
+  </nav>
+</header>
+
+  
+
+  <!-- EBOOK EMBUTIDO -->
+  <main class="ebook-container">
+    <iframe
+      class="ebook-frame"
+      src="eBook-Liga-Supermarket-1-Ed-v-1-0.pdf#toolbar=0&navpanes=0&scrollbar=0"
+    ></iframe>
+  </main>
+</body>
+</html>
