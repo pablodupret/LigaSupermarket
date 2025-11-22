@@ -222,13 +222,17 @@ function atualizarGraficoEvolucao(jogos) {
     jogadoresSet.add(j.jogador1);
     jogadoresSet.add(j.jogador2);
   });
-  const jogadores = Array.from(jogadoresSet).sort();
 
-  // Inicializa estrutura de evolução por jogador
-  const evolucao = {};
-  jogadores.forEach(j => {
-    evolucao[j] = [];
-  });
+  // Ordena jogadores pela POSIÇÃO no ranking final (respeitando pontos válidos)
+    const rankingFinal = calcularRankingParaGrafico(jogos);
+    const jogadores = rankingFinal.map(e => e.jogador);
+
+    // Inicializa estrutura de evolução por jogador
+    const evolucao = {};
+    jogadores.forEach(j => {
+      evolucao[j] = [];
+    });
+
 
   // Para cada dia, calcula ranking até aquele dia
   for (let dia = 1; dia <= maxDia; dia++) {
