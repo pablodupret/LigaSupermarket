@@ -176,26 +176,44 @@ function atualizarGraficoEvolucao(jogos) {
       }
     });
 
-    const arr = Object.keys(pontosTotais).map(jogador => {
-      const total = pontosTotais[jogador] || 0;
-      let pontosValidos = total;
+      // Descobre todos os "dias" existentes até aqui
+      const diasSet = new Set();
+      Object.values(pontosPorDia).forEach(mapa => {
+        Object.keys(mapa).forEach(diaStr => {
+          diasSet.add(Number(diaStr));
+        });
+      });
+      const diasOrdenados = Array.from(diasSet).sort((a, b) => a - b);
+    
 
-      if (ligaAtualId === 2) {
-        const mapaDias = pontosPorDia[jogador] || {};
-        const valoresDias = Object.values(mapaDias);
 
-        if (valoresDias.length > 1) {
-          const piorDia = Math.min(...valoresDias);
-          pontosValidos = total - piorDia;
+      const arr = Object.keys(pontosTotais).map(jogador => {
+        const total = pontosTotais[jogador] || 0;
+        let pontosValidos = total;
+  
+        if (ligaAtualId === 2 && diasOrdenados.length > 1) {
+          const mapaDias = pontosPorDia[jogador] || {};
+  
+          // monta vetor com TODOS os dias até aqui,
+          // usando 0 para dias em que o jogador não jogou
+          const valoresDias = diasOrdenados.map(dia => mapaDias[dia] || 0);
+  
+          if (valoresDias.length > 1) {
+            const piorDia = Math.min(...valoresDias);
+            const totalDias = valoresDias.reduce((acc, v) => acc + v, 0);
+            pontosValidos = totalDias - piorDia;
+          }
         }
-      }
+  
+        return {
+          jogador,
+          pontos: total,
+          pontosValidos
+        };
+      });
+  
 
-      return {
-        jogador,
-        pontos: total,
-        pontosValidos
-      };
-    });
+
 
     arr.sort((a, b) => {
       // Na Liga 2, ordena pelos pontos válidos
@@ -722,6 +740,21 @@ divDia.innerHTML += htmlRanking;
       s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
       s.gameWinPerc  = gJ > 0 ? s.gamesVencidos / gJ : 0;
     });
+
+    // 3) Calcula lista de dias da liga para usar no cálculo de pontos válidos
+    
+    const diasLigaSet = new Set();
+        Object.values(pontosPorDiaPorJogador).forEach(mapa => {
+          Object.keys(mapa).forEach(diaStr => {
+            diasLigaSet.add(Number(diaStr));
+          });
+        });
+        const diasLiga = Array.from(diasLigaSet).sort((a, b) => a - b);
+    
+
+
+
+
   
     // 3) OMWP (média do Match Win % dos oponentes, com floor 33%)
     jogadores.forEach(nome => {
@@ -745,34 +778,39 @@ divDia.innerHTML += htmlRanking;
   
     // 4) monta ranking com stats e streak
     const ranking = Object.entries(statsPorJogador)
-    .map(([jogador, s]) => {
-      const pontosDiasMap = pontosPorDiaPorJogador[jogador] || {};
-      const pontosDias = Object.values(pontosDiasMap);
-
-      // por padrão, pontos válidos = total
-      let pontosValidos = s.pontos;
-
-      // se tiver 2 ou mais dias, remove o pior dia
-      if (pontosDias.length > 1) {
-        const piorDia = Math.min(...pontosDias);
-        const totalDias = pontosDias.reduce((acc, v) => acc + v, 0);
-        pontosValidos = totalDias - piorDia;
-      }
-
-      return {
-        jogador,
-        pontos: s.pontos,            // total
-        pontosValidos,               // NOVO
-        vitorias: s.vitorias,
-        derrotas: s.derrotas,
-        empates: s.empates,
-        matchWinPerc: s.matchWinPerc || 0,
-        gameWinPerc: s.gameWinPerc || 0,
-        omwp: s.omwp || 0,
-        streakVitorias: currentWinStreak[jogador] || 0,
-        streakDerrotas: currentLoseStreak[jogador] || 0
-      };
-    })
+      .map(([jogador, s]) => {
+        const pontosDiasMap = pontosPorDiaPorJogador[jogador] || {};
+  
+        // por padrão, pontos válidos = total
+        let pontosValidos = s.pontos;
+  
+        // Na Liga 2, pontos válidos consideram TODOS os dias da liga,
+        // usando 0 para dias em que o jogador não jogou
+        if (ligaAtualId === 2 && diasLiga.length > 1) {
+          const pontosDias = diasLiga.map(dia => pontosDiasMap[dia] || 0);
+  
+          if (pontosDias.length > 1) {
+              const piorDia = Math.min(...pontosDias);
+              const totalDias = pontosDias.reduce((acc, v) => acc + v, 0);
+              pontosValidos = totalDias - piorDia;
+            }
+          }
+  
+          return {
+            jogador,
+            pontos: s.pontos,            // total
+            pontosValidos,               // já com pior dia descartado na Liga 2
+            vitorias: s.vitorias,
+            derrotas: s.derrotas,
+            empates: s.empates,
+            matchWinPerc: s.matchWinPerc || 0,
+            gameWinPerc: s.gameWinPerc || 0,
+            omwp: s.omwp || 0,
+            streakVitorias: currentWinStreak[jogador] || 0,
+            streakDerrotas: currentLoseStreak[jogador] || 0
+    };
+  })
+  
 
     .filter(entry => entry.jogador.toLowerCase() !== "bye")
 
