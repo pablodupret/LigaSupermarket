@@ -1202,6 +1202,27 @@ transform: translateX(-50%) translateY(0);
   font-weight: 600;
 }
 
+/* ===============================
+   FIX TOOLTIP (emojis) no ranking
+   =============================== */
+
+
+/* 3) Tabela: garante que a coluna "Jogador" fique acima das demais
+   (evita o tooltip ficar atrás de Pontos / Pontos válidos) */
+   #tabela-ranking-geral td:nth-child(2),
+   #tabela-ranking-geral th:nth-child(2) {
+     position: relative;
+     z-index: 50;
+   }
+   
+   /* 4) (extra) eleva o próprio badge do tooltip */
+   #tabela-ranking-geral .icon-badge {
+     position: relative;
+     z-index: 9999;
+   }
+   
+
+
 
 
 
