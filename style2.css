@@ -1196,6 +1196,13 @@ transform: translateX(-50%) translateY(0);
   margin-bottom: 12px;
 }
 
+/* Força o destaque do pior dia mesmo em linhas pares (zebra) */
+#pontos-por-dia table td.pior-dia {
+  background-color: rgba(255, 0, 0, 0.18) !important;
+  font-weight: 600;
+}
+
+
 
 
 

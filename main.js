@@ -441,7 +441,7 @@ function renderizarPontosPorDia(pontosPorDiaPorJogador) {
   });
 
   html += `
-          <th>Dia descartado</th>
+          <th>Ponto descartado</th>
         </tr>
       </thead>
       <tbody>
