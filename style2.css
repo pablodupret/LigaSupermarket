@@ -1220,7 +1220,87 @@ transform: translateX(-50%) translateY(0);
      position: relative;
      z-index: 9999;
    }
+
+
+/* =========================
+ Carta do Dia (Scryfall)
+ ========================= */
+
+ /* =========================
+   Carta do Dia (Scryfall)
+   ========================= */
+
+.carta-do-dia {
+  margin: 18px auto;
+  max-width: 980px;
+}
+
+/* Card com sombreado igual ao ranking (preto translúcido) */
+.carta-do-dia-card {
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+/* Título dentro do sombreado */
+.carta-do-dia-titulo {
+  margin: 0 0 12px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #f0c94a; /* mantém vibe dourada */
+  text-align: center;
+}
+
+/* Conteúdo: agora é só a carta */
+.carta-do-dia-conteudo {
+  display: flex;
+  justify-content: center;
+}
+
+/* Imagem da carta */
+.carta-do-dia-imagem img {
+  display: block;
+  max-width: 215px;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Botão embaixo e centralizado */
+.carta-do-dia-acoes {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.btn-nova-carta {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(240, 201, 74, 0.55);
+  background: rgba(0, 0, 0, 0.35);
+  color: #f0c94a;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.btn-nova-carta:hover {
+  background: rgba(0, 0, 0, 0.55);
+  transform: translateY(-1px);
+}
+
    
+.carta-do-dia-colecao {
+  text-align: center;
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+}
 
 
 
