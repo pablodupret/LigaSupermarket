@@ -405,7 +405,28 @@
   { "liga": 2, "dia": 3, "rodada": 5, "jogador1": "Matheus Berthoux", "resultado": "0 x 2", "jogador2": "João Amaral" },
   { "liga": 2, "dia": 3, "rodada": 5, "jogador1": "Jun", "resultado": "2 x 1", "jogador2": "Eduardo Baracho" },
   { "liga": 2, "dia": 3, "rodada": 5, "jogador1": "Flavio", "resultado": "1 x 1", "jogador2": "Bruno Novaes" },
-  { "liga": 2, "dia": 3, "rodada": 5, "jogador1": "Subzero", "resultado": "2 x 0", "jogador2": "Maria Baracho" }
+  { "liga": 2, "dia": 3, "rodada": 5, "jogador1": "Subzero", "resultado": "2 x 0", "jogador2": "Maria Baracho" },
+
+  { "liga": 2, "dia": 4, "rodada": 1, "jogador1": "Nagib", "resultado": "1 x 2", "jogador2": "Flavio" },
+  { "liga": 2, "dia": 4, "rodada": 1, "jogador1": "Marcelo", "resultado": "0 x 2", "jogador2": "Magno" },
+  { "liga": 2, "dia": 4, "rodada": 1, "jogador1": "Qiu", "resultado": "2 x 1", "jogador2": "Stenio" },
+  { "liga": 2, "dia": 4, "rodada": 1, "jogador1": "Caio", "resultado": "2 x 1", "jogador2": "Pablo" },
+  { "liga": 2, "dia": 4, "rodada": 1, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Sérgio" },
+  { "liga": 2, "dia": 4, "rodada": 2, "jogador1": "Flavio", "resultado": "0 x 2", "jogador2": "Magno" },
+  { "liga": 2, "dia": 4, "rodada": 2, "jogador1": "Qiu", "resultado": "2 x 0", "jogador2": "Vini" },
+  { "liga": 2, "dia": 4, "rodada": 2, "jogador1": "Caio", "resultado": "1 x 2", "jogador2": "Sérgio" },
+  { "liga": 2, "dia": 4, "rodada": 2, "jogador1": "Pablo", "resultado": "1 x 1", "jogador2": "Marcelo" },
+  { "liga": 2, "dia": 4, "rodada": 2, "jogador1": "Nagib", "resultado": "0 x 2", "jogador2": "Stenio" },
+  { "liga": 2, "dia": 4, "rodada": 3, "jogador1": "Qiu", "resultado": "1 x 2", "jogador2": "Magno" },
+  { "liga": 2, "dia": 4, "rodada": 3, "jogador1": "Vini", "resultado": "0 x 2", "jogador2": "Stenio" },
+  { "liga": 2, "dia": 4, "rodada": 3, "jogador1": "Flavio", "resultado": "1 x 2", "jogador2": "Sérgio" },
+  { "liga": 2, "dia": 4, "rodada": 3, "jogador1": "Caio", "resultado": "2 x 0", "jogador2": "Marcelo" },
+  { "liga": 2, "dia": 4, "rodada": 3, "jogador1": "Pablo", "resultado": "0 x 2", "jogador2": "Nagib" },
+  { "liga": 2, "dia": 4, "rodada": 4, "jogador1": "Magno", "resultado": "1 x 2", "jogador2": "Stenio" },
+  { "liga": 2, "dia": 4, "rodada": 4, "jogador1": "Qiu", "resultado": "2 x 1", "jogador2": "Caio" },
+  { "liga": 2, "dia": 4, "rodada": 4, "jogador1": "Sérgio", "resultado": "2 x 1", "jogador2": "Nagib" },
+  { "liga": 2, "dia": 4, "rodada": 4, "jogador1": "Flavio", "resultado": "2 x 1", "jogador2": "Marcelo" },
+  { "liga": 2, "dia": 4, "rodada": 4, "jogador1": "Vini", "resultado": "2 x 0", "jogador2": "Pablo" }
   
 ]
 

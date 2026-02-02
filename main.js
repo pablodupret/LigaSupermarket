@@ -4,6 +4,39 @@ let ligaAtualId = 2;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
 let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
 
+const jogadoresOcultos = [
+  "Everton Lucas",
+  "Raphael Rocha",
+  "Rafael Lobo",
+  "Rodrigo Copello",
+  "Matheus Berthoux",
+  "Gabriel",
+  "João Amaral",
+  "Eduardo Baracho",
+  "Maria Baracho",
+  "Victor Cabral",
+  "Rafael Rocha",
+  "Vitor Mayer",
+  "Mikael Molo",
+  "João Paulo Perez",
+  "Bernard Telles",
+  "Leandro Floresta",
+  "Bruno Novaes"
+];
+
+// ✅ Helpers para ocultar jogadores (ranking, gráfico, selects, etc.)
+const jogadoresOcultosSet = new Set(jogadoresOcultos.map(n => n.trim()));
+
+function jogadorEstaOculto(nome) {
+  return jogadoresOcultosSet.has(nome);
+}
+
+function jogadorEhVisivel(nome) {
+  return nome && nome.toLowerCase() !== "bye" && !jogadorEstaOculto(nome);
+}
+//---------
+
+
 // Carrega ligas a partir de ligas.json e preenche o seletor
 async function carregarLigas() {
   try {
@@ -109,7 +142,9 @@ function preencherSelectJogadores(jogos) {
   });
 
   const jogadores = Array.from(jogadoresSet)
-    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  .filter(nome => jogadorEhVisivel(nome)) // ✅ remove ocultos e BYE
+  .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
 
   // limpa opções atuais
   select.innerHTML = '<option value="">Selecione um jogador</option>';
@@ -227,7 +262,8 @@ function atualizarGraficoEvolucao(jogos) {
       return a.jogador.localeCompare(b.jogador, 'pt-BR');
     });
 
-    return arr;
+    return arr.filter(e => jogadorEhVisivel(e.jogador));
+
   }
   // -------------------------------------------------------------------
 
@@ -394,6 +430,7 @@ const infoPorLiga = {
     1: { data: "15/11/2025", draft: "Pre Release Avatar" },
     2: { data: "06/12/2025", draft: "Draft Avatar" },
     3: { data: "18/01/2026", draft: "Pré Release Lorwyn" },
+    4: { data: "31/01/2026", draft: "Draft Avatar" },
 
     // Quando tiver o dia 2, 3, 4... da liga 2, você só adiciona aqui:
     // 2: { data: "29/11/2025", draft: "Draft XYZ" },
@@ -449,8 +486,9 @@ function renderizarPontosPorDia(pontosPorDiaPorJogador) {
   `;
 
   const jogadores = Object.keys(pontosPorDiaPorJogador)
-    .filter(nome => nome.toLowerCase() !== 'bye')
-    .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  .filter(nome => jogadorEhVisivel(nome)) // ✅ remove BYE + ocultos
+  .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
 
   jogadores.forEach(jogador => {
     const mapa = pontosPorDiaPorJogador[jogador] || {};
@@ -815,7 +853,8 @@ divDia.innerHTML += htmlRanking;
   })
   
 
-    .filter(entry => entry.jogador.toLowerCase() !== "bye")
+    .filter(entry => jogadorEhVisivel(entry.jogador)) // ✅ remove BYE + ocultos
+
 
     .sort((a, b) => {
       const usaPontosValidos = (ligaAtualId === 2); // só Liga 2 usa essa regra
