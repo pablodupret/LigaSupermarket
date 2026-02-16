@@ -431,6 +431,8 @@ const infoPorLiga = {
     2: { data: "06/12/2025", draft: "Draft Avatar" },
     3: { data: "18/01/2026", draft: "Pré Release Lorwyn" },
     4: { data: "31/01/2026", draft: "Draft Avatar" },
+    5: { data: "14/02/2026", draft: "Draft Avatar" },
+
 
     // Quando tiver o dia 2, 3, 4... da liga 2, você só adiciona aqui:
     // 2: { data: "29/11/2025", draft: "Draft XYZ" },

@@ -94,18 +94,51 @@
 <body>
 <div class="container">
 <h1>Início do Torneio</h1>
+<label>Liga:</label>
+<input id="liga" type="number" min="1" step="1" placeholder="Ex: 2" />
 <label>Data:</label>
 <input id="data" type="date"/>
 <label>Coleção:</label>
 <input id="colecao" type="text"/>
 <label>Selecione os jogadores:</label>
 <div id="lista-jogadores" style="background-color:#2c2c2c;padding:15px;border-radius:10px;max-height:150px;overflow-y:auto;color:#f5f5dc; margin-bottom: 20px;"> Carregando jogadores...</div>
+
+
+
+
+<div id="contador-jogadores" style="margin-bottom: 10px; color:#f5f5dc;">
+  Selecionados: <strong id="qtd-selecionados">0</strong>
+</div>
+
+<button id="btn-incluir-jogadores" type="button" onclick="abrirConfirmacaoJogadores()">
+  Incluir Jogadores no Torneio
+</button>
+
+<div id="confirmacao-jogadores" style="display:none; margin-top: 15px; margin-bottom: 30px; padding: 12px; border: 1px solid rgba(255,215,0,0.5); border-radius: 10px; background: rgba(0,0,0,0.25);">
+  <h3 style="margin-top:0;">Confirmar jogadores</h3>
+  <div id="lista-confirmacao" style="line-height: 1.6;"></div>
+
+  <div style="display:flex; gap:10px; margin-top: 12px;">
+    <button type="button" onclick="confirmarJogadores()">Confirmar</button>
+    <button type="button" onclick="refazerSelecao()">Refazer</button>
+  </div>
+</div>
+
+
+
+
 <label> Adicionar novo jogador:</label>
 <input id="novo-jogador" type="text"/>
 <button onclick="adicionarJogador()" style="margin-bottom: 30px; margin-top: 0px;"> Adicionar</button>
 <label>Número total de rodadas:</label>
 <input id="numRodadas" max="10" min="1" type="number"/>
-<button onclick="iniciarTorneio()">Iniciar Torneio</button>
+
+<button id="btn-iniciar" onclick="iniciarTorneio()" disabled style="opacity:0.5; cursor:not-allowed;">
+  Iniciar Torneio
+</button>
+
+
+
 </div>
 <div class="container" id="torneio-area" style="display:none;"></div>
 <!-- Botão para salvar o HTML -->
@@ -129,6 +162,10 @@ async function carregarJogadores() {
     const lista = await res.json();
     const div = document.getElementById("lista-jogadores");
     div.innerHTML = "";
+
+    lista.sort((a, b) => a.localeCompare(b, 'pt-BR'));
+
+
     lista.forEach(nome => {
       const id = "jog_" + nome.replace(/\s+/g, "_");
       div.innerHTML += `
@@ -136,8 +173,14 @@ async function carregarJogadores() {
         <input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;" />
         <label for="${id}" style="color: #f5f5dc;">${nome}</label>
        </div>`;
-
+       
     });
+
+    vincularEventosCheckbox();
+    atualizarContadorSelecionados();
+
+
+
   } catch (err) {
     document.getElementById("lista-jogadores").innerText = "Erro ao carregar jogadores.";
   }
@@ -158,9 +201,112 @@ function adicionarJogador() {
         <label for="${id}" style="margin-left: 0px; color: #f5f5dc;">${nome}</label>
         </div>`;
   document.getElementById("novo-jogador").value = "";
+  
+  vincularEventosCheckbox(); // AQUI ESTOU NA DUVIDA SE COLOQUEI NO LUGAR CERTO
+  atualizarContadorSelecionados();
+  
 }
 
 carregarJogadores();
+
+
+
+
+
+let jogadoresConfirmados = false;
+
+function vincularEventosCheckbox() {
+  const checks = document.querySelectorAll("#lista-jogadores input[type=checkbox]");
+  checks.forEach(cb => {
+    // evita duplicar listener
+    if (cb.dataset.listener === "1") return;
+
+    cb.addEventListener("change", () => {
+      jogadoresConfirmados = false;
+      document.getElementById("confirmacao-jogadores").style.display = "none";
+      desabilitarIniciar();
+      atualizarContadorSelecionados();
+    });
+
+    cb.dataset.listener = "1";
+  });
+}
+
+function atualizarContadorSelecionados() {
+  const checks = document.querySelectorAll("#lista-jogadores input[type=checkbox]:checked");
+  document.getElementById("qtd-selecionados").textContent = checks.length;
+}
+
+function abrirConfirmacaoJogadores() {
+  const checks = document.querySelectorAll("#lista-jogadores input[type=checkbox]:checked");
+  const selecionados = Array.from(checks).map(c => c.value);
+
+  if (selecionados.length === 0) {
+    alert("Selecione pelo menos 1 jogador antes de incluir.");
+    return;
+  }
+
+  // monta a prévia
+  // Ordena alfabeticamente
+  selecionados.sort((a, b) => a.localeCompare(b, "pt-BR"));
+
+const total = selecionados.length;
+
+// Verifica se é ímpar
+const avisoBye = total % 2 !== 0
+  ? `<p style="color: gold; margin: 0 0 10px 0;">
+       ⚠ Número ímpar de jogadores. Cada rodada terá um jogador com <strong>Bye</strong>.
+     </p>`
+  : "";
+
+const listaHtml = `
+  <p style="margin: 0 0 10px 0;">
+    <strong>Total selecionados: ${total}</strong>
+  </p>
+  ${avisoBye}
+  <ol style="margin:0; padding-left: 22px;">
+    ${selecionados.map(n => `<li>${n}</li>`).join("")}
+  </ol>
+`;
+
+  document.getElementById("lista-confirmacao").innerHTML = listaHtml;
+  document.getElementById("confirmacao-jogadores").style.display = "block";
+}
+
+function confirmarJogadores() {
+  jogadoresConfirmados = true;
+  habilitarIniciar();
+  alert("Jogadores confirmados! Agora você pode iniciar o torneio.");
+}
+
+function refazerSelecao() {
+  jogadoresConfirmados = false;
+  document.getElementById("confirmacao-jogadores").style.display = "none";
+  desabilitarIniciar();
+}
+
+function habilitarIniciar() {
+  const btn = document.getElementById("btn-iniciar");
+  btn.disabled = false;
+  btn.style.opacity = "1";
+  btn.style.cursor = "pointer";
+}
+
+function desabilitarIniciar() {
+  const btn = document.getElementById("btn-iniciar");
+  btn.disabled = true;
+  btn.style.opacity = "0.5";
+  btn.style.cursor = "not-allowed";
+}
+
+
+
+
+
+
+
+
+
 </script>
 <script>
 let jogadores = [];
@@ -168,16 +314,30 @@ let resultadosPorRodada = {};
 let rodadaAtual = 0;
 let totalRodadas = 0;
 let confrontosAnteriores = new Set();
+let ligaAtual = null;
+
 
 function iniciarTorneio() {
+  ligaAtual = parseInt(document.getElementById("liga").value);
   const data = document.getElementById("data").value;
   const colecao = document.getElementById("colecao").value;
   const checks = document.querySelectorAll("#lista-jogadores input[type=checkbox]:checked");
   const selecionados = Array.from(checks).map(c => c.value);
+
+
+  if (!jogadoresConfirmados) {
+    alert("Antes de iniciar, clique em 'Incluir Jogadores no Torneio' e depois 'Confirmar'.");
+    return;
+  }
+
+
+
   totalRodadas = parseInt(document.getElementById("numRodadas").value);
 
-  if (!data || !colecao || !selecionados.length || !totalRodadas) {
-    alert("Preencha todos os campos corretamente.");
+
+
+  if (!ligaAtual || ligaAtual < 1 || !data || !colecao || !selecionados.length || !totalRodadas) {
+    alert("Preencha todos os campos corretamente (incluindo o número da Liga).");
     return;
   }
 
@@ -191,10 +351,32 @@ function iniciarTorneio() {
   rodadaAtual = 0;
   resultadosPorRodada = {};
   confrontosAnteriores = new Set();
-  document.getElementById("torneio-area").innerHTML = '';
-  document.getElementById("torneio-area").style.display = "block";
-  gerarRodada();
+
+  const area = document.getElementById("torneio-area");
+  area.innerHTML = "";
+  area.style.display = "block";
+
+  // Botões para escolher como gerar a 1ª rodada
+  const btnAuto = document.createElement("button");
+  btnAuto.textContent = "Gerar 1ª Rodada (automática)";
+  btnAuto.onclick = () => {
+    btnAuto.remove();
+    btnManual.remove();
+    gerarRodada();
+  };
+
+  const btnManual = document.createElement("button");
+  btnManual.textContent = "Gerar 1ª Rodada (manual)";
+  btnManual.onclick = () => {
+    btnAuto.remove();
+    btnManual.remove();
+    gerarRodadaManual();
+  };
+
+  area.appendChild(btnAuto);
+  area.appendChild(btnManual);
 }
+
 
 
 // Função para ordenação usando critérios do Appendix C
@@ -217,9 +399,18 @@ function ordenarJogadoresSuico(jogadores) {
       adversarios.push(h.contra);
     });
 
-    const matchPoints = j.pontos;
-    const matchWinPerc = Math.max(0.33, (vitorias * 3 + empates) / ((vitorias + empates + derrotas) * 3 || 1));
-    const gameWinPerc = Math.max(0.33, gamesGanhos / (gamesTotais || 1));
+    // Calcula os pontos de partida (match points) a partir do histórico,
+    // em vez de usar j.pontos, para evitar qualquer descompasso.
+    const matchPoints = vitorias * 3 + empates;
+
+    const matchWinPerc = Math.max(0.33,(vitorias * 3 + empates) / (((vitorias + empates + derrotas) * 3) || 1)
+    );
+
+const gameWinPerc = Math.max(
+  0.33,
+  gamesGanhos / (gamesTotais || 1)
+);
+
 
     return {
       ...j,
@@ -258,6 +449,31 @@ function ordenarJogadoresSuico(jogadores) {
 
 function gerarRodada() {
   rodadaAtual++;
+  // Garantir que pontos e saldo estejam sempre consistentes com o histórico
+  jogadores.forEach(j => {
+  let pontos = 0;
+  let saldo = 0;
+
+  j.historico.forEach(h => {
+    const placar = h.placar.replace("(bye)", "").trim();
+    if (!placar.includes("x")) return;
+
+    const [g1, g2] = placar.split("x").map(Number);
+    if (isNaN(g1) || isNaN(g2)) return;
+
+    if (g1 > g2) pontos += 3;
+    else if (g1 === g2) pontos += 1;
+
+    saldo += g1 - g2;
+  });
+
+  j.pontos = pontos;
+  j.saldo = saldo;
+  });
+
+
+
+
   const area = document.getElementById("torneio-area");
 
   const bloco = document.createElement("div");
@@ -335,55 +551,256 @@ if (rodadaAtual === 1) {
   area.appendChild(bloco);
 }
 
+function gerarRodadaManual() {
+  rodadaAtual++;
+  const area = document.getElementById("torneio-area");
+
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + rodadaAtual + "_manual";
+  bloco.innerHTML = "<h2>Rodada " + rodadaAtual + " (Manual)</h2>";
+
+  // Jogadores reais (sem Bye criado automaticamente)
+  const jogadoresDisponiveis = jogadores.filter(j => j.nome !== "Bye");
+  const numJogos = Math.ceil(jogadoresDisponiveis.length / 2);
+
+  const totalJogadores = jogadoresDisponiveis.length;
+  const temBye = totalJogadores % 2 !== 0; // só oferece Bye se número ímpar
+
+  let opcoes = '<option value="">Selecione</option>';
+  jogadoresDisponiveis.forEach(j => {
+    opcoes += `<option value="${j.nome}">${j.nome}</option>`;
+  });
+  if (temBye) {
+    opcoes += '<option value="Bye">Bye</option>';
+  }
+
+  let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+
+  for (let i = 0; i < numJogos; i++) {
+    html += `
+      <tr>
+        <td>
+          <select id="r${rodadaAtual}_j1_${i}">
+            ${opcoes}
+          </select>
+        </td>
+        <td class="placar-input">
+          <input type="number" min="0" id="r${rodadaAtual}_p${i * 2}">
+          <span>x</span>
+          <input type="number" min="0" id="r${rodadaAtual}_p${i * 2 + 1}">
+        </td>
+        <td>
+          <select id="r${rodadaAtual}_j2_${i}">
+            ${opcoes}
+          </select>
+        </td>
+      </tr>
+    `;
+  }
+
+  html += "</tbody></table>";
+  html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button>`;
+  html += ` <button onclick="reabrirRodada(${rodadaAtual})">Reabrir Rodada</button>`;
+
+  bloco.innerHTML += html;
+  area.appendChild(bloco);
+}
+
+
 function finalizarRodada(rodada) {
-  const confrontos = resultadosPorRodada[rodada];
-  for (let i = 0; i < confrontos.length; i++) {
-    const j1 = confrontos[i][0];
-    const j2 = confrontos[i][1];
-    if (j2.nome === "Bye") continue;
+  let confrontos = resultadosPorRodada[rodada];
 
-    const p1 = parseInt(document.getElementById(`r${rodada}_p${i * 2}`).value);
-    const p2 = parseInt(document.getElementById(`r${rodada}_p${i * 2 + 1}`).value);
+  // Se não há confrontos prontos, é rodada manual: montar a partir dos <select>
+  if (!confrontos || confrontos.length === 0) {
+    confrontos = [];
+    let i = 0;
+    let byeUsado = false;
 
-    if (isNaN(p1) || isNaN(p2)) {
-      alert("Preencha todos os placares antes de finalizar.");
+    while (true) {
+      const sel1 = document.getElementById(`r${rodada}_j1_${i}`);
+      const sel2 = document.getElementById(`r${rodada}_j2_${i}`);
+      if (!sel1 || !sel2) break; // acabou as linhas
+
+      const nome1 = sel1.value;
+      const nome2 = sel2.value;
+
+      // Linha vazia → pula
+      if (!nome1 && !nome2) {
+        i++;
+        continue;
+      }
+
+      if (!nome1 || !nome2) {
+        alert("Selecione os dois jogadores em todas as partidas.");
+        return;
+      }
+
+      if (nome1 === nome2) {
+        alert("Um jogador não pode enfrentar ele mesmo.");
+        return;
+      }
+
+      // Tratamento de Bye manual
+      if (nome1 === "Bye" || nome2 === "Bye") {
+        if (byeUsado) {
+          alert("Já existe um Bye definido nesta rodada.");
+          return;
+        }
+        byeUsado = true;
+
+        const nomeReal = nome1 === "Bye" ? nome2 : nome1;
+        const jReal = jogadores.find(j => j.nome === nomeReal);
+        if (!jReal) {
+          alert("Jogador inválido em uma das partidas.");
+          return;
+        }
+
+        const repetido = confrontos.some(par =>
+          par[0].nome === nomeReal ||
+          par[1].nome === nomeReal
+        );
+        if (repetido) {
+          alert("Um mesmo jogador está aparecendo em mais de um jogo nesta rodada.");
+          return;
+        }
+
+        confrontos.push([jReal, { nome: "Bye" }]);
+
+        // Vitória automática do Bye (2x0), igual à lógica da rodada automática
+        jReal.pontos += 3;
+        jReal.saldo += 2;
+        jReal.historico.push({ contra: "Bye", placar: "2x0 (bye)" });
+
+        i++;
+        continue;
+      }
+
+      // Jogo normal (sem Bye)
+      const j1 = jogadores.find(j => j.nome === nome1);
+      const j2 = jogadores.find(j => j.nome === nome2);
+
+      if (!j1 || !j2) {
+        alert("Jogador inválido em uma das partidas.");
+        return;
+      }
+
+      const repetido = confrontos.some(par =>
+        par[0].nome === nome1 ||
+        par[1].nome === nome1 ||
+        par[0].nome === nome2 ||
+        par[1].nome === nome2
+      );
+      if (repetido) {
+        alert("Um mesmo jogador está aparecendo em mais de um jogo nesta rodada.");
+        return;
+      }
+
+      confrontos.push([j1, j2]);
+      i++;
+    }
+
+    if (confrontos.length === 0) {
+      alert("Defina pelo menos um confronto para a rodada.");
       return;
     }
 
-    const input1 = document.getElementById(`r${rodada}_p${i * 2}`);
-    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}`);
-    const td = input1.parentElement;
-    td.innerHTML = `<span>${p1} x ${p2}</span>`;
-
-    if (p1 > p2) j1.pontos += 3;
-    else if (p2 > p1) j2.pontos += 3;
-    else {
-      j1.pontos += 1;
-      j2.pontos += 1;
-    }
-
-    j1.saldo += p1 - p2;
-    j2.saldo += p2 - p1;
-
-    j1.historico.push({ contra: j2.nome, placar: `${p1}x${p2}` });
-    j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}` });
+    resultadosPorRodada[rodada] = confrontos;
   }
+
+  // Atualiza placar / pontos / saldo para jogos normais (sem Bye)
+  for (let i = 0; i < confrontos.length; i++) {
+  const j1 = confrontos[i][0];
+  const j2 = confrontos[i][1];
+
+  // Tenta achar os inputs dessa linha (rodada normal ou manual)
+  const input1 = document.getElementById(`r${rodada}_p${i * 2}`);
+  const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}`);
+
+  // Se não tem inputs, não há nada pra atualizar visualmente
+  if (!input1 || !input2) {
+    continue;
+  }
+
+  const tr = input1.parentElement.parentElement; // <tr> da linha
+  const tdJog1 = tr.children[0];
+  const tdPlacar = tr.children[1];
+  const tdJog2 = tr.children[2];
+
+  // CASO BYE: só congelar a linha visualmente (pontos já foram dados lá em cima)
+  if (j2.nome === "Bye") {
+    if (tdJog1 && tdJog2 && tdPlacar) {
+      tdJog1.textContent = j1.nome;
+      tdPlacar.innerHTML = "<span>2 x 0</span>";
+      tdJog2.textContent = "Bye";
+    }
+    continue; // não recalcula pontos/saldo nem histórico aqui
+  }
+
+  // Jogo normal: ler placar, validar e atualizar
+  const p1 = parseInt(input1.value);
+  const p2 = parseInt(input2.value);
+
+  if (isNaN(p1) || isNaN(p2)) {
+    alert("Preencha todos os placares antes de finalizar.");
+    return;
+  }
+
+  // Congela a linha: nomes fixos + placar fixo
+  if (tdJog1 && tdJog2 && tdPlacar) {
+    tdJog1.textContent = j1.nome;
+    tdPlacar.innerHTML = `<span>${p1} x ${p2}</span>`;
+    tdJog2.textContent = j2.nome;
+  }
+
+  if (p1 > p2) {
+    j1.pontos += 3;
+  } else if (p2 > p1) {
+    j2.pontos += 3;
+  } else {
+    j1.pontos += 1;
+    j2.pontos += 1;
+  }
+
+  j1.saldo += p1 - p2;
+  j2.saldo += p2 - p1;
+
+  j1.historico.push({ contra: j2.nome, placar: `${p1}x${p2}` });
+  j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}` });
+}
+
 
   mostrarRanking();
   mostrarEstatisticasAppendixC();
 
-
+  // Botões para a próxima rodada
   if (rodada < totalRodadas) {
-    const botao = document.createElement("button");
-    botao.textContent = "Gerar Próxima Rodada";
-    botao.onclick = gerarRodada;
-    document.getElementById("torneio-area").appendChild(botao);
+    const area = document.getElementById("torneio-area");
+
+    // Remove botões antigos, se existirem
+    const oldAuto = document.getElementById("btn-proxima-auto");
+    const oldManual = document.getElementById("btn-proxima-manual");
+    if (oldAuto) oldAuto.remove();
+    if (oldManual) oldManual.remove();
+
+    const botaoAuto = document.createElement("button");
+    botaoAuto.id = "btn-proxima-auto";
+    botaoAuto.textContent = "Gerar Próxima Rodada (automática)";
+    botaoAuto.onclick = gerarRodada;
+    area.appendChild(botaoAuto);
+
+    const botaoManual = document.createElement("button");
+    botaoManual.id = "btn-proxima-manual";
+    botaoManual.textContent = "Gerar Próxima Rodada (manual)";
+    botaoManual.onclick = gerarRodadaManual;
+    area.appendChild(botaoManual);
   } else {
     const fim = document.createElement("h3");
     fim.textContent = "Fim do Torneio!";
     document.getElementById("torneio-area").appendChild(fim);
   }
 }
+
 
 
 function mostrarRanking() {
@@ -492,37 +909,55 @@ function reabrirRodada(rodada) {
 }
 
 // Função para finalizar rodada reaberta
-
 function finalizarRodadaReaberta(rodada) {
   const confrontos = resultadosPorRodada[rodada];
+
   for (let i = 0; i < confrontos.length; i++) {
     const j1 = confrontos[i][0];
     const j2 = confrontos[i][1];
+
+    // Para partidas com Bye reabertas, não há inputs para editar
     if (j2.nome === "Bye") continue;
 
-    const p1 = parseInt(document.getElementById(`r${rodada}_p${i * 2}_r`).value);
-    const p2 = parseInt(document.getElementById(`r${rodada}_p${i * 2 + 1}_r`).value);
+    const input1 = document.getElementById(`r${rodada}_p${i * 2}_r`);
+    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}_r`);
+    if (!input1 || !input2) continue; // segurança
+
+    const p1 = parseInt(input1.value);
+    const p2 = parseInt(input2.value);
 
     if (isNaN(p1) || isNaN(p2)) {
       alert("Preencha todos os placares antes de finalizar.");
       return;
     }
 
-    const input1 = document.getElementById(`r${rodada}_p${i * 2}_r`);
-    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}_r`);
-    const td = input1.parentElement;
-    td.innerHTML = `<span>${p1} x ${p2}</span>`;
+    // Pega a <tr> dessa linha e suas <td>
+    const tr = input1.parentElement.parentElement;
+    const tdJog1 = tr.children[0];
+    const tdPlacar = tr.children[1];
+    const tdJog2 = tr.children[2];
 
-    if (p1 > p2) j1.pontos += 3;
-    else if (p2 > p1) j2.pontos += 3;
-    else {
+    // Congela visualmente: mantém nomes e fixa o placar
+    if (tdJog1 && tdJog2 && tdPlacar) {
+      // tdJog1 e tdJog2 já são texto com os nomes, então só atualizamos o placar
+      tdPlacar.innerHTML = `<span>${p1} x ${p2}</span>`;
+    }
+
+    // Atualiza pontos
+    if (p1 > p2) {
+      j1.pontos += 3;
+    } else if (p2 > p1) {
+      j2.pontos += 3;
+    } else {
       j1.pontos += 1;
       j2.pontos += 1;
     }
 
+    // Atualiza saldo
     j1.saldo += p1 - p2;
     j2.saldo += p2 - p1;
 
+    // Atualiza histórico (nova versão corrigida)
     j1.historico.push({ contra: j2.nome, placar: `${p1}x${p2}` });
     j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}` });
   }
@@ -530,11 +965,26 @@ function finalizarRodadaReaberta(rodada) {
   mostrarRanking();
   mostrarEstatisticasAppendixC();
 
+  // Mesma lógica de "próxima rodada" que usamos em finalizarRodada()
   if (rodada < totalRodadas) {
-    const botao = document.createElement("button");
-    botao.textContent = "Gerar Próxima Rodada";
-    botao.onclick = gerarRodada;
-    document.getElementById("torneio-area").appendChild(botao);
+    const area = document.getElementById("torneio-area");
+
+    const oldAuto = document.getElementById("btn-proxima-auto");
+    const oldManual = document.getElementById("btn-proxima-manual");
+    if (oldAuto) oldAuto.remove();
+    if (oldManual) oldManual.remove();
+
+    const botaoAuto = document.createElement("button");
+    botaoAuto.id = "btn-proxima-auto";
+    botaoAuto.textContent = "Gerar Próxima Rodada (automática)";
+    botaoAuto.onclick = gerarRodada;
+    area.appendChild(botaoAuto);
+
+    const botaoManual = document.createElement("button");
+    botaoManual.id = "btn-proxima-manual";
+    botaoManual.textContent = "Gerar Próxima Rodada (manual)";
+    botaoManual.onclick = gerarRodadaManual;
+    area.appendChild(botaoManual);
   } else {
     const fim = document.createElement("h3");
     fim.textContent = "Fim do Torneio!";
@@ -645,53 +1095,86 @@ function mostrarEstatisticasAppendixC() {
   area.innerHTML += html;
 }
 
-
 function exportarResultadosParaJSON() {
-  const jogosExportados = [];
-  const numeroDia = prompt("Digite o número do dia (ex: 5):", "5");
-  if (!numeroDia) return;
+  if (!ligaAtual || ligaAtual < 1) {
+    alert("Defina o número da Liga no início do torneio antes de exportar.");
+    return;
+  }
 
-  for (const rodada in resultadosPorRodada) {
+  const jogosExportados = [];
+
+  const numeroDia = parseInt(prompt("Digite o número do dia (ex: 5):", "5"));
+  if (!numeroDia || numeroDia < 1) return;
+
+  for (const rodadaStr in resultadosPorRodada) {
+    const rodada = parseInt(rodadaStr);
     const confrontos = resultadosPorRodada[rodada];
+
     confrontos.forEach((par, i) => {
       const j1 = par[0];
       const j2 = par[1];
 
+      // Não exporta Bye
       if (j2.nome === "Bye") return;
 
-      // Identifica o elemento da célula com placar
-      const linhaIndex = i;
-      const blocoRodada = document.getElementById(`rodada_${rodada}`) || document.getElementById(`rodada_${rodada}_reaberta`);
+      // Tenta pegar o placar exibido na linha da tabela
+      const blocoRodada =
+        document.getElementById(`rodada_${rodada}`) ||
+        document.getElementById(`rodada_${rodada}_reaberta`) ||
+        document.getElementById(`rodada_${rodada}_manual`);
+
       if (!blocoRodada) return;
 
-      const placarCells = blocoRodada.querySelectorAll("tbody tr");
-      const linha = placarCells[linhaIndex];
+      const linhas = blocoRodada.querySelectorAll("tbody tr");
+      const linha = linhas[i];
       if (!linha) return;
 
-      const placarSpan = linha.querySelector("td.placar-input, td span");
-      if (!placarSpan) return;
+      // Normalmente o placar fica na 2ª coluna (td[1])
+      const tdPlacar = linha.children[1];
+      if (!tdPlacar) return;
 
-      const texto = placarSpan.innerText || "";
-      const [p1, p2] = texto.replace("(bye)", "").split("x").map(str => parseInt(str.trim()));
+      // Depois de finalizar, você troca por <span>p1 x p2</span>
+      const texto = (tdPlacar.innerText || "").trim();
+      const partes = texto.split("x").map(s => parseInt(s.trim()));
+      const p1 = partes[0];
+      const p2 = partes[1];
+
       if (isNaN(p1) || isNaN(p2)) return;
 
-      
-
       jogosExportados.push({
-      dia: parseInt(numeroDia),
-      rodada: parseInt(rodada),
-      jogador1: j1.nome,
-      jogador2: j2.nome,
-      resultado: `${p1} x ${p2}`
+        liga: ligaAtual,
+        dia: numeroDia,
+        rodada: rodada,
+        jogador1: j1.nome,
+        resultado: `${p1} x ${p2}`,
+        jogador2: j2.nome
       });
-
     });
   }
 
-  const blob = new Blob([JSON.stringify(jogosExportados, null, 2)], { type: "application/json" });
+  if (jogosExportados.length === 0) {
+    alert("Nenhum jogo válido para exportar. Verifique se as rodadas foram finalizadas.");
+    return;
+  }
+
+  // 🔥 Formato “uma linha por objeto”, igual vocês gostam no jogos.json
+  const linhas = jogosExportados.map(o =>
+    `{ "liga": ${o.liga}, "dia": ${o.dia}, "rodada": ${o.rodada}, "jogador1": "${o.jogador1}", "resultado": "${o.resultado}", "jogador2": "${o.jogador2}" }`
+  );
+
+  // JSON válido (sem vírgula sobrando no final)
+  const conteudo = "[\n" + linhas.join(",\n") + "\n]\n";
+
+  const blob = new Blob([conteudo], { type: "application/json" });
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.download = "resultados_28-07-2025.json";
+
+  const hoje = new Date();
+  const dd = String(hoje.getDate()).padStart(2, "0");
+  const mm = String(hoje.getMonth() + 1).padStart(2, "0");
+  const yyyy = hoje.getFullYear();
+
+  link.download = `resultados_${dd}-${mm}-${yyyy}.json`;
   link.click();
 }
 
