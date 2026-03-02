@@ -7,7 +7,7 @@ if (imgCarta && btnNovaCarta) {
     try {
       // Exemplo simples: carta aleatória no Scryfall da coleçao ECL (silga do Lorwyn)
       //Na próxima coleção precisa trocar o set abaixo!
-      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:ecl");
+      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:tmt");
 
 
       if (!resp.ok) {
