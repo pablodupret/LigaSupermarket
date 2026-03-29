@@ -1,5 +1,6 @@
 [
     { "id": 1, "nome": "Liga Supermarket - Temporada 1", "ano": 2025 },
-    { "id": 2, "nome": "Liga Supermarket - Temporada 2", "ano": 2026 }
+    { "id": 2, "nome": "Liga Supermarket - Temporada 2", "ano": 2026 },
+    { "id": 3, "nome": "Liga Supermarket - Temporada 3", "ano": 2026 }
   ]
   

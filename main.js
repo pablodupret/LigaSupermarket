@@ -1,6 +1,6 @@
 // Calcula ranking simples (pontos totais) e devolve array ordenado
 
-let ligaAtualId = 2;   // liga que começa selecionada (temporada atual)
+let ligaAtualId = 3;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
 let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
 
