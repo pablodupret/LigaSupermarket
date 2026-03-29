@@ -633,8 +633,8 @@ border-bottom: 1px solid #333;
 padding: 10px 24px;
 display: flex;
 align-items: center;
-justify-content: space-between;
-gap: 24px;
+justify-content: flex-start;
+gap: 28px;
 }
 
 .liga-logo {
@@ -644,12 +644,18 @@ line-height: 1.1;
 }
 
 .liga-logo-main {
-font-size: 1.0rem;
-font-weight: 700;
-letter-spacing: 2px;
-text-transform: uppercase;
-color: var(--accent);
-padding-left: 20px;
+  display: inline-block;
+  font-size: 1.0rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-left: 20px;
+  text-decoration: none;
+  }
+
+.liga-logo-main:hover {
+  opacity: 0.92;
 }
 
 .liga-logo-sub {
@@ -663,7 +669,8 @@ nav.liga-nav {
 display: flex;
 gap: 16px;
 flex-wrap: wrap;
-justify-content: flex-end;
+justify-content: flex-start;
+align-items: center;
 }
 
 nav.liga-nav a {
