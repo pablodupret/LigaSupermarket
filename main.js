@@ -326,93 +326,11 @@ function atualizarGraficoEvolucao(jogos) {
   }
 
   // ---------- NOVO: ranking por dia respeitando "pontos válidos" na Liga 2 ----------
+  
   function calcularRankingParaGrafico(jogosAteDia) {
-    const pontosTotais = {};
-    const pontosPorDia = {};
-
-    jogosAteDia.forEach(jogo => {
-      const [g1, g2] = jogo.resultado.split(" x ").map(Number);
-      const j1 = jogo.jogador1;
-      const j2 = jogo.jogador2;
-      const dia = jogo.dia;
-
-      if (!pontosTotais[j1]) pontosTotais[j1] = 0;
-      if (!pontosTotais[j2]) pontosTotais[j2] = 0;
-
-      if (!pontosPorDia[j1]) pontosPorDia[j1] = {};
-      if (!pontosPorDia[j2]) pontosPorDia[j2] = {};
-
-      // vitória / derrota / empate
-      if (g1 > g2) {
-        pontosTotais[j1] += 3;
-        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 3;
-        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 0;
-      } else if (g1 < g2) {
-        pontosTotais[j2] += 3;
-        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 3;
-        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 0;
-      } else {
-        pontosTotais[j1] += 1;
-        pontosTotais[j2] += 1;
-        pontosPorDia[j1][dia] = (pontosPorDia[j1][dia] || 0) + 1;
-        pontosPorDia[j2][dia] = (pontosPorDia[j2][dia] || 0) + 1;
-      }
-    });
-
-      // Descobre todos os "dias" existentes até aqui
-      const diasSet = new Set();
-      Object.values(pontosPorDia).forEach(mapa => {
-        Object.keys(mapa).forEach(diaStr => {
-          diasSet.add(Number(diaStr));
-        });
-      });
-      const diasOrdenados = Array.from(diasSet).sort((a, b) => a - b);
-    
-
-
-      const arr = Object.keys(pontosTotais).map(jogador => {
-        const total = pontosTotais[jogador] || 0;
-        let pontosValidos = total;
-  
-        if (usaRegraPontosValidos() && diasOrdenados.length > 1) {
-          const mapaDias = pontosPorDia[jogador] || {};
-  
-          // monta vetor com TODOS os dias até aqui,
-          // usando 0 para dias em que o jogador não jogou
-          const valoresDias = diasOrdenados.map(dia => mapaDias[dia] || 0);
-  
-          if (valoresDias.length > 1) {
-            const piorDia = Math.min(...valoresDias);
-            const totalDias = valoresDias.reduce((acc, v) => acc + v, 0);
-            pontosValidos = totalDias - piorDia;
-          }
-        }
-  
-        return {
-          jogador,
-          pontos: total,
-          pontosValidos
-        };
-      });
-  
-
-
-
-    arr.sort((a, b) => {
-      // Na Liga 2, ordena pelos pontos válidos
-      if (usaRegraPontosValidos()) {
-        if (b.pontosValidos !== a.pontosValidos) {
-          return b.pontosValidos - a.pontosValidos;
-        }
-      }
-      // fallback: pontos totais e nome
-      if (b.pontos !== a.pontos) return b.pontos - a.pontos;
-      return a.jogador.localeCompare(b.jogador, 'pt-BR');
-    });
-
-    return arr.filter(e => jogadorEhVisivel(e.jogador));
-
+    return calcularRankingArray(jogosAteDia);
   }
+
   // -------------------------------------------------------------------
 
   // Descobre o maior "dia" existente
