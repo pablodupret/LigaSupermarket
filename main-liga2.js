@@ -1,12 +1,8 @@
 // Calcula ranking simples (pontos totais) e devolve array ordenado
 
-let ligaAtualId = 3;   // liga que começa selecionada (temporada atual)
+let ligaAtualId = 2;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
 let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
-
-function usaRegraPontosValidos() {
-  return [2, 3].includes(ligaAtualId);
-}
 
 const jogadoresOcultos = [
   "Everton Lucas",
@@ -76,8 +72,8 @@ async function carregarLigas() {
   limparFiltroJogador();
 
   // Atualiza a classe do body para trocar o fundo
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2");
+  document.body.classList.add(`liga-${ligaAtualId}`);
 });
 
 
@@ -102,180 +98,182 @@ async function initPagina() {
   await carregarLigas();  // monta o combo de ligas
   await carregarJogos();  // monta ranking + histórico já filtrados pela ligaAtualId
 
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2");
+  document.body.classList.add(`liga-${ligaAtualId}`);
   
 }
 
 function compararRanking(a, b) {
-  const usaPontosValidos = usaRegraPontosValidos();
-
-  if (usaPontosValidos) {
-    if (b.pontosValidos !== a.pontosValidos) {
-      return b.pontosValidos - a.pontosValidos;
-    }
-  } else {
-    if (b.pontos !== a.pontos) {
-      return b.pontos - a.pontos;
-    }
-  }
-
-  if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
-  if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
-  if (b.omwp !== a.omwp) return b.omwp - a.omwp;
-  if (b.pontos !== a.pontos) return b.pontos - a.pontos;
-
-  return a.jogador.localeCompare(b.jogador, 'pt-BR');
-}
-
-function calcularRankingArray(jogos) {
-  const statsPorJogador = {};
-  const pontosPorDiaPorJogador = {};
-
-  function ensureJogador(nome) {
-    if (!statsPorJogador[nome]) {
-      statsPorJogador[nome] = {
-        pontos: 0,
-        vitorias: 0,
-        derrotas: 0,
-        empates: 0,
-        matchesJogos: 0,
-        gamesVencidos: 0,
-        gamesPerdidos: 0,
-        gamesJogos: 0,
-        oponentes: new Set()
-      };
-    }
-
-    if (!pontosPorDiaPorJogador[nome]) {
-      pontosPorDiaPorJogador[nome] = {};
-    }
-  }
-
-  function adicionarPontosNoDia(nome, dia, pontos) {
-    const mapa = pontosPorDiaPorJogador[nome];
-    mapa[dia] = (mapa[dia] || 0) + pontos;
-  }
-
-  jogos.forEach(jogo => {
-    const [g1, g2] = jogo.resultado.split(" x ").map(Number);
-    const j1 = jogo.jogador1;
-    const j2 = jogo.jogador2;
-    const dia = jogo.dia;
-
-    ensureJogador(j1);
-    ensureJogador(j2);
-
-    const s1 = statsPorJogador[j1];
-    const s2 = statsPorJogador[j2];
-
-    s1.matchesJogos++;
-    s2.matchesJogos++;
-
-    s1.gamesVencidos += g1;
-    s1.gamesPerdidos += g2;
-    s1.gamesJogos += g1 + g2;
-
-    s2.gamesVencidos += g2;
-    s2.gamesPerdidos += g1;
-    s2.gamesJogos += g1 + g2;
-
-    s1.oponentes.add(j2);
-    s2.oponentes.add(j1);
-
-    if (g1 > g2) {
-      s1.pontos += 3;
-      s1.vitorias++;
-      s2.derrotas++;
-
-      adicionarPontosNoDia(j1, dia, 3);
-      adicionarPontosNoDia(j2, dia, 0);
-    } else if (g1 < g2) {
-      s2.pontos += 3;
-      s2.vitorias++;
-      s1.derrotas++;
-
-      adicionarPontosNoDia(j2, dia, 3);
-      adicionarPontosNoDia(j1, dia, 0);
-    } else {
-      s1.pontos += 1;
-      s2.pontos += 1;
-      s1.empates++;
-      s2.empates++;
-
-      adicionarPontosNoDia(j1, dia, 1);
-      adicionarPontosNoDia(j2, dia, 1);
-    }
-  });
-
-  const jogadores = Object.keys(statsPorJogador);
-
-  jogadores.forEach(nome => {
-    const s = statsPorJogador[nome];
-    const mJ = s.matchesJogos;
-    const gJ = s.gamesJogos;
-
-    s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
-    s.gameWinPerc = gJ > 0 ? s.gamesVencidos / gJ : 0;
-  });
-
-  const diasLigaSet = new Set();
-  Object.values(pontosPorDiaPorJogador).forEach(mapa => {
-    Object.keys(mapa).forEach(diaStr => {
-      diasLigaSet.add(Number(diaStr));
-    });
-  });
-  const diasLiga = Array.from(diasLigaSet).sort((a, b) => a - b);
-
-  jogadores.forEach(nome => {
-    const s = statsPorJogador[nome];
-    const oponentes = Array.from(s.oponentes);
-
-    if (oponentes.length === 0) {
-      s.omwp = 0;
-      return;
-    }
-
-    let soma = 0;
-    oponentes.forEach(opp => {
-      let mw = statsPorJogador[opp]?.matchWinPerc || 0;
-      if (mw < 1 / 3) mw = 1 / 3;
-      soma += mw;
-    });
-
-    s.omwp = soma / oponentes.length;
-  });
-
-  return Object.entries(statsPorJogador)
-    .map(([jogador, s]) => {
-      const pontosDiasMap = pontosPorDiaPorJogador[jogador] || {};
-      let pontosValidos = s.pontos;
-
-      if (usaRegraPontosValidos() && diasLiga.length > 1) {
-        const pontosDias = diasLiga.map(dia => pontosDiasMap[dia] || 0);
-
-        if (pontosDias.length > 1) {
-          const piorDia = Math.min(...pontosDias);
-          const totalDias = pontosDias.reduce((acc, v) => acc + v, 0);
-          pontosValidos = totalDias - piorDia;
-        }
+    const usaPontosValidos = (ligaAtualId === 2);
+  
+    if (usaPontosValidos) {
+      if (b.pontosValidos !== a.pontosValidos) {
+        return b.pontosValidos - a.pontosValidos;
       }
+    } else {
+      if (b.pontos !== a.pontos) {
+        return b.pontos - a.pontos;
+      }
+    }
+  
+    if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
+    if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
+    if (b.omwp !== a.omwp) return b.omwp - a.omwp;
+    if (b.pontos !== a.pontos) return b.pontos - a.pontos;
+  
+    return a.jogador.localeCompare(b.jogador, 'pt-BR');
+  }
 
-      return {
-        jogador,
-        pontos: s.pontos,
-        pontosValidos,
-        vitorias: s.vitorias,
-        derrotas: s.derrotas,
-        empates: s.empates,
-        matchWinPerc: s.matchWinPerc || 0,
-        gameWinPerc: s.gameWinPerc || 0,
-        omwp: s.omwp || 0
-      };
-    })
-    .filter(entry => jogadorEhVisivel(entry.jogador))
-    .sort(compararRanking);
-}
+
+  function calcularRankingArray(jogos) {
+    const statsPorJogador = {};
+    const pontosPorDiaPorJogador = {};
+  
+    function ensureJogador(nome) {
+      if (!statsPorJogador[nome]) {
+        statsPorJogador[nome] = {
+          pontos: 0,
+          vitorias: 0,
+          derrotas: 0,
+          empates: 0,
+          matchesJogos: 0,
+          gamesVencidos: 0,
+          gamesPerdidos: 0,
+          gamesJogos: 0,
+          oponentes: new Set()
+        };
+      }
+  
+      if (!pontosPorDiaPorJogador[nome]) {
+        pontosPorDiaPorJogador[nome] = {};
+      }
+    }
+  
+    function adicionarPontosNoDia(nome, dia, pontos) {
+      const mapa = pontosPorDiaPorJogador[nome];
+      mapa[dia] = (mapa[dia] || 0) + pontos;
+    }
+  
+    jogos.forEach(jogo => {
+      const [g1, g2] = jogo.resultado.split(" x ").map(Number);
+      const j1 = jogo.jogador1;
+      const j2 = jogo.jogador2;
+      const dia = jogo.dia;
+  
+      ensureJogador(j1);
+      ensureJogador(j2);
+  
+      const s1 = statsPorJogador[j1];
+      const s2 = statsPorJogador[j2];
+  
+      s1.matchesJogos++;
+      s2.matchesJogos++;
+  
+      s1.gamesVencidos += g1;
+      s1.gamesPerdidos += g2;
+      s1.gamesJogos += g1 + g2;
+  
+      s2.gamesVencidos += g2;
+      s2.gamesPerdidos += g1;
+      s2.gamesJogos += g1 + g2;
+  
+      s1.oponentes.add(j2);
+      s2.oponentes.add(j1);
+  
+      if (g1 > g2) {
+        s1.pontos += 3;
+        s1.vitorias++;
+        s2.derrotas++;
+  
+        adicionarPontosNoDia(j1, dia, 3);
+        adicionarPontosNoDia(j2, dia, 0);
+      } else if (g1 < g2) {
+        s2.pontos += 3;
+        s2.vitorias++;
+        s1.derrotas++;
+  
+        adicionarPontosNoDia(j2, dia, 3);
+        adicionarPontosNoDia(j1, dia, 0);
+      } else {
+        s1.pontos += 1;
+        s2.pontos += 1;
+        s1.empates++;
+        s2.empates++;
+  
+        adicionarPontosNoDia(j1, dia, 1);
+        adicionarPontosNoDia(j2, dia, 1);
+      }
+    });
+  
+    const jogadores = Object.keys(statsPorJogador);
+  
+    jogadores.forEach(nome => {
+      const s = statsPorJogador[nome];
+      const mJ = s.matchesJogos;
+      const gJ = s.gamesJogos;
+  
+      s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
+      s.gameWinPerc = gJ > 0 ? s.gamesVencidos / gJ : 0;
+    });
+  
+    const diasLigaSet = new Set();
+    Object.values(pontosPorDiaPorJogador).forEach(mapa => {
+      Object.keys(mapa).forEach(diaStr => {
+        diasLigaSet.add(Number(diaStr));
+      });
+    });
+    const diasLiga = Array.from(diasLigaSet).sort((a, b) => a - b);
+  
+    jogadores.forEach(nome => {
+      const s = statsPorJogador[nome];
+      const oponentes = Array.from(s.oponentes);
+  
+      if (oponentes.length === 0) {
+        s.omwp = 0;
+        return;
+      }
+  
+      let soma = 0;
+      oponentes.forEach(opp => {
+        let mw = statsPorJogador[opp]?.matchWinPerc || 0;
+        if (mw < 1 / 3) mw = 1 / 3;
+        soma += mw;
+      });
+  
+      s.omwp = soma / oponentes.length;
+    });
+  
+    return Object.entries(statsPorJogador)
+      .map(([jogador, s]) => {
+        const pontosDiasMap = pontosPorDiaPorJogador[jogador] || {};
+        let pontosValidos = s.pontos;
+  
+        if (ligaAtualId === 2 && diasLiga.length > 1) {
+          const pontosDias = diasLiga.map(dia => pontosDiasMap[dia] || 0);
+  
+          if (pontosDias.length > 1) {
+            const piorDia = Math.min(...pontosDias);
+            const totalDias = pontosDias.reduce((acc, v) => acc + v, 0);
+            pontosValidos = totalDias - piorDia;
+          }
+        }
+  
+        return {
+          jogador,
+          pontos: s.pontos,
+          pontosValidos,
+          vitorias: s.vitorias,
+          derrotas: s.derrotas,
+          empates: s.empates,
+          matchWinPerc: s.matchWinPerc || 0,
+          gameWinPerc: s.gameWinPerc || 0,
+          omwp: s.omwp || 0
+        };
+      })
+      .filter(entry => jogadorEhVisivel(entry.jogador))
+      .sort(compararRanking);
+  }
+
 
 // Preenche o select de jogadores com todos os nomes da liga atual
 function preencherSelectJogadores(jogos) {
@@ -326,7 +324,7 @@ function atualizarGraficoEvolucao(jogos) {
   }
 
   // ---------- NOVO: ranking por dia respeitando "pontos válidos" na Liga 2 ----------
-  
+
   function calcularRankingParaGrafico(jogosAteDia) {
     return calcularRankingArray(jogosAteDia);
   }
@@ -500,14 +498,11 @@ const infoPorLiga = {
     5: { data: "14/02/2026", draft: "Draft Avatar" },
     6: { data: "01/03/2026", draft: "Pré Release Tartarugas Ninja" },
     7: { data: "14/03/2026", draft: "Draft Tartarugas Ninja" },
-  },
 
-  3: { //liga 3
-    1: { data: "30/03/2026", draft: "Chaos Draft Lorwyn/ Turtles / Foundations" }
+
+    // Quando tiver o dia 2, 3, 4... da liga 2, você só adiciona aqui:
+    // 2: { data: "29/11/2025", draft: "Draft XYZ" },
   }
-
-
-
 };
 
 // Mostra uma tabela com os pontos de cada dia para cada jogador
@@ -517,8 +512,8 @@ function renderizarPontosPorDia(pontosPorDiaPorJogador) {
 
   if (!section || !container) return;
 
-  // 👉 Só mostra a partir da Liga 2; na Liga 1 a seção fica escondida
-  if (!usaRegraPontosValidos()) {
+  // 👉 Só mostra na Liga 2; na Liga 1 a seção fica escondida
+  if (ligaAtualId !== 2) {
     section.style.display = 'none';
     return;
   } else {
@@ -900,7 +895,7 @@ divDia.innerHTML += htmlRanking;
   
         // Na Liga 2, pontos válidos consideram TODOS os dias da liga,
         // usando 0 para dias em que o jogador não jogou
-        if (usaRegraPontosValidos() && diasLiga.length > 1) {
+        if (ligaAtualId === 2 && diasLiga.length > 1) {
           const pontosDias = diasLiga.map(dia => pontosDiasMap[dia] || 0);
   
           if (pontosDias.length > 1) {

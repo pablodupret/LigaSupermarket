@@ -633,8 +633,8 @@ border-bottom: 1px solid #333;
 padding: 10px 24px;
 display: flex;
 align-items: center;
-justify-content: space-between;
-gap: 24px;
+justify-content: flex-start;
+gap: 28px;
 }
 
 .liga-logo {
@@ -644,12 +644,18 @@ line-height: 1.1;
 }
 
 .liga-logo-main {
-font-size: 1.0rem;
-font-weight: 700;
-letter-spacing: 2px;
-text-transform: uppercase;
-color: var(--accent);
-padding-left: 20px;
+  display: inline-block;
+  font-size: 1.0rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding-left: 20px;
+  text-decoration: none;
+  }
+
+.liga-logo-main:hover {
+  opacity: 0.92;
 }
 
 .liga-logo-sub {
@@ -663,7 +669,8 @@ nav.liga-nav {
 display: flex;
 gap: 16px;
 flex-wrap: wrap;
-justify-content: flex-end;
+justify-content: flex-start;
+align-items: center;
 }
 
 nav.liga-nav a {
@@ -1551,4 +1558,286 @@ transform: translateX(-50%) translateY(0);
   0% { opacity: 1; }
   50% { opacity: 0.6; }
   100% { opacity: 1; }
+}
+
+/* =========================
+   Página Histórico
+========================= */
+
+.pagina-historico {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    linear-gradient(rgba(6, 10, 18, 0.76), rgba(6, 10, 18, 0.92)),
+    url("img/bg-historico.jpg") center/cover fixed no-repeat;
+  color: #f5f1e6;
+}
+
+.pagina-historico::before {
+  display: none;
+}
+
+.historico-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 20px 80px;
+}
+
+.historico-hero {
+  text-align: center;
+  margin: 30px auto 40px;
+}
+
+.historico-kicker {
+  margin: 0 0 10px;
+  color: #c7a64a;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.historico-hero h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  color: #f4d77c;
+  text-shadow: 0 3px 12px rgba(0,0,0,0.5);
+}
+
+.historico-subtitle {
+  max-width: 760px;
+  margin: 14px auto 0;
+  color: rgba(245, 241, 230, 0.88);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.historico-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 32px;
+  margin-top: 40px;
+}
+
+.liga-card {
+  position: relative;
+  flex: 0 0 320px;
+  width: 320px;
+  max-width: 320px;
+  min-height: 560px;
+  box-sizing: border-box;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1a1408, #0a0f1a 80%);
+  border: 2px solid rgba(212, 170, 55, 0.55);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(255, 225, 130, 0.08);
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.liga-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(255, 215, 0, 0.78);
+  box-shadow:
+    0 24px 46px rgba(0, 0, 0, 0.42),
+    0 0 22px rgba(255, 215, 0, 0.12);
+}
+
+.liga-card.destaque {
+  border-color: rgba(255, 215, 0, 0.75);
+  box-shadow:
+    0 20px 42px rgba(0, 0, 0, 0.42),
+    0 0 28px rgba(255, 215, 0, 0.15);
+}
+
+.liga-card::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 220, 120, 0.22);
+  pointer-events: none;
+}
+
+.liga-card-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.liga-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 2px 3px;
+}
+
+.liga-card-tipo {
+  color: #f4d77c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.liga-card-ano {
+  color: rgba(255,255,255,0.78);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.liga-card-art {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.liga-art-liga1 {
+  background:
+    linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)),
+    url("img/fundo-liga1.jpg") center/cover no-repeat;
+}
+
+.liga-art-liga2 {
+  background:
+    linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)),
+    url("img/fundo-liga2.jpg") center/cover no-repeat;
+}
+
+.liga-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.liga-badge.finalizada {
+  color: #111;
+  background: linear-gradient(180deg, #f2d67a, #c99d22);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+}
+
+.liga-card-art .liga-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+
+.liga-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 4px;
+}
+
+.liga-card h2 {
+  margin: 0 0 12px;
+  color: #f4d77c;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  text-align: center;
+}
+
+.liga-card-texto {
+  margin: 0 0 18px;
+  color: rgba(245, 241, 230, 0.84);
+  line-height: 1.55;
+  font-size: 0.96rem;
+}
+
+.liga-card-info {
+  display: grid;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  color: #f3efe4;
+  font-size: 0.97rem;
+}
+
+.liga-card-footer {
+  padding: 18px 4px 4px;
+}
+
+.liga-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #1a1405;
+  background: linear-gradient(180deg, #f1d36f, #c89216);
+  box-shadow: 0 8px 18px rgba(201, 157, 34, 0.24);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  box-sizing: border-box;
+}
+
+.liga-card-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+
+/* Ajustes liga 3 */
+
+.subtitulo-liga-atual {
+  text-align: center;
+  margin: -6px 0 26px;
+  color: rgba(245, 245, 220, 0.86);
+  font-size: 1rem;
+}
+
+body.liga-atual::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo-liga3.jpg');
+}
+
+
+/* Ligas Anteriores*/
+
+body.liga-2-historico::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.35), rgba(0,0,0,.82)),
+    linear-gradient(180deg, rgba(18,18,22,0.90), rgba(8,8,10,0.96));
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+}
+
+.subtitulo-liga-historica {
+  text-align: center;
+  margin: -6px 0 26px;
+  color: rgba(245, 245, 220, 0.82);
+  font-size: 1rem;
+}
+
+body.liga-1-historico::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.35), rgba(0,0,0,.82)),
+    linear-gradient(180deg, rgba(22,18,12,0.90), rgba(10,8,6,0.96));
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
 }
