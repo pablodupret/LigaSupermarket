@@ -4,6 +4,10 @@ let ligaAtualId = 3;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
 let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
 
+function usaRegraPontosValidos() {
+  return [2, 3].includes(ligaAtualId);
+}
+
 const jogadoresOcultos = [
   "Everton Lucas",
   "Raphael Rocha",
@@ -72,8 +76,8 @@ async function carregarLigas() {
   limparFiltroJogador();
 
   // Atualiza a classe do body para trocar o fundo
-  document.body.classList.remove("liga-1", "liga-2");
-  document.body.classList.add(`liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
+  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
 });
 
 
@@ -98,8 +102,8 @@ async function initPagina() {
   await carregarLigas();  // monta o combo de ligas
   await carregarJogos();  // monta ranking + histórico já filtrados pela ligaAtualId
 
-  document.body.classList.remove("liga-1", "liga-2");
-  document.body.classList.add(`liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
+  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
   
 }
 
@@ -227,7 +231,7 @@ function atualizarGraficoEvolucao(jogos) {
         const total = pontosTotais[jogador] || 0;
         let pontosValidos = total;
   
-        if (ligaAtualId === 2 && diasOrdenados.length > 1) {
+        if (usaRegraPontosValidos() && diasOrdenados.length > 1) {
           const mapaDias = pontosPorDia[jogador] || {};
   
           // monta vetor com TODOS os dias até aqui,
@@ -253,7 +257,7 @@ function atualizarGraficoEvolucao(jogos) {
 
     arr.sort((a, b) => {
       // Na Liga 2, ordena pelos pontos válidos
-      if (ligaAtualId === 2) {
+      if (usaRegraPontosValidos()) {
         if (b.pontosValidos !== a.pontosValidos) {
           return b.pontosValidos - a.pontosValidos;
         }
@@ -435,11 +439,14 @@ const infoPorLiga = {
     5: { data: "14/02/2026", draft: "Draft Avatar" },
     6: { data: "01/03/2026", draft: "Pré Release Tartarugas Ninja" },
     7: { data: "14/03/2026", draft: "Draft Tartarugas Ninja" },
+  },
 
-
-    // Quando tiver o dia 2, 3, 4... da liga 2, você só adiciona aqui:
-    // 2: { data: "29/11/2025", draft: "Draft XYZ" },
+  3: { //liga 3
+    1: { data: "data do primeiro dia", draft: "nome do draft" }
   }
+
+
+
 };
 
 // Mostra uma tabela com os pontos de cada dia para cada jogador
@@ -449,8 +456,8 @@ function renderizarPontosPorDia(pontosPorDiaPorJogador) {
 
   if (!section || !container) return;
 
-  // 👉 Só mostra na Liga 2; na Liga 1 a seção fica escondida
-  if (ligaAtualId !== 2) {
+  // 👉 Só mostra a partir da Liga 2; na Liga 1 a seção fica escondida
+  if (!usaRegraPontosValidos()) {
     section.style.display = 'none';
     return;
   } else {
@@ -832,7 +839,7 @@ divDia.innerHTML += htmlRanking;
   
         // Na Liga 2, pontos válidos consideram TODOS os dias da liga,
         // usando 0 para dias em que o jogador não jogou
-        if (ligaAtualId === 2 && diasLiga.length > 1) {
+        if (usaRegraPontosValidos() && diasLiga.length > 1) {
           const pontosDias = diasLiga.map(dia => pontosDiasMap[dia] || 0);
   
           if (pontosDias.length > 1) {
@@ -862,7 +869,7 @@ divDia.innerHTML += htmlRanking;
 
 
     .sort((a, b) => {
-      const usaPontosValidos = (ligaAtualId === 2); // só Liga 2 usa essa regra
+      const usaPontosValidos = usaRegraPontosValidos(); // a partir Liga 2 usa essa regra
 
       if (usaPontosValidos) {
         if (b.pontosValidos !== a.pontosValidos) {

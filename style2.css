@@ -1798,6 +1798,23 @@ transform: translateX(-50%) translateY(0);
   filter: brightness(1.04);
 }
 
+
+/* Ajustes liga 3 */
+
+.subtitulo-liga-atual {
+  text-align: center;
+  margin: -6px 0 26px;
+  color: rgba(245, 245, 220, 0.86);
+  font-size: 1rem;
+}
+
+body.liga-atual::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo-liga3.jpg');
+}
+
+
 /* Ligas Anteriores*/
 
 body.liga-2-historico::before {
