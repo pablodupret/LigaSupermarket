@@ -882,10 +882,10 @@ divDia.innerHTML += htmlRanking;
       }
 
       // se empatar na regra principal, usa os mesmos critérios antigos:
-      if (b.pontos !== a.pontos) return b.pontos - a.pontos;
       if (b.matchWinPerc !== a.matchWinPerc) return b.matchWinPerc - a.matchWinPerc;
       if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
       if (b.omwp !== a.omwp) return b.omwp - a.omwp;
+      if (b.pontos !== a.pontos) return b.pontos - a.pontos;
       return a.jogador.localeCompare(b.jogador, 'pt-BR');
     });
 
