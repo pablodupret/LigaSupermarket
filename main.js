@@ -442,7 +442,7 @@ const infoPorLiga = {
   },
 
   3: { //liga 3
-    1: { data: "data do primeiro dia", draft: "nome do draft" }
+    1: { data: "30/03/2026", draft: "Chaos Draft Lorwyn/ Turtles / Foundations" }
   }
 
 
