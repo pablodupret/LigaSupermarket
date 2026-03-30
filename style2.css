@@ -1613,30 +1613,44 @@ transform: translateX(-50%) translateY(0);
 }
 
 .historico-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 320px));
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 30px;
+  align-items: flex-start;
+  gap: 32px;
   margin-top: 40px;
 }
 
 .liga-card {
   position: relative;
-  min-height: 460px;
-  padding: 18px 18px 20px;
+  flex: 0 0 320px;
+  width: 320px;
+  max-width: 320px;
+  min-height: 560px;
+  box-sizing: border-box;
   border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(24, 20, 10, 0.90), rgba(8, 12, 22, 0.96));
+  background: linear-gradient(180deg, #1a1408, #0a0f1a 80%);
   border: 2px solid rgba(212, 170, 55, 0.55);
   box-shadow:
-    0 16px 34px rgba(0, 0, 0, 0.36),
-    inset 0 0 0 2px rgba(255, 225, 130, 0.06),
-    inset 0 10px 20px rgba(255,255,255,0.02);
-  backdrop-filter: blur(4px);
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  display: flex;
-  flex-direction: column;
+    0 18px 36px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(255, 225, 130, 0.08);
   overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.liga-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  border-color: rgba(255, 215, 0, 0.78);
+  box-shadow:
+    0 24px 46px rgba(0, 0, 0, 0.42),
+    0 0 22px rgba(255, 215, 0, 0.12);
+}
+
+.liga-card.destaque {
+  border-color: rgba(255, 215, 0, 0.75);
+  box-shadow:
+    0 20px 42px rgba(0, 0, 0, 0.42),
+    0 0 28px rgba(255, 215, 0, 0.15);
 }
 
 .liga-card::before {
@@ -1648,74 +1662,122 @@ transform: translateX(-50%) translateY(0);
   pointer-events: none;
 }
 
-.liga-card:hover {
-  transform: translateY(-6px) scale(1.01);
-  border-color: rgba(255, 215, 0, 0.72);
-  box-shadow:
-    0 22px 46px rgba(0, 0, 0, 0.42),
-    0 0 22px rgba(255, 215, 0, 0.10);
+.liga-card-frame {
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+  height: 100%;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
-.liga-card.destaque {
-  border-color: rgba(255, 215, 0, 0.72);
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.38),
-    0 0 26px rgba(255, 215, 0, 0.12);
-}
-
-.liga-card-topo {
+.liga-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 2px 3px;
+}
+
+.liga-card-tipo {
+  color: #f4d77c;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.liga-card-ano {
+  color: rgba(255,255,255,0.78);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.liga-card-art {
+  position: relative;
+  width: 100%;
+  height: 170px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.liga-art-liga1 {
+  background:
+    linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)),
+    url("img/fundo-liga1.jpg") center/cover no-repeat;
+}
+
+.liga-art-liga2 {
+  background:
+    linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)),
+    url("img/fundo-liga2.jpg") center/cover no-repeat;
 }
 
 .liga-badge {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
 }
 
 .liga-badge.finalizada {
   color: #111;
   background: linear-gradient(180deg, #f2d67a, #c99d22);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.22);
 }
 
-.liga-ano {
-  color: rgba(255,255,255,0.72);
-  font-weight: 600;
+.liga-card-art .liga-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+}
+
+.liga-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0 4px;
 }
 
 .liga-card h2 {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   color: #f4d77c;
-  font-size: 1.55rem;
-  line-height: 1.2;
+  font-size: 1.35rem;
+  line-height: 1.15;
   text-shadow: 0 2px 8px rgba(0,0,0,0.45);
+  text-align: center;
 }
 
 .liga-card-texto {
   margin: 0 0 18px;
-  color: rgba(245, 241, 230, 0.82);
+  color: rgba(245, 241, 230, 0.84);
   line-height: 1.55;
-  font-size: 0.98rem;
+  font-size: 0.96rem;
 }
 
 .liga-card-info {
   display: grid;
   gap: 10px;
   margin-top: auto;
-  margin-bottom: 20px;
   padding-top: 16px;
   border-top: 1px solid rgba(255,255,255,0.08);
   color: #f3efe4;
+  font-size: 0.97rem;
+}
+
+.liga-card-footer {
+  padding: 18px 4px 4px;
 }
 
 .liga-card-btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -1728,7 +1790,7 @@ transform: translateX(-50%) translateY(0);
   background: linear-gradient(180deg, #f1d36f, #c89216);
   box-shadow: 0 8px 18px rgba(201, 157, 34, 0.24);
   transition: transform 0.2s ease, filter 0.2s ease;
-  margin-top: auto;
+  box-sizing: border-box;
 }
 
 .liga-card-btn:hover {
