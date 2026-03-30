@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ranking Liga Magic</title>
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0" /> REsponsivo para celular apagado -->
+
+  <!-- Teste git VScode -->
+  <!-- TEste Diff -->
+
+  <link rel="stylesheet" href="style2.css" />
+</head>
+<body class="liga-1-historico">
+
+
+<!-- CABEÇALHO DA LIGA -->
+<header class="liga-header">
+  <div class="liga-logo">
+    <a href="index.html" class="liga-logo-main">Liga Magic Supermarket</a>
+  </div>
+
+  <nav class="liga-nav">
+    <a href="index.html">Liga Atual</a>
+    <a href="historico.html" class="active">Ligas Anteriores</a>
+    <a href="bookLiga1.html">eBook 1ª Liga</a>
+  </nav>
+</header>
+
+<!-- Brincadeira do Tapetão desativada
+<div class="tapetao-banner">
+  🚨 RESULTADO SOB INVESTIGAÇÃO <br>
+  Possível aplicação de TAPETÃO na Liga 2 🚨
+</div>
+-->
+
+
+<div class="mana-row">
+  <img class="mana" src="img/black_mana.png" alt="mana preto">
+  <img class="mana" src="img/Blue_mana.png" alt="Blue_mana">
+  <img class="mana" src="img/Green_mana.png" alt="mana verde">
+  <img class="mana" src="img/png-clipart-magic-the-gathering-magic-points-playing-card-card-game-mana-werewolf-symbol-game-logo-thumbnail-2.png" alt="mana vermelho">
+  <img class="mana" src="img/white_mana.png" alt="">
+</div>
+
+<h1>Liga Magic Supermarket – Liga 1</h1>
+<p class="subtitulo-liga-historica"> Temporada finalizada • Arquivo oficial da competição</p>
+
+<!-- Inserindo Podio -->
+
+<section class="podio-temporada">
+  <div class="podio-header">
+    <div class="podio-badge"> Segunda Liga Finalizada 🏆 </div>
+    <h2>Campeão da Temporada: <span class="campeao-nome">Magno</span></h2>
+    <p class="podio-subtitulo">O pódio oficial da Liga Magic Supermarket</p>
+  </div>
+
+  <div class="podio-esports">
+    <!-- 2º lugar -->
+    <div class="podio-card podio-prata">
+      <div class="podio-posicao">2º</div>
+      <img src="img/avatar_nagib.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Nagib"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Nagib</h3>
+        <p>Vice-campeão</p>
+      </div>
+      <div class="podio-base prata">
+        <span>🥈</span>
+      </div>
+    </div>
+
+    <!-- 1º lugar -->
+    <div class="podio-card podio-ouro campeao">
+      <div class="faixa-campeao">CAMPEÃO</div>
+      <div class="podio-posicao">1º</div>
+      <img src="img/avatar_magno.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Magno"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Magno</h3>
+        <p>Vencedor da Liga 2</p>
+      </div>
+      <div class="podio-base ouro">
+        <span>🥇</span>
+      </div>
+    </div>
+
+    <!-- 3º lugar -->
+    <div class="podio-card podio-bronze">
+      <div class="podio-posicao">3º</div>
+      <img src="img/avatar_sergio.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Sérgio"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Sérgio</h3>
+        <p>Top 3 da temporada</p>
+      </div>
+      <div class="podio-base bronze">
+        <span>🥉</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+<div class="tabela-wrapper"> 
+  <table id="tabela-ranking-geral">
+    <thead>
+      <tr>
+        <th>Posição</th>
+        <th>Jogador</th>
+
+        <th  class="th-pontos-validos"title="Total de pontos menos o pior dia.">  Pontos válidos </th>
+
+        <th>Pontos</th>
+        <th>Campanha</th>
+        <th>MW / GW / OMWP</th>
+      </tr>
+    </thead>
+    <tbody id="tabela-ranking"></tbody>
+  </table>
+</div>  
+
+<section id="pontos-por-dia-section">
+  <h2>Pontos por Dia</h2>
+  <p class="pontos-por-dia-nota">
+    Na Liga 2, os pontos válidos consideram todos os dias de jogo,
+    descartando o pior resultado de cada jogador.
+  </p>
+  <div id="pontos-por-dia"></div>
+</section>
+
+
+<!-- NOVO: Gráfico de evolução por rodada -->
+<section id="grafico-evolucao-section">
+  <h2>Evolução no Ranking por Rodada</h2>
+  <canvas id="grafico-evolucao"></canvas>
+</section>
+
+<!-- Filtro e Estatísticas -->
+<section id="filtro-estatisticas">
+      <h2>Buscar Estatísticas do Jogador</h2>
+      <label for="filtro-jogador">Nome do jogador:</label>
+      <select id="filtro-jogador">
+      <option value="">Selecione um jogador</option>
+      </select>
+      <button onclick="filtrarJogos()">Filtrar</button>
+      <div id="estatisticas"></div>
+      <div id="jogos-filtrados"></div>
+
+  </section>
+
+ 
+
+
+
+  <div id="rodadas-container"></div>
+
+  <!-- Biblioteca do gráfico -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="appendix_c.js"></script>
+  <script src="main-liga1.js"></script>
+  
+
+
+</body>
+</html>
