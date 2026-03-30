@@ -10,9 +10,7 @@
 
   <link rel="stylesheet" href="style2.css" />
 </head>
-<body class="liga-1">
-
-  
+<body class="liga-2-historico">
 
 
 <!-- CABEÇALHO DA LIGA -->
@@ -22,11 +20,18 @@
   </div>
 
   <nav class="liga-nav">
-    <a href="index.html" class="active">Liga Atual</a>
-    <a href="historico.html">Ligas Anteriores</a>
+    <a href="index.html">Liga Atual</a>
+    <a href="historico.html" class="active">Ligas Anteriores</a>
     <a href="bookLiga1.html">eBook 1ª Liga</a>
   </nav>
 </header>
+
+<!-- Brincadeira do Tapetão desativada
+<div class="tapetao-banner">
+  🚨 RESULTADO SOB INVESTIGAÇÃO <br>
+  Possível aplicação de TAPETÃO na Liga 2 🚨
+</div>
+-->
 
 
 <div class="mana-row">
@@ -37,10 +42,11 @@
   <img class="mana" src="img/white_mana.png" alt="">
 </div>
 
-<h1>Liga Magic Supermarket</h1>
+<h1>Liga Magic Supermarket – Liga 2</h1>
+<p class="subtitulo-liga-historica"> Temporada finalizada • Arquivo oficial da competição</p>
 
 <!-- Inserindo Podio -->
-<!-- 
+
 <section class="podio-temporada">
   <div class="podio-header">
     <div class="podio-badge"> Segunda Liga Finalizada 🏆 </div>
@@ -48,8 +54,8 @@
     <p class="podio-subtitulo">O pódio oficial da Liga Magic Supermarket</p>
   </div>
 
-  <div class="podio-esports"> -->
-    <!-- 2º lugar 
+  <div class="podio-esports">
+    <!-- 2º lugar -->
     <div class="podio-card podio-prata">
       <div class="podio-posicao">2º</div>
       <img src="img/avatar_stenio.jpg"
@@ -64,8 +70,8 @@
         <span>🥈</span>
       </div>
     </div>
-    -->
-    <!-- 1º lugar 
+
+    <!-- 1º lugar -->
     <div class="podio-card podio-ouro campeao">
       <div class="faixa-campeao">CAMPEÃO</div>
       <div class="podio-posicao">1º</div>
@@ -81,8 +87,8 @@
         <span>🥇</span>
       </div>
     </div>
-    -->
-    <!-- 3º lugar
+
+    <!-- 3º lugar -->
     <div class="podio-card podio-bronze">
       <div class="podio-posicao">3º</div>
       <img src="img/avatar_sergio.jpg"
@@ -99,31 +105,6 @@
     </div>
   </div>
 </section>
- -->
-
-
-<!-- Exercicio para feature Carta do Dia -->
-<!-- Exercício de API -->
-
-<section class="carta-do-dia">
-  <div class="carta-do-dia-card">
-    <h2 class="carta-do-dia-titulo">Carta do Dia</h2>
-    <p class="carta-do-dia-colecao">Coleção Tartaruga Ninja</p>
-
-
-    <div class="carta-do-dia-conteudo">
-      <div class="carta-do-dia-imagem">
-        <img id="carta-img" src="" alt="Carta do dia" />
-      </div>
-    </div>
-
-    <div class="carta-do-dia-acoes">
-      <button id="btn-nova-carta" class="btn-nova-carta">Nova carta</button>
-    </div>
-  </div>
-</section>
-
-<!-- Fim da parte do exercicio API -->
 
 
 
@@ -163,14 +144,8 @@
   <canvas id="grafico-evolucao"></canvas>
 </section>
 
-<div class="btn-gerar-dia-wrapper">
-  <a href="novo-torneio-V6.html">
-      <button>Gerar Novo Dia de Competição</button>
-  </a>
-</div>
-
-    <!-- Filtro e Estatísticas -->
-    <section id="filtro-estatisticas">
+<!-- Filtro e Estatísticas -->
+<section id="filtro-estatisticas">
       <h2>Buscar Estatísticas do Jogador</h2>
       <label for="filtro-jogador">Nome do jogador:</label>
       <select id="filtro-jogador">
@@ -190,10 +165,8 @@
 
   <!-- Biblioteca do gráfico -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   <script src="appendix_c.js"></script>
-  <script src="main.js"></script>
-  <script src="carta-do-dia.js"></script>
+  <script src="main-liga2.js"></script>
   
 
 

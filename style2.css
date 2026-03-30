@@ -1797,3 +1797,21 @@ transform: translateX(-50%) translateY(0);
   transform: translateY(-1px);
   filter: brightness(1.04);
 }
+
+/* Ligas Anteriores*/
+
+body.liga-2-historico::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.35), rgba(0,0,0,.82)),
+    linear-gradient(180deg, rgba(18,18,22,0.90), rgba(8,8,10,0.96));
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+}
+
+.subtitulo-liga-historica {
+  text-align: center;
+  margin: -6px 0 26px;
+  color: rgba(245, 245, 220, 0.82);
+  font-size: 1rem;
+}
