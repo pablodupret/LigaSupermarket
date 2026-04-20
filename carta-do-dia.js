@@ -5,9 +5,7 @@ const btnNovaCarta = document.getElementById("btn-nova-carta");
 if (imgCarta && btnNovaCarta) {
   async function carregarCartaAleatoria() {
     try {
-      // Exemplo simples: carta aleatória no Scryfall da coleçao ECL (silga do Lorwyn)
-      //Na próxima coleção precisa trocar o set abaixo!
-      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:tmt");
+      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:sos");//Secret of Strixhaven
 
 
       if (!resp.ok) {
