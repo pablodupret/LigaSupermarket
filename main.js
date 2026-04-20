@@ -26,7 +26,27 @@ const jogadoresOcultos = [
   "Bernard Telles",
   "Leandro Floresta",
   "Luis Neto",
-  "Breno Fragoso"
+  "Breno Fragoso",
+  "Giuliano Abbagliato",
+  "Ricardo Miranda",
+  "Daniel Muniz",
+  "Lucca Novaes",
+  "Mateus Ramos",
+  "Gustavo Kusdra",
+  "Leandro Pinho",
+  "Daniel Cortez",
+  "Oriendo Viana",
+  "Juliano Gennari",
+  "Danilo Fernandes",
+  "Newbie Novaes",
+  "Leonardo Batista",
+  "Fioravanti",
+  "Benedito Siderito",
+  "Ewerton Leal",
+  "Felipe Lyra",
+  "MIKAEL MOLO",
+  "Fernando Nogueira",
+  "Lucas Rioja"
 ];
 
 // ✅ Helpers para ocultar jogadores (ranking, gráfico, selects, etc.)
@@ -503,7 +523,8 @@ const infoPorLiga = {
   },
 
   3: { //liga 3
-    1: { data: "30/03/2026", draft: "Chaos Draft Lorwyn/ Turtles / Foundations" }
+    1: { data: "30/03/2026", draft: "Chaos Draft Lorwyn/ Turtles / Foundations" },
+    2: { data: "19/04/2026", draft: "Pré-release Secrets of Strixhaven" }
   }
 
 
