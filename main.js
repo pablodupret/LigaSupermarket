@@ -525,7 +525,8 @@ const infoPorLiga = {
   3: { //liga 3
     1: { data: "30/03/2026", draft: "Chaos Draft Lorwyn/ Turtles / Foundations" },
     2: { data: "19/04/2026", draft: "Pré-release Secrets of Strixhaven" },
-    3: { data: "03/05/2026", draft: "Draft Secrets of Strixhaven" }
+    3: { data: "03/05/2026", draft: "Draft Secrets of Strixhaven" },
+    4: { data: "31/05/2026", draft: "Draft Secrets of Strixhaven" }
   }
 
 
