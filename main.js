@@ -29,7 +29,6 @@ const jogadoresOcultos = [
   "Breno Fragoso",
   "Giuliano Abbagliato",
   "Ricardo Miranda",
-  "Daniel Muniz",
   "Lucca Novaes",
   "Mateus Ramos",
   "Gustavo Kusdra",
