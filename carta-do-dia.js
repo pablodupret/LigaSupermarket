@@ -5,7 +5,7 @@ const btnNovaCarta = document.getElementById("btn-nova-carta");
 if (imgCarta && btnNovaCarta) {
   async function carregarCartaAleatoria() {
     try {
-      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:sos");//Secret of Strixhaven
+      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:msh");//Marvel Super Heroes
 
 
       if (!resp.ok) {
