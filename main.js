@@ -37,7 +37,6 @@ const jogadoresOcultos = [
   "Oriendo Viana",
   "Juliano Gennari",
   "Danilo Fernandes",
-  "Newbie Novaes",
   "Leonardo Batista",
   "Fioravanti",
   "Benedito Siderito",
@@ -45,7 +44,15 @@ const jogadoresOcultos = [
   "Felipe Lyra",
   "MIKAEL MOLO",
   "Fernando Nogueira",
-  "Lucas Rioja"
+  "Lucas Rioja",
+  "Eryck Bacelar",
+  "Carlos Maranhão",
+  "Frederico Cortez",
+  "Thiago Garcia Moreira",
+  "Henrique Paiva",
+  "Pedro Sérgio",
+  "Pedro da Cunha Cavalieri Doro"
+
 ];
 
 // ✅ Helpers para ocultar jogadores (ranking, gráfico, selects, etc.)
