@@ -51,7 +51,8 @@ const jogadoresOcultos = [
   "Thiago Garcia Moreira",
   "Henrique Paiva",
   "Pedro Sérgio",
-  "Pedro da Cunha Cavalieri Doro"
+  "Pedro da Cunha Cavalieri Doro",
+  "Newbie Novaes"
 
 ];
 
