@@ -34,11 +34,9 @@ body {
   color: var(--cor-texto-principal);
   display: flex;
   flex-direction: column;
-  
-  position: relative;   /* NOVO – cria contexto para o ::before */
-  min-height: 100vh;    /* NOVO – garante altura de tela */
-  
-
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 /* === AJUSTES DE ESTABILIDADE VISUAL === */
 
@@ -101,11 +99,13 @@ filter: blur(8px);
 
 
 
-/* MOBILE/TABLET: só troca em dispositivos touch */
+/* MOBILE/TABLET: dimensões explícitas para evitar distorção do fundo */
 @media (hover: none) and (pointer: coarse){
-body::before{
-  position: absolute;
-}
+  body::before {
+    position: fixed;
+    width: 100vw;
+    height: 100dvh;
+  }
 }
 
 
