@@ -157,12 +157,22 @@ table {
 @media (max-width: 600px) {
   #tabela-ranking-geral {
     width: 100%;
-    font-size: 0.78em;
+    font-size: 0.68em;
   }
 
   #tabela-ranking-geral th,
   #tabela-ranking-geral td {
-    padding: 8px 5px;
+    padding: 8px 3px;
+  }
+
+  #tabela-ranking-geral .avatar {
+    width: 30px;
+    height: 30px;
+    margin-right: 0;
+  }
+
+  #tabela-ranking-geral .td-nome {
+    gap: 4px;
   }
 
   /* Oculta MW/GW/OMWP — coluna de desempate, menos relevante no mobile */
