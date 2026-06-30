@@ -239,8 +239,22 @@ button:hover {
   text-align: center;      /* centraliza o botão */
 }
 
-.btn-gerar-dia-wrapper button {
-  display: inline-block;   /* garante que respeite o text-align */
+.btn-gerar-dia-wrapper .btn-gerar-dia {
+  display: inline-block;
+  background-color: var(--cor-borda);
+  color: var(--cor-texto-secundario);
+  border: none;
+  margin: 20px;
+  padding: 12px 24px;
+  font-size: 1em;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
+}
+
+.btn-gerar-dia-wrapper .btn-gerar-dia:hover {
+  background-color: #e6c200;
 }
 
 
