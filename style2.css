@@ -137,6 +137,12 @@ h4 {
 /* =====================
    TABELAS GERAIS
 ===================== */
+.tabela-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table {
   border-collapse: collapse;
   width: 25%;
@@ -146,6 +152,24 @@ table {
   box-shadow: 0 0 15px var(--sombra-suave);
   border-radius: 10px;
   overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  #tabela-ranking-geral {
+    width: 100%;
+    font-size: 0.78em;
+  }
+
+  #tabela-ranking-geral th,
+  #tabela-ranking-geral td {
+    padding: 8px 5px;
+  }
+
+  /* Oculta MW/GW/OMWP — coluna de desempate, menos relevante no mobile */
+  #tabela-ranking-geral th:nth-child(6),
+  #tabela-ranking-geral td:nth-child(6) {
+    display: none;
+  }
 }
 
 th, td {
