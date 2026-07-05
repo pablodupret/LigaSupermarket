@@ -5,14 +5,9 @@
   <title>Ranking Liga Magic</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Teste git VScode -->
-  <!-- TEste Diff -->
-
   <link rel="stylesheet" href="style2.css" />
 </head>
-<body class="liga-atual">
-
-  
+<body class="liga-3-historico">
 
 
 <!-- CABEÇALHO DA LIGA -->
@@ -22,8 +17,8 @@
   </div>
 
   <nav class="liga-nav">
-    <a href="index.html" class="active">Liga Atual</a>
-    <a href="historico.html">Ligas Anteriores</a>
+    <a href="index.html">Liga Atual</a>
+    <a href="historico.html" class="active">Ligas Anteriores</a>
     <a href="bookLiga1.html">eBook 1ª Liga</a>
   </nav>
 </header>
@@ -38,9 +33,10 @@
 </div>
 
 <h1>Liga Magic Supermarket – Liga 3</h1>
-<p class="subtitulo-liga-atual">Temporada finalizada • Confira o pódio abaixo enquanto a Liga 4 não começa</p>
+<p class="subtitulo-liga-historica"> Temporada finalizada • Arquivo oficial da competição</p>
 
-<!-- Pódio da Liga 3 - fica aqui até a Liga 4 começar, depois esse bloco vira o liga3.html congelado -->
+<!-- Inserindo Podio -->
+
 <section class="podio-temporada">
   <div class="podio-header">
     <div class="podio-badge"> Terceira Liga Finalizada 🏆 </div>
@@ -101,34 +97,9 @@
 </section>
 
 
-<!-- Exercicio para feature Carta do Dia -->
-<!-- Exercício de API -->
-
-<section class="carta-do-dia">
-  <div class="carta-do-dia-card">
-    <h2 class="carta-do-dia-titulo">Carta do Dia</h2>
-    <p class="carta-do-dia-colecao">Coleção Marvel Super Heroes</p>
 
 
-    <div class="carta-do-dia-conteudo">
-      <div class="carta-do-dia-imagem">
-        <img id="carta-img" src="" alt="Carta do dia" />
-      </div>
-    </div>
-
-    <div class="carta-do-dia-acoes">
-      <button id="btn-nova-carta" class="btn-nova-carta">Nova carta</button>
-    </div>
-  </div>
-</section>
-
-<!-- Fim da parte do exercicio API -->
-
-
-
-
-
-<div class="tabela-wrapper"> 
+<div class="tabela-wrapper">
   <table id="tabela-ranking-geral">
     <thead>
       <tr>
@@ -144,12 +115,12 @@
     </thead>
     <tbody id="tabela-ranking"></tbody>
   </table>
-</div>  
+</div>
 
 <section id="pontos-por-dia-section">
   <h2>Pontos por Dia</h2>
   <p class="pontos-por-dia-nota">
-    Na Liga 2, os pontos válidos consideram todos os dias de jogo,
+    Na Liga 3, os pontos válidos consideram todos os dias de jogo,
     descartando o pior resultado de cada jogador.
   </p>
   <div id="pontos-por-dia"></div>
@@ -162,12 +133,8 @@
   <canvas id="grafico-evolucao"></canvas>
 </section>
 
-<div class="btn-gerar-dia-wrapper">
-  <a href="novo-torneio-V6.html" class="btn-gerar-dia">Gerar Novo Dia de Competição</a>
-</div>
-
-    <!-- Filtro e Estatísticas -->
-    <section id="filtro-estatisticas">
+<!-- Filtro e Estatísticas -->
+<section id="filtro-estatisticas">
       <h2>Buscar Estatísticas do Jogador</h2>
       <label for="filtro-jogador">Nome do jogador:</label>
       <select id="filtro-jogador">
@@ -179,7 +146,7 @@
 
   </section>
 
- 
+
 
 
 
@@ -192,10 +159,9 @@
     crossorigin="anonymous">
   </script>
 
-  <script defer src="appendix_c.js"></script>
-  <script defer src="main.js"></script>
-  <script defer src="carta-do-dia.js"></script>
-  
+  <script src="appendix_c.js"></script>
+  <script src="main-liga3.js"></script>
+
 
 
 </body>

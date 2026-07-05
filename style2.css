@@ -1766,6 +1766,12 @@ transform: translateX(-50%) translateY(0);
     url("img/fundo-liga2.jpg") center/cover no-repeat;
 }
 
+.liga-art-liga3 {
+  background:
+    linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)),
+    url("img/fundo-liga3.jpg") center/cover no-repeat;
+}
+
 .liga-badge {
   display: inline-block;
   padding: 6px 12px;
@@ -1885,6 +1891,15 @@ body.liga-1-historico::before {
   background-image:
     radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.35), rgba(0,0,0,.82)),
     linear-gradient(180deg, rgba(22,18,12,0.90), rgba(10,8,6,0.96));
+  background-size: cover, cover;
+  background-repeat: no-repeat, no-repeat;
+  background-position: center center, center center;
+}
+
+body.liga-3-historico::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.45), rgba(0,0,0,.85)),
+    url('img/fundo-liga3.jpg');
   background-size: cover, cover;
   background-repeat: no-repeat, no-repeat;
   background-position: center center, center center;

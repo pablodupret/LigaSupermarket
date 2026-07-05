@@ -103,8 +103,8 @@ async function carregarLigas() {
   limparFiltroJogador();
 
   // Atualiza a classe do body para trocar o fundo
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2", "liga-3");
+  document.body.classList.add(`liga-${ligaAtualId}`);
 });
 
 
@@ -129,9 +129,8 @@ async function initPagina() {
   await carregarLigas();  // monta o combo de ligas
   await carregarJogos();  // monta ranking + histórico já filtrados pela ligaAtualId
 
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
-  
+  document.body.classList.remove("liga-1", "liga-2", "liga-3");
+  document.body.classList.add(`liga-${ligaAtualId}`);
 }
 
 function compararRanking(a, b) {
