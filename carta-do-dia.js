@@ -5,7 +5,7 @@ const btnNovaCarta = document.getElementById("btn-nova-carta");
 if (imgCarta && btnNovaCarta) {
   async function carregarCartaAleatoria() {
     try {
-      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:msh");//Marvel Super Heroes
+      const resp = await fetch("https://api.scryfall.com/cards/random?q=set:hob");//The Hobbit
 
 
       if (!resp.ok) {

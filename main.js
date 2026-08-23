@@ -1,11 +1,11 @@
 // Calcula ranking simples (pontos totais) e devolve array ordenado
 
-let ligaAtualId = 3;   // liga que começa selecionada (temporada atual)
+let ligaAtualId = 4;   // liga que começa selecionada (temporada atual)
 let ligas = [];        // será preenchido a partir de ligas.json
 let graficoEvolucao = null; // instância do Chart.js para poder atualizar/destroi
 
 function usaRegraPontosValidos() {
-  return [2, 3].includes(ligaAtualId);
+  return [2, 3, 4].includes(ligaAtualId);
 }
 
 const jogadoresOcultos = [
@@ -52,7 +52,16 @@ const jogadoresOcultos = [
   "Henrique Paiva",
   "Pedro Sérgio",
   "Pedro da Cunha Cavalieri Doro",
-  "Newbie Novaes"
+  "Newbie Novaes",
+
+  // Liga 4 - Dia 1 (Pre Release Hobbit, 09/08/2026)
+  "Vinicius Hedler",
+  "Renan Corrêa",
+  "Bruno Carvalho",
+  "João Vitor",
+  "Dary Romano",
+  "Rafael Cajazeiras",
+  "Ewerton Lucas"
 
 ];
 
@@ -103,8 +112,8 @@ async function carregarLigas() {
   limparFiltroJogador();
 
   // Atualiza a classe do body para trocar o fundo
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-4", "liga-atual");
+  document.body.classList.add(ligaAtualId === 4 ? "liga-atual" : `liga-${ligaAtualId}`);
 });
 
 
@@ -129,8 +138,8 @@ async function initPagina() {
   await carregarLigas();  // monta o combo de ligas
   await carregarJogos();  // monta ranking + histórico já filtrados pela ligaAtualId
 
-  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-atual");
-  document.body.classList.add(ligaAtualId === 3 ? "liga-atual" : `liga-${ligaAtualId}`);
+  document.body.classList.remove("liga-1", "liga-2", "liga-3", "liga-4", "liga-atual");
+  document.body.classList.add(ligaAtualId === 4 ? "liga-atual" : `liga-${ligaAtualId}`);
   
 }
 
@@ -536,9 +545,12 @@ const infoPorLiga = {
     4: { data: "31/05/2026", draft: "Draft Secrets of Strixhaven" },
     5: { data: "20/06/2026", draft: "Pré Release Marvel Super Heroes" },
     6: { data: "05/07/2026", draft: "Draft Marvel Super Heroes" }
+  },
+
+  4: { // liga 4 (temporada atual) - adicionar uma linha a cada dia lançado
+    1: { data: "09/08/2026", draft: "Pre Release Hobbit" },
+    2: { data: "23/08/2026", draft: "Chaos Draft Marvel&Lorwyn" }
   }
-
-
 
 };
 

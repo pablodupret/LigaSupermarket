@@ -1907,6 +1907,14 @@ transform: translateX(-50%) translateY(0);
 body.liga-atual::before {
   background-image:
     radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
+    url('img/fundo.jpg');
+}
+
+/* Fundo da Liga 3 (usado só se a liga 3 for selecionada num seletor de ligas;
+   a página histórica liga3.html usa body.liga-3-historico mais abaixo) */
+body.liga-3::before {
+  background-image:
+    radial-gradient(ellipse at 20% 10%, rgba(0,0,0,.28), rgba(0,0,0,.70)),
     url('img/fundo-liga3.jpg');
 }
 

@@ -18,9 +18,10 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 
 ```
 /
-├── index.html              → Página da liga ativa (Liga 3 atualmente)
+├── index.html              → Página da liga ativa (Liga 4 atualmente)
 ├── liga1.html              → Página histórica da Liga 1 (encerrada)
 ├── liga2.html              → Página histórica da Liga 2 (encerrada)
+├── liga3.html              → Página histórica da Liga 3 (encerrada)
 ├── historico.html          → Página de listagem de temporadas anteriores
 ├── bookLiga1.html          → eBook da 1ª Liga (PDF embutido)
 ├── novo-torneio-V6.html    → Ferramenta de geração de dias de competição
@@ -28,6 +29,7 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 ├── main.js                 → Lógica da liga ATIVA (evolui livremente)
 ├── main-liga1.js           → Snapshot congelado da Liga 1 (NÃO EDITAR)
 ├── main-liga2.js           → Snapshot congelado da Liga 2 (NÃO EDITAR)
+├── main-liga3.js           → Snapshot congelado da Liga 3 (NÃO EDITAR)
 ├── appendix_c.js           → Lógica de ranking por dia (torneio suíço)
 ├── carta-do-dia.js         → Integração com API Scryfall
 │
@@ -40,9 +42,10 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 └── img/                    → Avatares dos jogadores e imagens de fundo
     ├── avatar_[nome].jpg   → Ex: avatar_pablo.jpg, avatar_magno.jpg
     ├── avatar_padrao.jpg   → Fallback quando avatar não existe
-    ├── fundo.jpg           → Fundo da liga ativa
+    ├── fundo.jpg           → Fundo da liga ativa (Liga 4, provisório)
     ├── fundo-liga1.jpg     → Fundo específico da Liga 1
     ├── fundo-liga2.jpg     → Fundo específico da Liga 2
+    ├── fundo-liga3.jpg     → Fundo específico da Liga 3 (Marvel Super Heroes)
     └── [ícones de mana]
 ```
 
@@ -73,7 +76,8 @@ Array de objetos, um por partida:
 [
   { "id": 1, "nome": "Liga Supermarket - Temporada 1", "ano": 2025 },
   { "id": 2, "nome": "Liga Supermarket - Temporada 2", "ano": 2026 },
-  { "id": 3, "nome": "Liga Supermarket - Temporada 3", "ano": 2026 }
+  { "id": 3, "nome": "Liga Supermarket - Temporada 3", "ano": 2026 },
+  { "id": 4, "nome": "Liga Supermarket - Temporada 4", "ano": 2026 }
 ]
 ```
 
@@ -89,7 +93,7 @@ Array de objetos, um por partida:
 ### Pontos válidos (Liga 2 em diante)
 - Cada jogador tem seu **pior dia descartado** no cálculo final
 - Dias em que o jogador não jogou contam como **zero** no descarte
-- Controlado pela função `usaRegraPontosValidos()` que retorna `true` para ligas 2 e 3
+- Controlado pela função `usaRegraPontosValidos()` que retorna `true` para ligas 2, 3 e 4
 - A coluna "Pontos válidos" mostra pontos totais menos o pior dia
 
 ### Critérios de desempate do ranking geral (em ordem)
@@ -140,7 +144,7 @@ Lista em `main.js` (`jogadoresOcultos`): jogadores que aparecem em `jogos.json` 
 | `jogadorEhVisivel(nome)` | Helper: retorna false para Bye e jogadores ocultos |
 
 ### Variáveis globais
-- `ligaAtualId`: número da liga selecionada (inicia em 3)
+- `ligaAtualId`: número da liga selecionada (inicia em 4)
 - `ligas`: array carregado do ligas.json
 - `graficoEvolucao`: instância do Chart.js (necessário para destruir antes de recriar)
 
@@ -174,12 +178,19 @@ O fundo usa `body::before` com `position: fixed` para resolver problemas de `bac
 - `body.liga-atual` → `img/fundo.jpg`
 - `body.liga-1` → `img/fundo-liga1.jpg`
 - `body.liga-2` → `img/fundo-liga2.jpg`
+- `body.liga-3` → `img/fundo-liga3.jpg`
 
 ### Classes de body por contexto
 - `liga-atual` → index.html (liga ativa)
 - `liga-1-historico` → liga1.html
 - `liga-2-historico` → liga2.html
+- `liga-3-historico` → liga3.html
 - `pagina-historico` → historico.html
+
+**Atenção à ordem no CSS:** as regras `body.liga-N::before` e `body.liga-N-historico::before`
+têm a mesma especificidade. As regras `-historico` precisam ficar **depois** no arquivo para
+vencer, porque o `main-ligaN.js` adiciona a classe `liga-N` no body além da classe `-historico`
+que já vem do HTML.
 
 ---
 
@@ -256,8 +267,12 @@ Projeto sólido e bem acima da média para uma stack sem framework. Funciona cor
 
 ### Futuro / qualidade de vida
 - [ ] Extrair o HTML repetido (header, tabela, filtro) para um componente ou template compartilhado
-- [ ] Quando a Liga 3 encerrar: renomear `main.js` → `main-liga3-encerrada.js`, criar novo `main.js` para Liga 4
+- [x] ~~Quando a Liga 3 encerrar: criar snapshot da Liga 3 e apontar o `main.js` para a Liga 4~~
+      — feito em 23/08/2026 (ver seção 12)
 - [ ] Considerar mover dados do pódio do HTML para o JSON
+- [ ] Trocar `img/fundo.jpg` por um `img/fundo-liga4.jpg` com a arte da coleção da Liga 4
+- [x] ~~Atualizar o set da Carta do Dia para a coleção da Liga 4~~ — feito em 23/08/2026
+      (`set:hob`, The Hobbit)
 
 ---
 
@@ -282,17 +297,94 @@ Sempre `"N x N"` com espaços. O split em `main.js` usa `" x "` com espaços. O 
 Registrado como `"Bye"` (com maiúscula). O código verifica `j === "Bye"` e `j.toLowerCase() !== "bye"` em diferentes lugares — manter sempre com maiúscula no JSON.
 
 ### Liga ativa
-Controlada pela variável `ligaAtualId = 3` no topo do `main.js`. Quando iniciar Liga 4, atualizar para `4`.
+Controlada pela variável `ligaAtualId = 4` no topo do `main.js`. Quando iniciar a Liga 5,
+seguir o checklist de encerramento da seção 12.
 
 ---
 
 ## 11. Contexto da liga (para referência)
 
-- **Liga 1** (2025): campeão Magno, vice Nagib. 12 dias de competição.
-- **Liga 2** (2026): campeão Magno, vice Stenio, 3º Sérgio. 7 dias. Primeira liga com descarte do pior dia.
-- **Liga 3** (2026): em andamento. 1 dia registrado até o momento (Chaos Draft Lorwyn/Turtles/Foundations, 30/03/2026).
+- **Liga 1** (2025): encerrada. Campeão Magno, vice Nagib, 3º Sérgio. 12 dias de competição.
+- **Liga 2** (2026): encerrada. Campeão Magno, vice Stenio, 3º Sérgio. 7 dias. Primeira liga com descarte do pior dia.
+- **Liga 3** (2026): encerrada. Campeão Magno, vice Flavio, 3º Eduardo. 6 dias, de 30/03/2026 (Chaos Draft Lorwyn/Turtles/Foundations) a 05/07/2026 (Draft Marvel Super Heroes).
+- **Liga 4** (2026): **em andamento**. Nenhum dia registrado até o momento.
 
 Jogadores regulares: Pablo, Magno, Nagib, Joca, Stenio, Marcelo, Qiu, Alex, Eduardo, Subzero, Vini, Igor, Sérgio, Will, Gabriel, Jun, Pedro, Rates, Caio, Marcos, Nick, Flavio, Bruno Novaes.
+
+---
+
+## 12. Checklist de encerramento de liga
+
+Procedimento executado ao encerrar a Liga 3 e abrir a Liga 4 (23/08/2026). Repetir na Liga 5.
+A ideia central: **o histórico nunca é recalculado a partir do código da liga ativa** — cada
+temporada encerrada tem o seu par `ligaN.html` + `main-ligaN.js` congelado.
+
+### Como o congelamento funciona (padrão adotado)
+
+Os dados **não** são duplicados: `jogos.json` continua guardando todas as ligas, e cada página
+histórica filtra pelo campo `liga`. O que congela é o **código e o HTML**:
+
+- `ligaN.html` → `<body class="liga-N-historico">`, pódio hardcoded, `<script src="main-ligaN.js">`
+- `main-ligaN.js` → cópia do `main.js` do dia do encerramento, com `ligaAtualId = N`
+
+**Regra de ouro:** nunca editar linhas com `"liga": N` no `jogos.json` de uma liga encerrada,
+nem editar `ligaN.html` / `main-ligaN.js`. É daí que vem a imutabilidade.
+
+Descartadas duas alternativas mais pesadas: um `jogos-ligaN.json` separado (duplicaria dados) e
+uma pasta autocontida por liga (é o que existe em `Liga-1-Finalizada/`, que hoje nem está
+linkada no site).
+
+### Passo a passo
+
+**A. Congelar a liga que terminou (liga N)**
+1. Copiar `main.js` → `main-ligaN.js`, trocar `ligaAtualId` para `N` e ajustar a manipulação de
+   classe de body (o snapshot não precisa da lógica de `liga-atual`)
+2. Copiar `index.html` → `ligaN.html`: `<body class="liga-N-historico">`, subtítulo
+   `.subtitulo-liga-historica`, apontar o `<script>` para `main-ligaN.js`, remover as seções que
+   só fazem sentido na liga ativa (Carta do Dia, botão "Gerar Novo Dia")
+3. Manter no `ligaN.html` o bloco `<section class="podio-temporada">` com os 3 primeiros
+4. Adicionar em `style2.css` a regra `body.liga-N-historico::before` — **depois** da regra
+   `body.liga-N::before`, por causa da ordem/especificidade (ver seção 6)
+5. Adicionar o card da temporada em `historico.html` (`.liga-card` com campeão, vice e 3º)
+
+**B. Abrir a liga nova (liga N+1)**
+6. `ligas.json`: acrescentar `{ "id": N+1, "nome": "...", "ano": ... }`
+7. `main.js`: `ligaAtualId = N+1`; incluir `N+1` no array de `usaRegraPontosValidos()`; incluir
+   `"liga-N"` na lista de `classList.remove(...)` e trocar o ternário para `ligaAtualId === N+1`;
+   abrir a chave `N+1: { }` em `infoPorLiga`
+8. `index.html`: atualizar `<h1>`, trocar o subtítulo para "temporada em andamento",
+   **remover o bloco do pódio** (já preservado no `ligaN.html`) e corrigir a nota da seção
+   "Pontos por Dia" para citar a liga certa
+9. `style2.css`: apontar `body.liga-atual::before` para o fundo da nova liga
+10. `carta-do-dia.js`: trocar o código do set no `set:xxx` da URL do Scryfall
+11. Atualizar este documento: seções 2, 4, 5, 6, 10 e 11
+
+### Como validar sem subir nada
+
+Rodar o ranking de cada liga em Node com um stub de DOM e conferir se o top 3 calculado bate com
+o pódio hardcoded no HTML. No encerramento da Liga 3 os quatro arquivos foram conferidos assim:
+
+| Arquivo | Liga | Jogos | Top 3 calculado |
+|---|---|---|---|
+| `main-liga1.js` | 1 | 264 | Magno, Nagib, Sérgio |
+| `main-liga2.js` | 2 | 209 | Magno, Stenio, Sérgio |
+| `main-liga3.js` | 3 | 184 | Magno, Flavio, Eduardo |
+| `main.js` | 4 | 0 | (sem jogos — página vazia, sem erro) |
+
+Uma liga recém-aberta e ainda sem jogos **não quebra** a página: `Math.max(...)` de array vazio
+devolve `-Infinity`, `calcularRankingArray([])` devolve `[]` e o gráfico tem guarda para lista
+vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado.
+
+---
+
+## 13. Como lançar um dia de competição
+
+1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
+2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
+3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
+4. Adicionar o dia em `infoPorLiga[liga ativa]` no `main.js`: `N: { data: "DD/MM/AAAA", draft: "..." }`
+5. Jogador novo: acrescentar em `jogadores.json` com o nome **exatamente** igual ao do `jogos.json`.
+   Se for jogador eventual que não deve pontuar no ranking, acrescentar em `jogadoresOcultos` no `main.js`
 
 ---
 
