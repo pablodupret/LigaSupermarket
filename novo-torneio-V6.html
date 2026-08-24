@@ -339,11 +339,39 @@ function limparRascunho(rodada) {
   delete rascunhos[rodada];
 }
 
+// Na tela de correção os campos têm sufixo "_r"; nas demais, não.
+// Sem isto o autosave lia os campos errados durante "Corrigir Placares" e o
+// que fosse digitado ali se perdia num reload.
+function sufixoCampos(rodada) {
+  return estadoRodadas[rodada] === "corrigindo" ? "_r" : "";
+}
+
+// Slots que a rodada realmente tem, ignorando os de Bye (que não têm placar).
+//
+// Percorrer os slots CONHECIDOS, em vez de parar no primeiro input ausente, é
+// o que corrige o caso de número ímpar: numa rodada automática o Bye ocupa o
+// slot 0 e não tem inputs, então o laço antigo terminava de cara e nenhum
+// placar da rodada era salvo.
+function slotsDaRodada(rodada) {
+  const confrontos = resultadosPorRodada[rodada];
+  if (confrontos && confrontos.length) {
+    return confrontos
+      .filter(par => !MTR.ehBye(par[1].nome))
+      .map((par, i) => (par.slot !== undefined ? par.slot : i));
+  }
+
+  // Rodada manual ainda não finalizada: não há confrontos, use as linhas.
+  const r = rascunhos[rodada];
+  const n = (r && r.numLinhas) || Math.ceil(jogadoresAtivos().length / 2);
+  return Array.from({ length: n }, (_, i) => i);
+}
+
 // Lê o que está na tela da rodada em andamento e guarda no rascunho.
-// Chamado nos eventos `change` dos selects e dos campos de placar.
 function capturarRascunho(rodada) {
   const r = rascunhos[rodada] || (rascunhos[rodada] = { pares: {}, placares: {} });
+  const sufixo = sufixoCampos(rodada);
 
+  // Pares (só existem na rodada manual, e nunca com sufixo).
   for (let i = 0; ; i++) {
     const s1 = document.getElementById(`r${rodada}_j1_${i}`);
     const s2 = document.getElementById(`r${rodada}_j2_${i}`);
@@ -353,30 +381,46 @@ function capturarRascunho(rodada) {
     else delete r.pares[i];
   }
 
-  for (let slot = 0; ; slot++) {
-    const p1 = document.getElementById(`r${rodada}_p${slot * 2}`);
-    const p2 = document.getElementById(`r${rodada}_p${slot * 2 + 1}`);
-    if (!p1 || !p2) break;
-    const e = document.getElementById(`r${rodada}_e${slot}`);
+  slotsDaRodada(rodada).forEach(slot => {
+    const p1 = document.getElementById(`r${rodada}_p${slot * 2}${sufixo}`);
+    const p2 = document.getElementById(`r${rodada}_p${slot * 2 + 1}${sufixo}`);
+    if (!p1 || !p2) return;               // Bye ou linha sem campos: só pula
+
+    const e = document.getElementById(`r${rodada}_e${slot}${sufixo}`);
     if (p1.value !== "" || p2.value !== "") {
       r.placares[slot] = [p1.value, p2.value, e ? e.value : ""];
     } else {
       delete r.placares[slot];
     }
-  }
+  });
 
   salvarEstado();
 }
 
 // Liga o autosave nos campos de uma rodada recém-desenhada.
+//   - selects: `change` (só mudam por seleção)
+//   - campos numéricos: `input` com debounce curto, para não perder um placar
+//     digitado e seguido de ⌘R antes de sair do campo. O handler só atualiza o
+//     rascunho e grava no storage — nada de cálculo pesado.
 function ligarAutosave(rodada) {
   const bloco = document.getElementById("rodada_" + rodada) ||
                 document.getElementById("rodada_" + rodada + "_manual") ||
                 document.getElementById("rodada_" + rodada + "_reaberta");
   if (!bloco || !bloco.querySelectorAll) return;
 
-  bloco.querySelectorAll("input, select").forEach(el => {
+  let timer = null;
+  const agendar = () => {
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => capturarRascunho(rodada), 250);
+  };
+
+  bloco.querySelectorAll("select").forEach(el => {
     el.addEventListener("change", () => capturarRascunho(rodada));
+  });
+
+  bloco.querySelectorAll("input").forEach(el => {
+    el.addEventListener("input", agendar);
+    el.addEventListener("change", () => capturarRascunho(rodada));  // rede de segurança
   });
 }
 
@@ -384,6 +428,7 @@ function ligarAutosave(rodada) {
 function aplicarRascunho(rodada) {
   const r = rascunhos[rodada];
   if (!r) return;
+  const sufixo = sufixoCampos(rodada);
 
   Object.keys(r.pares || {}).forEach(i => {
     const s1 = document.getElementById(`r${rodada}_j1_${i}`);
@@ -394,9 +439,9 @@ function aplicarRascunho(rodada) {
 
   Object.keys(r.placares || {}).forEach(slot => {
     const v = r.placares[slot];
-    const p1 = document.getElementById(`r${rodada}_p${slot * 2}`);
-    const p2 = document.getElementById(`r${rodada}_p${Number(slot) * 2 + 1}`);
-    const e = document.getElementById(`r${rodada}_e${slot}`);
+    const p1 = document.getElementById(`r${rodada}_p${Number(slot) * 2}${sufixo}`);
+    const p2 = document.getElementById(`r${rodada}_p${Number(slot) * 2 + 1}${sufixo}`);
+    const e = document.getElementById(`r${rodada}_e${slot}${sufixo}`);
     if (p1) p1.value = v[0];
     if (p2) p2.value = v[1];
     if (e && v[2]) e.value = v[2];
@@ -507,13 +552,38 @@ function aplicarEstado(estado) {
   });
 }
 
+let avisouFalhaStorage = false;
+
+// Se a gravação falhar, o organizador precisa SABER que não há recuperação —
+// senão ele confia num autosave que não existe. O aviso aparece uma única vez
+// por sessão e o torneio segue funcionando normalmente.
+function avisarFalhaStorage(erro) {
+  console.warn("Não foi possível salvar o torneio:", erro);
+  if (avisouFalhaStorage) return;
+  avisouFalhaStorage = true;
+
+  const msg = "⚠️ Não foi possível ativar a recuperação automática deste torneio. " +
+              "Evite atualizar ou fechar esta página.";
+
+  const area = document.getElementById("torneio-area");
+  if (area && area.appendChild && document.createElement) {
+    const aviso = document.createElement("div");
+    aviso.id = "aviso-storage";
+    aviso.style.cssText =
+      "margin:12px 0;padding:10px;border:1px solid #ffcc66;border-radius:8px;color:#ffcc66";
+    aviso.textContent = msg;
+    area.appendChild(aviso);
+  }
+  if (typeof alert === "function") alert(msg);
+}
+
 function salvarEstado() {
-  if (!temStorage()) return;
+  if (!jogadores.length) return;
+  if (!temStorage()) { avisarFalhaStorage(new Error("localStorage indisponível")); return; }
   try {
-    if (!jogadores.length) return;
     localStorage.setItem(CHAVE_ESTADO, JSON.stringify(serializarEstado()));
   } catch (e) {
-    console.warn("Não foi possível salvar o torneio:", e);
+    avisarFalhaStorage(e);
   }
 }
 
@@ -674,6 +744,19 @@ function redesenharRodadaManual(r) {
 
   aplicarRascunho(r);
   ligarAutosave(r);
+}
+
+// Regra de domínio: nenhuma nova rodada enquanto a atual estiver em "gerada",
+// "manual" ou "corrigindo". Vale também para chamada direta pelo console — a
+// ausência do botão na tela não é garantia suficiente.
+function podeGerarNovaRodada() {
+  if (rodadaAtualEstaFinalizada()) return true;
+  const situacao = estadoRodadas[rodadaAtual];
+  const motivo = situacao === "corrigindo"
+    ? `A Rodada ${rodadaAtual} está em correção de placares.`
+    : `A Rodada ${rodadaAtual} ainda não foi finalizada.`;
+  alert(`${motivo}\n\nFinalize a rodada atual antes de gerar a próxima.`);
+  return false;
 }
 
 function rodadaAtualEstaFinalizada() {
@@ -868,6 +951,7 @@ function ordenarJogadoresSuico(jogadores) {
 
 
 function gerarRodada() {
+  if (!podeGerarNovaRodada()) return;
   removerBotaoReabrirAnterior();
   rodadaAtual++;
   // Garantir que pontos e saldo estejam sempre consistentes com o histórico
@@ -1022,6 +1106,7 @@ function campoEmpates(rodada, slot) {
 }
 
 function gerarRodadaManual() {
+  if (!podeGerarNovaRodada()) return;
   removerBotaoReabrirAnterior();
   rodadaAtual++;
   const area = document.getElementById("torneio-area");
@@ -1445,6 +1530,11 @@ function finalizarRodada(rodada) {
   });
 
   estadoRodadas[rodada] = "finalizada";
+
+  // Tira a interface de correcao e deixa uma unica tabela da rodada, ja com os
+  // novos resultados.
+  removerBlocosDaRodada(rodada);
+  redesenharRodadaLeitura(rodada);
   ultimaRodadaFinalizada = Math.max(ultimaRodadaFinalizada, rodada);
   limparRascunho(rodada);
   salvarEstado();
@@ -1541,6 +1631,19 @@ function corrigirPlacares(rodada, restaurando) {
     return;
   }
 
+  // Guarda o placar que está valendo ANTES do rollback, para pré-preencher os
+  // campos de correção — depois daqui o histórico da rodada já não existe.
+  const placarAtual = {};
+  confrontos.forEach((par, i) => {
+    if (MTR.ehBye(par[1].nome)) return;
+    const slot = par.slot !== undefined ? par.slot : i;
+    const h = (par[0].historico || []).find(
+      x => x.contra === par[1].nome && Number(x.rodada) === Number(rodada)
+    );
+    const p = h ? MTR.parsePlacar(h.placar) : null;
+    if (p) placarAtual[slot] = [String(p[0]), String(p[1]), h.gamesEmpatados ? String(h.gamesEmpatados) : ""];
+  });
+
   // Remove pontos, saldo e histórico APENAS desta rodada.
   // Antes o filtro era por adversário, então reabrir uma rodada apagava também
   // as partidas contra o mesmo adversário em outras rodadas.
@@ -1572,42 +1675,86 @@ function corrigirPlacares(rodada, restaurando) {
     j2.historico = j2.historico.filter(h => !(h.contra === j1.nome && Number(h.rodada) === Number(rodada)));
   });
 
-  // Criar nova rodada com mesmo número
+  estadoRodadas[rodada] = "corrigindo";
+
+  // Enquanto a rodada está sendo corrigida, nenhuma nova rodada pode ser
+  // gerada — os botões saem da tela imediatamente (a regra também vale no
+  // domínio, em podeGerarNovaRodada()).
+  removerBotoesProximaRodada();
+
+  // Uma única representação visual da rodada: a tabela de leitura sai e entra
+  // a de correção. Antes as duas conviviam na tela, mostrando o placar antigo
+  // logo acima dos campos de correção.
+  removerBlocosDaRodada(rodada);
+
   const area = document.getElementById("torneio-area");
   const bloco = document.createElement("div");
   bloco.className = "rodada-bloco";
   bloco.id = "rodada_" + rodada + "_reaberta";
-  estadoRodadas[rodada] = "corrigindo";
-  bloco.innerHTML = `<h2>Rodada ${rodada} — Corrigindo Placares</h2>`;
+  bloco.innerHTML =
+    `<h2>Rodada ${rodada} — Corrigindo Placares</h2>` +
+    `<p style="font-size:.9em;opacity:.8;margin-top:-6px">` +
+    `Altera somente os resultados. Os confrontos permanecem os mesmos.</p>`;
 
+  // Os campos usam o mesmo `slot` da rodada normal (com sufixo "_r"), para o
+  // rascunho e a leitura seguirem uma única convenção de índice.
   let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
   confrontos.forEach((par, i) => {
-    if (par[1].nome === "Bye") {
-      html += `<tr><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
-    } else {
-      html += `
-        <tr>
-          <td>${par[0].nome}</td>
-          <td class="placar-input">
-            <input type="number" min="0" id="r${rodada}_p${i * 2}_r">
-            <span>x</span>
-            <input type="number" min="0" id="r${rodada}_p${i * 2 + 1}_r">
-            <span class="emp-wrap" style="display:none"> emp:
-              <input type="number" min="0" style="width:3em" id="r${rodada}_e${i}_r"></span>
-          </td>
-          <td>${par[1].nome}</td>
-        </tr>
-      `;
+    const slot = par.slot !== undefined ? par.slot : i;
+    if (MTR.ehBye(par[1].nome)) {
+      html += `<tr data-slot="${slot}"><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
+      return;
     }
+    html += `
+      <tr data-slot="${slot}">
+        <td>${par[0].nome}</td>
+        <td class="placar-input">
+          <input type="number" min="0" id="r${rodada}_p${slot * 2}_r">
+          <span>x</span>
+          <input type="number" min="0" id="r${rodada}_p${slot * 2 + 1}_r">
+          <span class="emp-wrap" style="display:none"> emp:
+            <input type="number" min="0" style="width:3em" id="r${rodada}_e${slot}_r"></span>
+        </td>
+        <td>${par[1].nome}</td>
+      </tr>
+    `;
   });
   html += '</tbody></table>';
   html += `<button onclick="finalizarCorrecao(${rodada})">Salvar Placares Corrigidos</button>`;
   bloco.innerHTML += html;
   area.appendChild(bloco);
+
+  // Preenche com o rascunho (se veio de um reload) ou com o placar que estava
+  // valendo, capturado antes do rollback.
+  if (rascunhos[rodada] && Object.keys(rascunhos[rodada].placares || {}).length) {
+    aplicarRascunho(rodada);
+  } else {
+    rascunhos[rodada] = { pares: {}, placares: placarAtual };
+    aplicarRascunho(rodada);
+  }
+
   ligarAutosave(rodada);
   salvarEstado();
   if (!restaurando) alert("Corrija os placares e salve novamente.");
 }
+
+// Remove todos os blocos de uma rodada (leitura, manual e correção), para
+// nunca existirem duas representações da mesma rodada na tela.
+function removerBlocosDaRodada(rodada) {
+  ["rodada_" + rodada, "rodada_" + rodada + "_manual", "rodada_" + rodada + "_reaberta"]
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el && el.remove) el.remove();
+    });
+}
+
+function removerBotoesProximaRodada() {
+  ["btn-proxima-auto", "btn-proxima-manual"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.remove) el.remove();
+  });
+}
+
 
 // Função para finalizar rodada reaberta
 function finalizarCorrecao(rodada) {
@@ -1624,8 +1771,9 @@ function finalizarCorrecao(rodada) {
     // Para partidas com Bye reabertas, não há inputs para editar
     if (MTR.ehBye(j2.nome)) continue;
 
-    const input1 = document.getElementById(`r${rodada}_p${i * 2}_r`);
-    const input2 = document.getElementById(`r${rodada}_p${i * 2 + 1}_r`);
+    const slot = confrontos[i].slot !== undefined ? confrontos[i].slot : i;
+    const input1 = document.getElementById(`r${rodada}_p${slot * 2}_r`);
+    const input2 = document.getElementById(`r${rodada}_p${slot * 2 + 1}_r`);
     if (!input1 || !input2) continue; // segurança
 
     const p1 = parseInt(input1.value);
@@ -1636,7 +1784,7 @@ function finalizarCorrecao(rodada) {
       return;   // nada aplicado
     }
 
-    const inputE = document.getElementById(`r${rodada}_e${i}_r`);
+    const inputE = document.getElementById(`r${rodada}_e${slot}_r`);
     const emp = inputE && inputE.value !== "" ? parseInt(inputE.value) : 0;
     if (isNaN(emp) || emp < 0) {
       alert(`Empates de game inválidos em ${j1.nome} x ${j2.nome}.`);
@@ -1669,6 +1817,11 @@ function finalizarCorrecao(rodada) {
   });
 
   estadoRodadas[rodada] = "finalizada";
+
+  // Tira a interface de correcao e deixa uma unica tabela da rodada, ja com os
+  // novos resultados.
+  removerBlocosDaRodada(rodada);
+  redesenharRodadaLeitura(rodada);
   ultimaRodadaFinalizada = Math.max(ultimaRodadaFinalizada, rodada);
   limparRascunho(rodada);
   salvarEstado();

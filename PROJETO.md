@@ -424,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 119 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 144 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -542,6 +542,36 @@ Fechamento dos pontos que restaram da primeira auditoria.
 7. **`gamesEmpatados` nos contadores brutos do `main.js`.** Esses campos não têm nenhum
    leitor hoje — os percentuais vêm todos do `mtr.js` —, então a correção é para consistência,
    não muda resultado algum.
+
+---
+
+## 17. Fechamento da camada operacional (24/08/2026)
+
+Últimos ajustes de autosave e UX antes do teste de mesa.
+
+1. **Autosave durante "Corrigir Placares".** A tela de correção usa campos com sufixo `_r`,
+   mas o autosave só procurava os IDs sem sufixo — nada digitado ali era salvo. Agora
+   `sufixoCampos(rodada)` decide os IDs pelo estado da rodada.
+2. **BYE no slot 0 matava o autosave da rodada inteira.** O laço parava no primeiro input
+   ausente, e numa rodada automática de número ímpar o Bye ocupa o slot 0 e não tem campos.
+   Resultado: com 7 jogadores, **nenhum** dos três placares era salvo. Agora
+   `slotsDaRodada(rodada)` percorre os slots conhecidos e apenas ignora os de Bye.
+3. **Bloqueio de nova rodada no domínio.** `podeGerarNovaRodada()` recusa enquanto a rodada
+   atual estiver em `gerada`, `manual` ou `corrigindo` — vale também para chamada direta pelo
+   console. Entrar em correção remove os botões de próxima rodada na hora.
+4. **Uma única representação da rodada.** A tabela de leitura sai ao entrar em correção e a de
+   correção sai ao salvar, com a rodada redesenhada uma vez só. Os campos já abrem com o
+   placar que está valendo, e há um aviso: *"Altera somente os resultados. Os confrontos
+   permanecem os mesmos."*
+5. **Falha de `localStorage` agora avisa na tela** (uma vez por sessão) em vez de só um
+   `console.warn`. O torneio segue funcionando; o organizador é quem precisa saber que não há
+   recuperação automática.
+6. **Autosave em `input` com debounce de 250 ms** nos campos numéricos, além do `change` como
+   rede de segurança. Fecha a janela de "digitei o placar e apertei ⌘R sem sair do campo".
+   Selects continuam em `change`.
+
+Os testes de autosave disparam **eventos reais** no harness (`addEventListener` /
+`dispatchEvent` de verdade no DOM simulado), em vez de chamar `capturarRascunho()` na mão.
 
 ### Sobre conformidade com a Wizards
 

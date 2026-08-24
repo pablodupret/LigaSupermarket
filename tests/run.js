@@ -845,8 +845,11 @@ grupo("8. Comparador único (ordenarJogadoresSuico)");
   })();
 
   // A ordenação alimenta escolherBye: o líder nunca deve folgar.
+  // (A rodada 1 é sempre sorteada; a ordenação só vale da 2ª em diante, por
+  //  isso o torneio precisa estar além da primeira rodada.)
   (function () {
     var t = criar(["A", "B", "C", "D", "E"], 3, 4);
+    t.run("rodadaAtual = 1; estadoRodadas[1] = 'finalizada'; ultimaRodadaFinalizada = 1;");
     t.definirHistorico({
       A: [{ contra: "B", placar: "2x0", rodada: 1 }, { contra: "C", placar: "2x0", rodada: 2 }],
       B: [{ contra: "A", placar: "0x2", rodada: 1 }, { contra: "D", placar: "0x2", rodada: 2 }],
@@ -999,6 +1002,168 @@ grupo("9. Transação completa e rodada em andamento");
     t.preencherPlacares(1, function () { return [2, 0]; });
     t.finalizar(1);
     ok(t.run("rodadaAtualEstaFinalizada()") === true, "rodada finalizada libera a proxima");
+  })();
+})();
+
+// ================= 10. Autosave: correção, BYE e bloqueio de rodada
+grupo("10. Autosave em correção, BYE no slot 0 e bloqueios");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  function torneioComRodadaFinalizada(nomes, totalRodadas) {
+    var t = criar(nomes, totalRodadas || 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    return t;
+  }
+
+  // -- 1) autosave durante "Corrigir Placares", com EVENTO REAL
+  (function () {
+    var t = torneioComRodadaFinalizada(["A", "B", "C", "D"]);
+    t.reabrir(1);
+
+    ok(t.estadoRodadas()[1] === "corrigindo", "entrou em correcao");
+
+    // A tela de correcao usa campos com sufixo _r
+    ok(t.campoExiste("r1_p0_r"), "os campos de correcao existem com sufixo _r");
+
+    // Os campos ja vem com o placar que estava valendo
+    ok(t.valorDoCampo("r1_p0_r") === "2" && t.valorDoCampo("r1_p1_r") === "0",
+       "a correcao abre com o placar atual preenchido",
+       t.valorDoCampo("r1_p0_r") + " x " + t.valorDoCampo("r1_p1_r"));
+
+    // Altera 2x0 para 1x2 disparando o evento real
+    t.digitar("r1_p0_r", 1, "change");
+    t.digitar("r1_p1_r", 2, "change");
+
+    var rasc = t.rascunhos()[1];
+    ok(rasc && rasc.placares && rasc.placares["0"] &&
+       rasc.placares["0"][0] === "1" && rasc.placares["0"][1] === "2",
+       "o placar corrigido entra no rascunho (autosave le os campos _r)",
+       JSON.stringify(rasc));
+
+    // Recarrega
+    t.recarregarDoStorage();
+    ok(t.estadoRodadas()[1] === "corrigindo", "apos o reload continua em correcao");
+
+    var depois = t.rascunhos()[1];
+    ok(depois && depois.placares["0"][0] === "1" && depois.placares["0"][1] === "2",
+       "o valor digitado sobreviveu ao reload", JSON.stringify(depois));
+
+    ok(t.run("rodadaAtualEstaFinalizada()") === false,
+       "durante a correcao a proxima rodada nao pode ser gerada");
+  })();
+
+  // -- 2) BYE no primeiro slot nao pode interromper a captura dos demais
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E", "F", "G"], 3, 4);
+    t.gerarAuto();
+
+    var pares = t.run("resultadosPorRodada[1].map(function(p){return [p[0].nome,p[1].nome,p.slot];})");
+    ok(pares[0][1] === "Bye" && pares[0][2] === 0,
+       "com 7 jogadores o BYE fica no slot 0 (cenario do bug)",
+       JSON.stringify(pares));
+
+    // Preenche os tres jogos normais usando o EVENTO REAL
+    var normais = pares.filter(function (p) { return p[1] !== "Bye"; });
+    normais.forEach(function (p, k) {
+      var slot = p[2];
+      t.digitar("r1_p" + (slot * 2), 2, "change");
+      t.digitar("r1_p" + (slot * 2 + 1), k, "change");
+    });
+
+    var rasc = t.rascunhos()[1];
+    var salvos = rasc ? Object.keys(rasc.placares || {}).length : 0;
+    ok(salvos === 3,
+       "os 3 placares foram salvos mesmo com o BYE no slot 0",
+       "salvos: " + salvos + " -> " + JSON.stringify(rasc && rasc.placares));
+
+    t.recarregarDoStorage();
+    var depois = t.rascunhos()[1];
+    ok(depois && Object.keys(depois.placares).length === 3,
+       "os 3 placares reapareceram apos o reload",
+       JSON.stringify(depois && depois.placares));
+
+    var byeIntacto = t.run(
+      "resultadosPorRodada[1].filter(function(p){return p[1].nome==='Bye';}).length"
+    );
+    ok(byeIntacto === 1, "o BYE continua intacto apos o reload", "byes: " + byeIntacto);
+    ok(t.run("rodadaAtualEstaFinalizada()") === false,
+       "a proxima rodada nao esta liberada");
+  })();
+
+  // -- 3) chamada direta de gerarRodada/gerarRodadaManual durante a correcao
+  (function () {
+    var t = torneioComRodadaFinalizada(["A", "B", "C", "D"]);
+    t.reabrir(1);
+    t.limparAlertas();
+
+    var antes = t.estado();
+    t.gerarAuto();
+    ok(/correção|correcao/i.test(t.alertas().join(" ")),
+       "gerarRodada() e recusada durante a correcao", t.alertas().join(" | "));
+    ok(t.estado() === antes, "gerarRodada() recusada nao altera estado");
+
+    t.limparAlertas();
+    t.gerarManual();
+    ok(/correção|correcao/i.test(t.alertas().join(" ")),
+       "gerarRodadaManual() e recusada durante a correcao", t.alertas().join(" | "));
+    ok(t.estado() === antes, "gerarRodadaManual() recusada nao altera estado");
+    ok(t.rodadaAtual() === 1, "rodadaAtual nao avancou", "rodadaAtual=" + t.rodadaAtual());
+  })();
+
+  // -- 4) uma unica representacao visual da rodada
+  (function () {
+    var t = torneioComRodadaFinalizada(["A", "B", "C", "D"]);
+    ok(t.blocosDaRodada(1).length === 1, "rodada finalizada tem 1 bloco",
+       t.blocosDaRodada(1).join(", "));
+
+    t.reabrir(1);
+    ok(t.blocosDaRodada(1).length === 1,
+       "durante a correcao continua havendo 1 bloco (a tabela antiga saiu)",
+       t.blocosDaRodada(1).join(", "));
+
+    t.digitar("r1_p0_r", 1, "change");
+    t.digitar("r1_p1_r", 2, "change");
+    t.preencherPlacaresReabertos(1, function (a, b, i) { return i === 0 ? [1, 2] : [2, 0]; });
+    t.finalizarCorrecao(1);
+
+    ok(t.blocosDaRodada(1).length === 1,
+       "apos salvar a correcao resta 1 bloco",
+       t.blocosDaRodada(1).join(", "));
+    ok(t.estadoRodadas()[1] === "finalizada", "a rodada volta a 'finalizada'");
+
+    var exp = t.exportar(1).filter(function (o) { return o.rodada === 1; });
+    var corrigido = exp.filter(function (o) { return o.resultado === "1 x 2"; });
+    ok(corrigido.length === 1, "o placar corrigido consta na exportacao",
+       JSON.stringify(exp));
+  })();
+
+  // -- 5) falha do localStorage nao quebra o torneio e avisa uma vez
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.quebrarStorage();
+    t.limparAlertas();
+
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+
+    ok(t.estadoRodadas()[1] === "finalizada",
+       "o torneio continua funcionando com o storage quebrado",
+       JSON.stringify(t.estadoRodadas()));
+
+    var avisos = t.alertas().filter(function (m) { return /recuperação automática/i.test(m); });
+    ok(avisos.length === 1,
+       "o organizador e avisado UMA vez que nao ha recuperacao automatica",
+       "avisos: " + avisos.length + " | " + t.alertas().join(" | "));
+
+    var exp = t.exportar(1);
+    ok(exp.length === 2, "a exportacao segue funcionando sem storage",
+       JSON.stringify(exp));
   })();
 })();
 

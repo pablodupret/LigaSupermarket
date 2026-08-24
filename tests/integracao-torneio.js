@@ -23,14 +23,39 @@ function criarDOM() {
       textContent: "",
       _html: "",
       children: [],
-      style: {},
+      _filhos: [],          // inputs/selects que este bloco contém
+      _listeners: {},
+      style: { cssText: "" },
       classList: { add: function () {}, remove: function () {}, contains: function () { return false; } },
       appendChild: function (f) { this.children.push(f); return f; },
-      remove: function () {},
-      addEventListener: function () {},
-      querySelectorAll: function () { return []; },
+      remove: function () { if (el.id) delete elementos[el.id]; el._removido = true; },
+      // Listeners de verdade: é assim que o teste exercita o autosave pelo
+      // mesmo caminho do navegador, em vez de chamar capturarRascunho() na mão.
+      addEventListener: function (tipo, fn) {
+        (el._listeners[tipo] || (el._listeners[tipo] = [])).push(fn);
+      },
+      dispararEvento: function (tipo) {
+        (el._listeners[tipo] || []).forEach(function (fn) { fn({ type: tipo, target: el }); });
+      },
+      querySelectorAll: function (sel) {
+        var alvo = String(sel).split(",")[0].trim();
+        return el._filhos.filter(function (f) {
+          return alvo === "input, select" || f.tagName === alvo ||
+                 (alvo === ".emp-wrap" && false);
+        });
+      },
       querySelector: function () { return null; }
     };
+
+    // Registrar pelo id, como o DOM faz ao inserir o nó: sem isto
+    // getElementById("rodada_1") não acha o bloco criado por createElement e
+    // ligarAutosave não encontraria os campos.
+    var _id = "";
+    Object.defineProperty(el, "id", {
+      get: function () { return _id; },
+      set: function (v) { _id = String(v); if (_id) elementos[_id] = el; }
+    });
+
     Object.defineProperty(el, "innerHTML", {
       get: function () { return el._html; },
       set: function (v) {
@@ -55,6 +80,7 @@ function criarDOM() {
           inp.id = m[1];
           inp.parentElement = { parentElement: tr };   // <td class="placar-input"> -> <tr>
           elementos[m[1]] = inp;
+          el._filhos.push(inp);
         }
 
         // Campos de empate de game e os <select> das rodadas manuais.
@@ -65,6 +91,7 @@ function criarDOM() {
             var e = novoEl(mm[1].indexOf("_j") >= 0 ? "select" : "input");
             e.id = mm[1];
             elementos[mm[1]] = e;
+            el._filhos.push(e);
           }
         });
       }
@@ -75,13 +102,14 @@ function criarDOM() {
   var doc = {
     getElementById: function (id) {
       if (!elementos[id]) {
-        // Inputs de placar que não existem devem devolver null, como no
-        // navegador — é assim que o código pula a linha do Bye, que não
-        // tem campos de placar. Fabricar um elemento aqui mascararia isso.
-        if (/^r\d+_(p\d+|j[12]_\d+)$/.test(id)) return null;
+        // Só o container fixo da página é fabricado sob demanda. Todo o resto
+        // devolve null como no navegador: fabricar um bloco de rodada
+        // inexistente mascarava o autosave nunca encontrar os campos, e um
+        // input de placar ausente é justamente como o código detecta a linha
+        // do Bye.
+        if (id !== "torneio-area") return null;
         var el = novoEl();
         el.id = id;
-        elementos[id] = el;
       }
       return elementos[id];
     },
@@ -141,7 +169,9 @@ function carregarFerramenta(nomes, numRodadas, liga) {
       };
     })(),
     confirm: function () { return sandbox.__respostaConfirm; },
-    __respostaConfirm: true
+    __respostaConfirm: true,
+    setTimeout: setTimeout,
+    clearTimeout: clearTimeout
   };
 
   sandbox.MTR = require(path.join(RAIZ, "mtr.js"));
@@ -383,6 +413,7 @@ function criarTorneio(nomes, numRodadas, liga) {
 
     finalizar: function (rodada) { run("finalizarRodada(" + rodada + ");"); },
     finalizarReaberta: function (rodada) { run("finalizarCorrecao(" + rodada + ");"); },
+    finalizarCorrecao: function (rodada) { run("finalizarCorrecao(" + rodada + ");"); },
     reabrir: function (rodada) { run("corrigirPlacares(" + rodada + ");"); },
 
     // Chama a FUNÇÃO REAL de exportação usada pela interface.
@@ -405,6 +436,29 @@ function criarTorneio(nomes, numRodadas, liga) {
     confrontos: function () { return run("Array.from(confrontosAnteriores)"); },
     estadoRodadas: function () { return run("estadoRodadas"); },
     rascunhos: function () { return run("rascunhos"); },
+
+    // Escreve num campo e dispara o EVENTO REAL, percorrendo o mesmo caminho
+    // que o navegador usaria para acionar o autosave.
+    digitar: function (id, valor, tipoEvento) {
+      var el = elementos[id];
+      if (!el) throw new Error("campo inexistente: " + id);
+      el.value = String(valor);
+      el.dispararEvento(tipoEvento || "change");
+      return el;
+    },
+    campoExiste: function (id) { return !!elementos[id]; },
+    valorDoCampo: function (id) { return elementos[id] ? elementos[id].value : null; },
+
+    // Quantos blocos visíveis existem para uma rodada (para checar duplicidade).
+    blocosDaRodada: function (rodada) {
+      return ["rodada_" + rodada, "rodada_" + rodada + "_manual", "rodada_" + rodada + "_reaberta"]
+        .filter(function (id) { return !!elementos[id] && !elementos[id]._removido; });
+    },
+
+    // Faz o localStorage falhar, como um Safari em aba privativa.
+    quebrarStorage: function () {
+      sandbox.localStorage.setItem = function () { throw new Error("QuotaExceededError"); };
+    },
 
     // Injeta um histórico pronto, para montar cenários de desempate exatos.
     definirHistorico: function (porJogador) {
