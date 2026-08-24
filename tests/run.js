@@ -679,13 +679,13 @@ grupo("7. Fluxo manual, reabertura e exportação");
 
     t.limparAlertas();
     t.reabrir(1);
-    ok(/ultima rodada finalizada|última rodada finalizada/.test(t.alertas().join(" ")),
-       "reabrir uma rodada antiga e recusado", t.alertas().join(" | "));
+    ok(/rodada atual/.test(t.alertas().join(" ")),
+       "corrigir uma rodada antiga e recusado", t.alertas().join(" | "));
 
     t.limparAlertas();
     t.reabrir(2);
-    ok(t.alertas().length === 1 && /reaberta/i.test(t.alertas()[0]),
-       "reabrir a ultima rodada funciona", t.alertas().join(" | "));
+    ok(t.alertas().length === 1 && /Corrija os placares/i.test(t.alertas()[0]),
+       "corrigir a rodada atual funciona", t.alertas().join(" | "));
 
     // corrige o placar e confere que a exportacao reflete
     t.preencherPlacaresReabertos(2, function () { return [0, 2]; });
@@ -758,6 +758,247 @@ grupo("7. Fluxo manual, reabertura e exportação");
     ok(Math.abs(a.gameWinPerc - 7 / 9) < 0.005,
        "GW% do 2-0-1 chega correto no ranking da ferramenta (7/9)",
        "obtido: " + a.gameWinPerc.toFixed(3));
+  })();
+})();
+
+// ============ 8. Comparador único: a ordenação REAL do pareamento
+grupo("8. Comparador único (ordenarJogadoresSuico)");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // Cenário que SÓ é decidido corretamente com o piso do GW%.
+  //
+  //   A perde 0x2 para C e 0x2 para D   -> GW% bruto  0/4  =  0%
+  //   B perde 1x2 para E e 0x2 para F   -> GW% bruto  1/5  = 20%
+  //   C, D, E e F vencem uma partida cada -> MW% 100% para todos
+  //
+  //   match points: A = B = 0                      (empata)
+  //   OMW%:         A = B = 100%                   (empata)
+  //   GW% bruto:    A =  0%  <  B = 20%            -> sem piso, B na frente
+  //   GW% oficial:  A = B = 33% (piso)             -> empata, vai para o OGW%
+  //   OGW%:         A = (100+100)/2 = 100%
+  //                 B = (66.7+100)/2 = 83.3%       -> A na frente
+  //
+  // Ou seja: sem o piso a ordem sai B, A; com o piso sai A, B.
+  var CENARIO = {
+    A: [{ contra: "C", placar: "0x2", rodada: 1 }, { contra: "D", placar: "0x2", rodada: 2 }],
+    B: [{ contra: "E", placar: "1x2", rodada: 1 }, { contra: "F", placar: "0x2", rodada: 2 }],
+    C: [{ contra: "A", placar: "2x0", rodada: 1 }],
+    D: [{ contra: "A", placar: "2x0", rodada: 2 }],
+    E: [{ contra: "B", placar: "2x1", rodada: 1 }],
+    F: [{ contra: "B", placar: "2x0", rodada: 2 }]
+  };
+  var ELENCO = ["A", "B", "C", "D", "E", "F"];
+
+  (function () {
+    var t = criar(ELENCO, 3, 4);
+    t.definirHistorico(CENARIO);
+
+    var linhas = t.ranking();
+    var a = linhas.filter(function (l) { return l.jogador === "A"; })[0];
+    var b = linhas.filter(function (l) { return l.jogador === "B"; })[0];
+
+    ok(a.gameWinPerc < 0.33 && b.gameWinPerc < 0.33,
+       "cenario: os dois GW% ficam abaixo do piso",
+       "A=" + a.gameWinPerc.toFixed(3) + " B=" + b.gameWinPerc.toFixed(3));
+    ok(b.gameWinPerc > a.gameWinPerc,
+       "cenario e discriminante: sem o piso, B passaria na frente de A",
+       "A=" + a.gameWinPerc.toFixed(3) + " B=" + b.gameWinPerc.toFixed(3));
+    ok(a.matchPoints === b.matchPoints && perto(a.omwp, b.omwp),
+       "cenario: MP e OMW% realmente empatados",
+       "MP " + a.matchPoints + "/" + b.matchPoints +
+       " OMW " + a.omwp.toFixed(3) + "/" + b.omwp.toFixed(3));
+    ok(a.ogwp > b.ogwp, "cenario: o OGW% de A e maior, entao A deve vencer o desempate",
+       "A=" + a.ogwp.toFixed(3) + " B=" + b.ogwp.toFixed(3));
+    ok(MTR.estaoEmpatadosNosCriterios(a, b) === false,
+       "estaoEmpatadosNosCriterios: nao ha empate total (o OGW% separa)");
+  })();
+
+  // O teste que faltava: a ordenação REAL usada para parear.
+  (function () {
+    var t = criar(ELENCO, 3, 4);
+    t.definirHistorico(CENARIO);
+
+    var ordem = t.ordenar();
+    var posA = ordem.indexOf("A");
+    var posB = ordem.indexOf("B");
+
+    ok(posA < posB,
+       "ordenarJogadoresSuico respeita o piso do GW% (A antes de B)",
+       "ordem: " + ordem.join(", "));
+  })();
+
+  // Empate total nos quatro critérios continua sendo desempatado por sorteio.
+  (function () {
+    var t = criar(["A", "B"], 2, 4);
+    t.definirHistorico({
+      A: [{ contra: "Z", placar: "0x2", rodada: 1 }],
+      B: [{ contra: "Y", placar: "0x2", rodada: 1 }]
+    });
+    var linhas = t.ranking();
+    ok(MTR.estaoEmpatadosNosCriterios(linhas[0], linhas[1]),
+       "dois jogadores identicos empatam nos quatro criterios");
+    ok(MTR.compararCriterios(linhas[0], linhas[1]) === 0,
+       "compararCriterios devolve 0 no empate total (deixa o sorteio decidir)");
+  })();
+
+  // A ordenação alimenta escolherBye: o líder nunca deve folgar.
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E"], 3, 4);
+    t.definirHistorico({
+      A: [{ contra: "B", placar: "2x0", rodada: 1 }, { contra: "C", placar: "2x0", rodada: 2 }],
+      B: [{ contra: "A", placar: "0x2", rodada: 1 }, { contra: "D", placar: "0x2", rodada: 2 }],
+      C: [{ contra: "D", placar: "2x0", rodada: 1 }, { contra: "A", placar: "0x2", rodada: 2 }],
+      D: [{ contra: "C", placar: "0x2", rodada: 1 }, { contra: "B", placar: "2x0", rodada: 2 }],
+      E: [{ contra: "F", placar: "0x2", rodada: 1 }, { contra: "G", placar: "0x2", rodada: 2 }]
+    });
+
+    var bye = t.byeDaRodada();
+    ok(bye !== null, "com 5 jogadores a rodada gerada tem BYE", "bye: " + bye);
+    ok(bye !== "A", "o BYE nao vai para o lider isolado", "bye: " + bye);
+  })();
+
+  // Nenhuma reconstrução manual dos critérios pode sobrar fora do mtr.js
+  (function () {
+    var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+    var suspeitos = html.match(/(matchPoints\s*-|\.omwp\s*-|gameWinPerc\s*-|\.ogwp\s*-)/g) || [];
+    ok(suspeitos.length === 0,
+       "nao existe comparador de criterios reconstruido no HTML",
+       suspeitos.join(", "));
+  })();
+})();
+
+// ================ 9. Transação completa e recuperação em andamento
+grupo("9. Transação completa e rodada em andamento");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // -- BYE valido + ultimo placar vazio => NADA aplicado
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["E", "Bye"], ["A", "B"], ["C", "D"]]);
+    t.preencherPlacaresPorSlot(1, { 1: [2, 0] });   // slot 2 (C x D) fica vazio
+
+    var antes = t.estado();
+    t.finalizar(1);
+
+    ok(/Falta o placar/.test(t.alertas().join(" ")),
+       "placar faltando bloqueia a finalizacao", t.alertas().join(" | "));
+    ok(t.estado() === antes,
+       "BYE, pontos, historico e confrontos NAO foram aplicados (transacao)");
+    ok(Object.keys(t.run("resultadosPorRodada")).length === 0,
+       "resultadosPorRodada segue vazio apos a tentativa invalida");
+
+    // Agora completa e finaliza: tudo aplicado UMA vez
+    t.limparAlertas();
+    t.preencherPlacaresPorSlot(1, { 1: [2, 0], 2: [1, 2] });
+    t.finalizar(1);
+    ok(t.alertas().length === 0, "apos completar, finaliza sem alerta",
+       t.alertas().join(" | "));
+
+    var jogs = t.jogadores();
+    var e = jogs.filter(function (j) { return j.nome === "E"; })[0];
+    ok(e.historico.length === 1 && e.pontos === 3,
+       "o BYE foi aplicado exatamente uma vez",
+       "historico=" + e.historico.length + " pontos=" + e.pontos);
+    var a = jogs.filter(function (j) { return j.nome === "A"; })[0];
+    ok(a.historico.length === 1 && a.pontos === 3,
+       "o vencedor recebeu os pontos uma unica vez",
+       "historico=" + a.historico.length + " pontos=" + a.pontos);
+  })();
+
+  // -- corrigir placares: guarda de dominio
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.gerarAuto();
+    t.preencherPlacares(2, function () { return [2, 0]; });
+    t.finalizar(2);
+    t.gerarAuto();               // R3 gerada, nao finalizada
+
+    var antes = t.estado();
+    t.limparAlertas();
+    t.reabrir(2);                // chamada direta, como se fosse pelo console
+    ok(/rodada atual/.test(t.alertas().join(" ")),
+       "com R3 gerada, corrigir R2 e recusado mesmo chamando a funcao direto",
+       t.alertas().join(" | "));
+    ok(t.estado() === antes, "a recusa nao altera estado");
+  })();
+
+  // -- rodada automatica gerada e nao finalizada sobrevive ao reload
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.gerarAuto();                                   // R2 gerada
+    t.preencherPlacares(2, function () { return [2, 1]; });  // digitado, nao finalizado
+    t.run("capturarRascunho(2);");                   // o `change` faria isso
+
+    ok(t.estadoRodadas()[2] === "gerada",
+       "R2 fica marcada como 'gerada'", JSON.stringify(t.estadoRodadas()));
+
+    t.recarregarDoStorage();
+    ok(t.estadoRodadas()[2] === "gerada", "o estado 'gerada' sobrevive ao reload");
+    ok(t.run("rodadaAtualEstaFinalizada()") === false,
+       "com R2 em andamento, a proxima rodada NAO pode ser oferecida");
+
+    var rascunho = t.rascunhos()[2];
+    ok(rascunho && Object.keys(rascunho.placares || {}).length > 0,
+       "os placares digitados em R2 foram preservados",
+       JSON.stringify(rascunho));
+  })();
+
+  // -- rodada manual em preenchimento sobrevive ao reload
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], null]);   // so um par escolhido
+    t.run("capturarRascunho(1);");
+
+    ok(t.estadoRodadas()[1] === "manual",
+       "rodada manual gerada fica marcada como 'manual'",
+       JSON.stringify(t.estadoRodadas()));
+
+    t.recarregarDoStorage();
+    var r = t.rascunhos()[1];
+    ok(r && r.pares && r.pares["0"] && r.pares["0"][0] === "A" && r.pares["0"][1] === "B",
+       "os pares ja escolhidos na manual foram restaurados", JSON.stringify(r));
+    ok(t.run("rodadaAtualEstaFinalizada()") === false,
+       "manual em preenchimento nao libera a proxima rodada");
+  })();
+
+  // -- rodada em correcao sobrevive ao reload
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.reabrir(1);
+    ok(t.estadoRodadas()[1] === "corrigindo",
+       "reabrir marca a rodada como 'corrigindo'", JSON.stringify(t.estadoRodadas()));
+
+    t.recarregarDoStorage();
+    ok(t.estadoRodadas()[1] === "corrigindo", "o estado 'corrigindo' sobrevive ao reload");
+    ok(t.run("rodadaAtualEstaFinalizada()") === false,
+       "rodada em correcao nao libera a proxima");
+  })();
+
+  // -- so uma rodada finalizada libera a proxima
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    ok(t.run("rodadaAtualEstaFinalizada()") === false, "rodada recem-gerada nao libera");
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    ok(t.run("rodadaAtualEstaFinalizada()") === true, "rodada finalizada libera a proxima");
   })();
 })();
 

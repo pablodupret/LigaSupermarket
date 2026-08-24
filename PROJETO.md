@@ -137,6 +137,19 @@ Nunca reimplemente esta matemática em outro arquivo — `main.js`, `appendix_c.
     primeiro) e não a ordem do MTR. Ali entram `matchWinPctRaw`/`gameWinPctRaw`, porque com
     o piso todos abaixo de 33% empatariam e o critério perderia poder de desempate
   - `classificar()` devolve os dois: `gameWinPerc` (cru, para exibir) e `gameWinPercPiso`
+
+### As três funções de comparação — use sempre uma delas
+```
+MTR.compararCriterios(a, b)          // MP -> OMW% -> GW%(piso) -> OGW%; 0 se empatar tudo
+MTR.compararMTR(a, b)                // igual, + nome como último desempate (apresentação)
+MTR.estaoEmpatadosNosCriterios(a, b) // true quando os quatro critérios empatam
+```
+**Nunca reconstruir essa ordem em outro arquivo.** Foi exatamente assim que o piso do GW%
+ficou de fora do pareamento: `compararMTR` já tinha o piso, mas o `novo-torneio-V6.html`
+mantinha um `sort` próprio com o valor bruto, alterando a ordem do pareamento e **quem
+recebia o BYE** (`escolherBye` lê essa lista de trás para frente).
+Quem pareia usa `compararCriterios` (devolve 0 no empate, preservando o sorteio prévio);
+quem exibe usa `compararMTR`.
 - **Bye = vitória 2×0**: 3 match points, 6 game points, 2 games, 1 rodada. O bye
   **nunca entra como adversário** no OMW%/OGW% (regra explícita do MTR)
 - Adversário enfrentado duas vezes conta **duas vezes** na média (não deduplicar)
@@ -411,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 88 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 119 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -419,6 +432,11 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 4. Adicionar o dia em `infoPorLiga[liga ativa]` no `main.js`: `N: { data: "DD/MM/AAAA", draft: "..." }`
 5. Jogador novo: acrescentar em `jogadores.json` com o nome **exatamente** igual ao do `jogos.json`.
    Se for jogador eventual que não deve pontuar no ranking, acrescentar em `jogadoresOcultos` no `main.js`
+
+**"Corrigir Placares"** só funciona na rodada atual, e apenas enquanto nenhuma rodada
+posterior tiver sido gerada. Ela corrige **resultados**, nunca refaz um pareamento — erro de
+pareamento deve ser percebido antes de a rodada ser jogada, e o caminho ali é não finalizar
+a rodada.
 
 Se a ferramenta exibir o aviso amarelo **"Não existe pareamento sem repetição nesta rodada"**,
 não é bug: os jogadores já se enfrentaram o suficiente para esgotar as combinações. O sistema
@@ -493,6 +511,37 @@ Fechamento dos pontos que restaram da primeira auditoria.
    a ferramenta com um torneio em andamento, ela oferece continuar; há botão para descartar.
    Os confrontos são salvos como nomes e **religados por referência** ao restaurar — salvar
    os objetos direto duplicaria cada jogador e os pontos parariam de acompanhar o histórico.
+
+---
+
+## 16. Terceira rodada de correções (24/08/2026)
+
+Últimos ajustes antes de congelar a lógica.
+
+1. **O piso do GW% não valia no pareamento.** `compararMTR` já aplicava o piso, mas o
+   `ordenarJogadoresSuico` mantinha um `sort` próprio com o valor bruto. Como essa ordem
+   alimenta `escolherBye`, o bug afetava também **quem recebia o BYE**. Criadas
+   `compararCriterios` e `estaoEmpatadosNosCriterios`; não há mais comparador fora do `mtr.js`.
+2. **Detecção de empate do campeão** passou a usar `estaoEmpatadosNosCriterios` em vez de
+   comparar campo a campo (que não reconhecia 25% × 30% como empate no piso).
+3. **Finalização manual totalmente transacional:** agora é
+   *ler pares → validar → ler placares → validar → aplicar*. Antes o pareamento era aplicado
+   antes da leitura dos placares, então um placar faltando na última linha já deixava BYE,
+   pontos, histórico e `confrontosAnteriores` gravados.
+4. **Reabertura com guarda de domínio:** exige `rodada === ultimaRodadaFinalizada` **e**
+   `rodada === rodadaAtual`. Antes a regra valia só na interface (o botão sumia), mas a função
+   aceitaria a chamada direta.
+5. **Recuperação de rodada em andamento.** Passou a existir `estadoRodadas[n]`
+   (`gerada` / `manual` / `finalizada` / `corrigindo`) e um rascunho por rodada com o que já
+   foi digitado, salvo nos eventos `change`. Na volta, cada rodada é redesenhada conforme o
+   seu estado e **a próxima só é oferecida se a atual estiver finalizada**. Antes uma rodada
+   manual apenas gerada **desaparecia** na recarga — ela só entra em `resultadosPorRodada` na
+   finalização, e `rodadaAtual` já tinha sido incrementado.
+6. **"Reabrir Rodada" virou "Corrigir Placares"** (`corrigirPlacares` / `finalizarCorrecao`),
+   descrevendo o que a função de fato faz.
+7. **`gamesEmpatados` nos contadores brutos do `main.js`.** Esses campos não têm nenhum
+   leitor hoje — os percentuais vêm todos do `mtr.js` —, então a correção é para consistência,
+   não muda resultado algum.
 
 ### Sobre conformidade com a Wizards
 

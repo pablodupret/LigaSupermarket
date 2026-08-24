@@ -321,8 +321,87 @@ let rodadaAtual = 0;
 let totalRodadas = 0;
 let confrontosAnteriores = new Set();
 let ligaAtual = null;
-let ultimaRodadaFinalizada = 0;   // só ela pode ser reaberta
+let ultimaRodadaFinalizada = 0;   // só ela pode ser corrigida
 let diaAtual = null;              // guardado para a exportação e o autosave
+
+// Situação de cada rodada, para a recuperação saber o que redesenhar:
+//   "gerada"     -> automática, pareada, aguardando placares
+//   "manual"     -> formulário de pareamento manual aberto, em preenchimento
+//   "finalizada" -> concluída
+//   "corrigindo" -> em correção de placares
+let estadoRodadas = {};
+
+// O que já foi digitado mas ainda não finalizado, para não se perder num reload.
+//   rascunhos[n] = { numLinhas, pares: {slot:[j1,j2]}, placares: {slot:[p1,p2,emp]} }
+let rascunhos = {};
+
+function limparRascunho(rodada) {
+  delete rascunhos[rodada];
+}
+
+// Lê o que está na tela da rodada em andamento e guarda no rascunho.
+// Chamado nos eventos `change` dos selects e dos campos de placar.
+function capturarRascunho(rodada) {
+  const r = rascunhos[rodada] || (rascunhos[rodada] = { pares: {}, placares: {} });
+
+  for (let i = 0; ; i++) {
+    const s1 = document.getElementById(`r${rodada}_j1_${i}`);
+    const s2 = document.getElementById(`r${rodada}_j2_${i}`);
+    if (!s1 || !s2) break;
+    r.numLinhas = i + 1;
+    if (s1.value || s2.value) r.pares[i] = [s1.value, s2.value];
+    else delete r.pares[i];
+  }
+
+  for (let slot = 0; ; slot++) {
+    const p1 = document.getElementById(`r${rodada}_p${slot * 2}`);
+    const p2 = document.getElementById(`r${rodada}_p${slot * 2 + 1}`);
+    if (!p1 || !p2) break;
+    const e = document.getElementById(`r${rodada}_e${slot}`);
+    if (p1.value !== "" || p2.value !== "") {
+      r.placares[slot] = [p1.value, p2.value, e ? e.value : ""];
+    } else {
+      delete r.placares[slot];
+    }
+  }
+
+  salvarEstado();
+}
+
+// Liga o autosave nos campos de uma rodada recém-desenhada.
+function ligarAutosave(rodada) {
+  const bloco = document.getElementById("rodada_" + rodada) ||
+                document.getElementById("rodada_" + rodada + "_manual") ||
+                document.getElementById("rodada_" + rodada + "_reaberta");
+  if (!bloco || !bloco.querySelectorAll) return;
+
+  bloco.querySelectorAll("input, select").forEach(el => {
+    el.addEventListener("change", () => capturarRascunho(rodada));
+  });
+}
+
+// Reaplica na tela um rascunho restaurado do localStorage.
+function aplicarRascunho(rodada) {
+  const r = rascunhos[rodada];
+  if (!r) return;
+
+  Object.keys(r.pares || {}).forEach(i => {
+    const s1 = document.getElementById(`r${rodada}_j1_${i}`);
+    const s2 = document.getElementById(`r${rodada}_j2_${i}`);
+    if (s1) s1.value = r.pares[i][0];
+    if (s2) s2.value = r.pares[i][1];
+  });
+
+  Object.keys(r.placares || {}).forEach(slot => {
+    const v = r.placares[slot];
+    const p1 = document.getElementById(`r${rodada}_p${slot * 2}`);
+    const p2 = document.getElementById(`r${rodada}_p${Number(slot) * 2 + 1}`);
+    const e = document.getElementById(`r${rodada}_e${slot}`);
+    if (p1) p1.value = v[0];
+    if (p2) p2.value = v[1];
+    if (e && v[2]) e.value = v[2];
+  });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers de estado (usados pelo fluxo manual, pela reabertura e pelo autosave)
@@ -382,6 +461,8 @@ function serializarEstado() {
     rodadaAtual: rodadaAtual,
     totalRodadas: totalRodadas,
     ultimaRodadaFinalizada: ultimaRodadaFinalizada,
+    estadoRodadas: estadoRodadas,
+    rascunhos: rascunhos,
     jogadores: jogadores.map(j => ({
       nome: j.nome,
       pontos: j.pontos,
@@ -399,6 +480,8 @@ function aplicarEstado(estado) {
   rodadaAtual = estado.rodadaAtual;
   totalRodadas = estado.totalRodadas;
   ultimaRodadaFinalizada = estado.ultimaRodadaFinalizada || 0;
+  estadoRodadas = estado.estadoRodadas || {};
+  rascunhos = estado.rascunhos || {};
 
   jogadores = (estado.jogadores || []).map(j => ({
     nome: j.nome,
@@ -458,50 +541,158 @@ function descartarTorneioSalvo() {
   location.reload();
 }
 
-// Redesenha em modo leitura as rodadas já finalizadas, para o organizador ver
-// o que já aconteceu antes de continuar.
-function redesenharRodadasFinalizadas() {
+// Redesenha cada rodada CONFORME O SEU ESTADO. Antes tudo que estivesse em
+// resultadosPorRodada virava tabela de leitura, então uma rodada gerada e ainda
+// não finalizada aparecia como histórica — e uma rodada manual em preenchimento
+// sumia por completo, já que só entra em resultadosPorRodada na finalização.
+function redesenharRodadas() {
   const area = document.getElementById("torneio-area");
   if (!area) return;
   area.style.display = "block";
 
-  Object.keys(resultadosPorRodada).map(Number).sort((a, b) => a - b).forEach(r => {
-    const bloco = document.createElement("div");
-    bloco.className = "rodada-bloco";
-    bloco.id = "rodada_" + r;
+  const rodadas = new Set(
+    Object.keys(resultadosPorRodada).map(Number)
+      .concat(Object.keys(estadoRodadas).map(Number))
+  );
 
-    let html = `<h2>Rodada ${r}</h2>` +
-      '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+  Array.from(rodadas).sort((a, b) => a - b).forEach(r => {
+    const situacao = estadoRodadas[r] || "finalizada";
 
-    resultadosPorRodada[r].forEach(par => {
-      if (MTR.ehBye(par[1].nome)) {
-        html += `<tr><td colspan="3">${par[0].nome} folgou nesta rodada (Bye)</td></tr>`;
-        return;
-      }
-      const h = (par[0].historico || []).find(
-        x => x.contra === par[1].nome && Number(x.rodada) === Number(r)
-      );
-      const p = h ? MTR.parsePlacar(h.placar) : null;
-      const texto = p ? `${p[0]} x ${p[1]}` : "—";
-      const emp = h && h.gamesEmpatados ? ` (${h.gamesEmpatados} emp.)` : "";
-      html += `<tr><td>${par[0].nome}</td><td>${texto}${emp}</td><td>${par[1].nome}</td></tr>`;
-    });
+    if (situacao === "manual") { redesenharRodadaManual(r); return; }
+    if (situacao === "gerada") { redesenharRodadaEditavel(r); return; }
+    if (situacao === "corrigindo") { corrigirPlacares(r, true); return; }
 
-    html += "</tbody></table>";
-    bloco.innerHTML = html;
-    area.appendChild(bloco);
+    redesenharRodadaLeitura(r);
   });
+}
+
+function redesenharRodadaLeitura(r) {
+  const area = document.getElementById("torneio-area");
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + r;
+
+  let html = `<h2>Rodada ${r}</h2>` +
+    '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+
+  (resultadosPorRodada[r] || []).forEach(par => {
+    if (MTR.ehBye(par[1].nome)) {
+      html += `<tr><td colspan="3">${par[0].nome} folgou nesta rodada (Bye)</td></tr>`;
+      return;
+    }
+    const h = (par[0].historico || []).find(
+      x => x.contra === par[1].nome && Number(x.rodada) === Number(r)
+    );
+    const p = h ? MTR.parsePlacar(h.placar) : null;
+    const texto = p ? `${p[0]} x ${p[1]}` : "—";
+    const emp = h && h.gamesEmpatados ? ` (${h.gamesEmpatados} emp.)` : "";
+    html += `<tr><td>${par[0].nome}</td><td>${texto}${emp}</td><td>${par[1].nome}</td></tr>`;
+  });
+
+  html += "</tbody></table>";
+  bloco.innerHTML = html;
+  area.appendChild(bloco);
+}
+
+// Rodada automática pareada mas ainda sem placares: volta EDITÁVEL, com os
+// mesmos confrontos e o que já tinha sido digitado.
+function redesenharRodadaEditavel(r) {
+  const area = document.getElementById("torneio-area");
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + r;
+
+  let html = `<h2>Rodada ${r}</h2>` +
+    '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+
+  (resultadosPorRodada[r] || []).forEach((par, i) => {
+    const slot = par.slot !== undefined ? par.slot : i;
+    if (MTR.ehBye(par[1].nome)) {
+      html += `<tr data-slot="${slot}"><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
+      return;
+    }
+    html += `
+      <tr data-slot="${slot}">
+        <td>${par[0].nome}</td>
+        <td class="placar-input">
+          <input type="number" min="0" id="r${r}_p${slot * 2}">
+          <span>x</span>
+          <input type="number" min="0" id="r${r}_p${slot * 2 + 1}">
+          ${campoEmpates(r, slot)}
+        </td>
+        <td>${par[1].nome}</td>
+      </tr>`;
+  });
+
+  html += "</tbody></table>";
+  html += blocoEmpatesToggle(r);
+  html += `<button onclick="finalizarRodada(${r})">Finalizar Rodada ${r}</button>`;
+  bloco.innerHTML = html;
+  area.appendChild(bloco);
+
+  aplicarRascunho(r);
+  ligarAutosave(r);
+}
+
+// Rodada manual em preenchimento: reconstrói os selects com as escolhas feitas.
+function redesenharRodadaManual(r) {
+  const area = document.getElementById("torneio-area");
+  const bloco = document.createElement("div");
+  bloco.className = "rodada-bloco";
+  bloco.id = "rodada_" + r + "_manual";
+
+  const disponiveis = jogadoresAtivos();
+  const temBye = disponiveis.length % 2 !== 0;
+  const numJogos = (rascunhos[r] && rascunhos[r].numLinhas) || Math.ceil(disponiveis.length / 2);
+
+  let opcoes = '<option value="">Selecione</option>';
+  disponiveis.forEach(j => { opcoes += `<option value="${j.nome}">${j.nome}</option>`; });
+  if (temBye) opcoes += '<option value="Bye">Bye</option>';
+
+  let html = `<h2>Rodada ${r} (Manual)</h2>` +
+    '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
+
+  for (let i = 0; i < numJogos; i++) {
+    html += `
+      <tr data-slot="${i}">
+        <td><select id="r${r}_j1_${i}">${opcoes}</select></td>
+        <td class="placar-input">
+          <input type="number" min="0" id="r${r}_p${i * 2}">
+          <span>x</span>
+          <input type="number" min="0" id="r${r}_p${i * 2 + 1}">
+          ${campoEmpates(r, i)}
+        </td>
+        <td><select id="r${r}_j2_${i}">${opcoes}</select></td>
+      </tr>`;
+  }
+
+  html += "</tbody></table>";
+  html += blocoEmpatesToggle(r);
+  html += `<button onclick="finalizarRodada(${r})">Finalizar Rodada ${r}</button>`;
+  bloco.innerHTML = html;
+  area.appendChild(bloco);
+
+  aplicarRascunho(r);
+  ligarAutosave(r);
+}
+
+function rodadaAtualEstaFinalizada() {
+  if (rodadaAtual === 0) return true;   // nenhuma rodada gerada ainda
+  return (estadoRodadas[rodadaAtual] || "finalizada") === "finalizada";
 }
 
 function retomarTorneioSalvo(estado) {
   aplicarEstado(estado);
-  redesenharRodadasFinalizadas();
+  redesenharRodadas();
   mostrarRanking();
   mostrarEstatisticasAppendixC();
 
   const area = document.getElementById("torneio-area");
 
-  if (rodadaAtual < totalRodadas) {
+  // A próxima rodada só é oferecida se a atual estiver de fato finalizada —
+  // antes o botão aparecia mesmo com a rodada em andamento, e gerar a seguinte
+  // pularia a atual em silêncio.
+  if (rodadaAtualEstaFinalizada() && rodadaAtual < totalRodadas) {
     const botaoAuto = document.createElement("button");
     botaoAuto.id = "btn-proxima-auto";
     botaoAuto.textContent = "Gerar Próxima Rodada (automática)";
@@ -579,6 +770,8 @@ function iniciarTorneio() {
   confrontosAnteriores = new Set();
   ultimaRodadaFinalizada = 0;
   diaAtual = null;
+  estadoRodadas = {};
+  rascunhos = {};
   apagarEstadoSalvo();   // torneio novo substitui qualquer rascunho anterior
 
   const area = document.getElementById("torneio-area");
@@ -657,15 +850,18 @@ function ordenarJogadoresSuico(jogadores) {
     };
   });
 
-  // Embaralha antes de ordenar: como o sort do JS é estável, quem empatar nos
-  // quatro critérios fica em ordem sorteada, e não sempre na mesma.
+  // Embaralha antes de ordenar: como o sort do JS é estável e compararCriterios
+  // devolve 0 no empate real, quem empatar nos quatro critérios fica em ordem
+  // sorteada, e não sempre na mesma.
+  //
+  // Usa o comparador do mtr.js — que aplica o piso de 33% ao GW%. Uma ordenação
+  // própria aqui deixava o piso de fora e alterava tanto a ordem do pareamento
+  // quanto quem recebia o BYE (escolherBye lê esta lista de trás para frente).
   Pareamento.embaralhar(stats);
-  stats.sort((a, b) =>
-    (b.matchPoints - a.matchPoints) ||
-    (b.omwp - a.omwp) ||
-    (b.gameWinPerc - a.gameWinPerc) ||
-    (b.ogwp - a.ogwp)
-  );
+  stats.sort((a, b) => MTR.compararCriterios(
+    { matchPoints: a.matchPoints, omwp: a.omwp, gameWinPerc: a.gameWinPerc, ogwp: a.ogwp },
+    { matchPoints: b.matchPoints, omwp: b.omwp, gameWinPerc: b.gameWinPerc, ogwp: b.ogwp }
+  ));
 
   return stats;
 }
@@ -762,6 +958,7 @@ if (rodadaAtual === 1) {
   }
 
   resultadosPorRodada[rodadaAtual] = confrontos;
+  estadoRodadas[rodadaAtual] = "gerada";
 
   // `slot` é o índice da LINHA na tabela, gravado no próprio confronto.
   // Ler o placar por ele, e não pela posição no array, é o que impede que os
@@ -790,9 +987,10 @@ if (rodadaAtual === 1) {
   html += '</tbody></table>';
   html += blocoEmpatesToggle(rodadaAtual);
   html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button> ` +
-          `<button id="btn-reabrir-${rodadaAtual}" onclick="reabrirRodada(${rodadaAtual})">Reabrir Rodada</button>`;
+          `<button id="btn-reabrir-${rodadaAtual}" onclick="corrigirPlacares(${rodadaAtual})">Corrigir Placares</button>`;
   bloco.innerHTML += html;
   area.appendChild(bloco);
+  ligarAutosave(rodadaAtual);
   salvarEstado();
 }
 
@@ -876,10 +1074,17 @@ function gerarRodadaManual() {
   html += "</tbody></table>";
   html += blocoEmpatesToggle(rodadaAtual);
   html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button>`;
-  html += ` <button id="btn-reabrir-${rodadaAtual}" onclick="reabrirRodada(${rodadaAtual})">Reabrir Rodada</button>`;
+  html += ` <button id="btn-reabrir-${rodadaAtual}" onclick="corrigirPlacares(${rodadaAtual})">Corrigir Placares</button>`;
 
   bloco.innerHTML += html;
   area.appendChild(bloco);
+
+  // Sem isto a rodada manual gerada some numa recarga: ela so entra em
+  // resultadosPorRodada na finalizacao, e rodadaAtual ja foi incrementado.
+  estadoRodadas[rodadaAtual] = "manual";
+  rascunhos[rodadaAtual] = { numLinhas: numJogos, pares: {}, placares: {} };
+
+  ligarAutosave(rodadaAtual);
   salvarEstado();
 }
 
@@ -1017,8 +1222,47 @@ function validarRodadaManual(linhas, rodada) {
   return erros;
 }
 
-// FASE 3 — aplica. Só chamada quando a validação passou inteira.
-function aplicarRodadaManual(linhas, rodada) {
+// FASE 2b — lê os placares das linhas JÁ VALIDADAS, sem aplicar nada.
+// Lê pelo `slot` de cada linha, não pela posição no array.
+// Devolve { placares, erros }.
+function lerPlacaresManual(linhas, rodada) {
+  const placares = {};
+  const erros = [];
+
+  linhas.forEach(l => {
+    if (MTR.ehBye(l.nome1) || MTR.ehBye(l.nome2)) return;  // Bye não tem placar
+
+    const i1 = document.getElementById(`r${rodada}_p${l.slot * 2}`);
+    const i2 = document.getElementById(`r${rodada}_p${l.slot * 2 + 1}`);
+    if (!i1 || !i2) {
+      erros.push(`Campos de placar não encontrados para ${l.nome1} x ${l.nome2}.`);
+      return;
+    }
+
+    const p1 = parseInt(i1.value);
+    const p2 = parseInt(i2.value);
+    if (isNaN(p1) || isNaN(p2)) {
+      erros.push(`Falta o placar de ${l.nome1} x ${l.nome2}.`);
+      return;
+    }
+
+    const ie = document.getElementById(`r${rodada}_e${l.slot}`);
+    const emp = ie && ie.value !== "" ? parseInt(ie.value) : 0;
+    if (isNaN(emp) || emp < 0) {
+      erros.push(`Empates de game inválidos em ${l.nome1} x ${l.nome2}.`);
+      return;
+    }
+
+    placares[l.slot] = { p1: p1, p2: p2, emp: emp || 0 };
+  });
+
+  return { placares: placares, erros: erros };
+}
+
+// FASE 3 — aplica pareamento E placares numa única etapa.
+// Só é chamada quando pares e placares passaram inteiros na validação, então
+// não existe estado intermediário: ou tudo é gravado, ou nada é.
+function aplicarRodadaManual(linhas, placares, rodada) {
   const confrontos = [];
 
   linhas.forEach(l => {
@@ -1046,6 +1290,40 @@ function aplicarRodadaManual(linhas, rodada) {
     // Sem isto, uma rodada manual fica invisível para o pareamento das
     // rodadas automáticas seguintes e o confronto poderia se repetir.
     registrarConfronto(j1.nome, j2.nome);
+
+    const pl = placares[l.slot];
+    if (!pl) return;
+
+    if (pl.p1 > pl.p2) j1.pontos += 3;
+    else if (pl.p2 > pl.p1) j2.pontos += 3;
+    else { j1.pontos += 1; j2.pontos += 1; }
+
+    j1.saldo += pl.p1 - pl.p2;
+    j2.saldo += pl.p2 - pl.p1;
+
+    j1.historico.push({ contra: j2.nome, placar: `${pl.p1}x${pl.p2}`, rodada: rodada, gamesEmpatados: pl.emp });
+    j2.historico.push({ contra: j1.nome, placar: `${pl.p2}x${pl.p1}`, rodada: rodada, gamesEmpatados: pl.emp });
+
+    // Congela a linha na tela
+    const i1 = document.getElementById(`r${rodada}_p${l.slot * 2}`);
+    const tr = i1 && i1.parentElement ? i1.parentElement.parentElement : null;
+    if (tr && tr.children[1]) {
+      tr.children[0].textContent = j1.nome;
+      tr.children[1].innerHTML = `<span>${pl.p1} x ${pl.p2}${pl.emp ? ` (${pl.emp} emp.)` : ""}</span>`;
+      tr.children[2].textContent = j2.nome;
+    }
+  });
+
+  // Congela também a linha do Bye
+  confrontos.forEach(par => {
+    if (!MTR.ehBye(par[1].nome)) return;
+    const i1 = document.getElementById(`r${rodada}_p${par.slot * 2}`);
+    const tr = i1 && i1.parentElement ? i1.parentElement.parentElement : null;
+    if (tr && tr.children[1]) {
+      tr.children[0].textContent = par[0].nome;
+      tr.children[1].innerHTML = "<span>2 x 0</span>";
+      tr.children[2].textContent = "Bye";
+    }
   });
 
   return confrontos;
@@ -1054,20 +1332,38 @@ function aplicarRodadaManual(linhas, rodada) {
 function finalizarRodada(rodada) {
   let confrontos = resultadosPorRodada[rodada];
 
-  // Rodada manual: ler -> validar -> aplicar.
-  // Nada é gravado enquanto a validação não passar inteira, para um erro na
-  // última linha não deixar pontos, histórico ou BYE parcialmente aplicados.
+  // Rodada manual — transação completa:
+  //   ler pares -> validar pares -> ler placares -> validar placares -> APLICAR
+  // Nenhuma mutação acontece antes de pares E placares estarem válidos, para um
+  // placar faltando na última linha não deixar BYE, pontos, histórico e
+  // confrontosAnteriores já gravados.
   if (!confrontos || confrontos.length === 0) {
     const leitura = lerRodadaManual(rodada);
-    const erros = validarRodadaManual(leitura.linhas, rodada);
 
-    if (erros.length) {
-      alert("A rodada não pode ser finalizada:\n\n• " + erros.join("\n• "));
-      return;   // nenhum estado foi tocado até aqui
+    const errosPares = validarRodadaManual(leitura.linhas, rodada);
+    if (errosPares.length) {
+      alert("A rodada não pode ser finalizada:\n\n• " + errosPares.join("\n• "));
+      return;   // nada tocado
     }
 
-    confrontos = aplicarRodadaManual(leitura.linhas, rodada);
+    const leituraPlacares = lerPlacaresManual(leitura.linhas, rodada);
+    if (leituraPlacares.erros.length) {
+      alert("A rodada não pode ser finalizada:\n\n• " + leituraPlacares.erros.join("\n• "));
+      return;   // nada tocado — nem o BYE
+    }
+
+    confrontos = aplicarRodadaManual(leitura.linhas, leituraPlacares.placares, rodada);
     resultadosPorRodada[rodada] = confrontos;
+    estadoRodadas[rodada] = "finalizada";
+
+    ultimaRodadaFinalizada = Math.max(ultimaRodadaFinalizada, rodada);
+    limparRascunho(rodada);
+    salvarEstado();
+
+    mostrarRanking();
+    mostrarEstatisticasAppendixC();
+    botoesProximaRodada(rodada);
+    return;
   }
 
   // Placares também em duas fases: lê e valida TODOS antes de aplicar
@@ -1148,22 +1444,28 @@ function finalizarRodada(rodada) {
     j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}`, rodada: rodada, gamesEmpatados: emp });
   });
 
+  estadoRodadas[rodada] = "finalizada";
   ultimaRodadaFinalizada = Math.max(ultimaRodadaFinalizada, rodada);
+  limparRascunho(rodada);
   salvarEstado();
 
   mostrarRanking();
   mostrarEstatisticasAppendixC();
+  botoesProximaRodada(rodada);
+}
 
-  // Botões para a próxima rodada
+// Só é chamada depois de uma rodada ser efetivamente finalizada — é isso que
+// impede a próxima rodada de ser oferecida com a atual ainda em andamento.
+function botoesProximaRodada(rodada) {
+  const area = document.getElementById("torneio-area");
+  if (!area) return;
+
+  const oldAuto = document.getElementById("btn-proxima-auto");
+  const oldManual = document.getElementById("btn-proxima-manual");
+  if (oldAuto) oldAuto.remove();
+  if (oldManual) oldManual.remove();
+
   if (rodada < totalRodadas) {
-    const area = document.getElementById("torneio-area");
-
-    // Remove botões antigos, se existirem
-    const oldAuto = document.getElementById("btn-proxima-auto");
-    const oldManual = document.getElementById("btn-proxima-manual");
-    if (oldAuto) oldAuto.remove();
-    if (oldManual) oldManual.remove();
-
     const botaoAuto = document.createElement("button");
     botaoAuto.id = "btn-proxima-auto";
     botaoAuto.textContent = "Gerar Próxima Rodada (automática)";
@@ -1178,7 +1480,7 @@ function finalizarRodada(rodada) {
   } else {
     const fim = document.createElement("h3");
     fim.textContent = "Fim do Torneio!";
-    document.getElementById("torneio-area").appendChild(fim);
+    area.appendChild(fim);
   }
 }
 
@@ -1211,20 +1513,28 @@ function mostrarRanking() {
 
 
 
-function reabrirRodada(rodada) {
+// Corrige os PLACARES da rodada atual. Os confrontos permanecem os mesmos —
+// esta função nunca refaz um pareamento.
+// `restaurando` = true quando chamada pela recuperação do localStorage, para
+// redesenhar a tela sem revalidar nem alertar.
+function corrigirPlacares(rodada, restaurando) {
   const confrontos = resultadosPorRodada[rodada];
 
   if (!confrontos || !confrontos.length) {
-    alert("Esta rodada ainda não foi finalizada.");
+    if (!restaurando) alert("Esta rodada ainda não foi finalizada.");
     return;
   }
 
-  // Só a última rodada finalizada pode ser reaberta. Mudar o resultado de uma
-  // rodada antiga alteraria a classificação que gerou os pareamentos das
-  // rodadas seguintes — elas já teriam sido montadas de outro jeito.
-  if (Number(rodada) !== Number(ultimaRodadaFinalizada)) {
+  // A regra vale no DOMÍNIO, não só na interface: além de ser a última rodada
+  // finalizada, nenhuma rodada posterior pode ter sido gerada. Sem a segunda
+  // condição, chamar a função direto pelo console corrigiria uma rodada que já
+  // serviu de base para o pareamento seguinte.
+  if (!restaurando &&
+      (Number(rodada) !== Number(ultimaRodadaFinalizada) ||
+       Number(rodada) !== Number(rodadaAtual))) {
     alert(
-      `Só é possível reabrir a última rodada finalizada (Rodada ${ultimaRodadaFinalizada}).\n\n` +
+      `Só é possível corrigir os placares da rodada atual (Rodada ${rodadaAtual}), ` +
+      `e apenas enquanto nenhuma rodada posterior tiver sido gerada.\n\n` +
       `A Rodada ${rodada} já foi usada para montar os pareamentos das rodadas seguintes; ` +
       `mudar o resultado dela agora tornaria esses pareamentos inconsistentes.`
     );
@@ -1267,7 +1577,8 @@ function reabrirRodada(rodada) {
   const bloco = document.createElement("div");
   bloco.className = "rodada-bloco";
   bloco.id = "rodada_" + rodada + "_reaberta";
-  bloco.innerHTML = `<h2>Rodada ${rodada} (Reaberta)</h2>`;
+  estadoRodadas[rodada] = "corrigindo";
+  bloco.innerHTML = `<h2>Rodada ${rodada} — Corrigindo Placares</h2>`;
 
   let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
   confrontos.forEach((par, i) => {
@@ -1290,15 +1601,16 @@ function reabrirRodada(rodada) {
     }
   });
   html += '</tbody></table>';
-  html += `<button onclick="finalizarRodadaReaberta(${rodada})">Finalizar Rodada ${rodada} (Reaberta)</button>`;
+  html += `<button onclick="finalizarCorrecao(${rodada})">Salvar Placares Corrigidos</button>`;
   bloco.innerHTML += html;
   area.appendChild(bloco);
+  ligarAutosave(rodada);
   salvarEstado();
-  alert("Rodada reaberta! Corrija os placares e finalize novamente.");
+  if (!restaurando) alert("Corrija os placares e salve novamente.");
 }
 
 // Função para finalizar rodada reaberta
-function finalizarRodadaReaberta(rodada) {
+function finalizarCorrecao(rodada) {
   const confrontos = resultadosPorRodada[rodada];
 
   // Igual a finalizarRodada: lê e valida todos os placares antes de aplicar
@@ -1356,37 +1668,14 @@ function finalizarRodadaReaberta(rodada) {
     j2.historico.push({ contra: j1.nome, placar: `${p2}x${p1}`, rodada: rodada, gamesEmpatados: emp });
   });
 
+  estadoRodadas[rodada] = "finalizada";
   ultimaRodadaFinalizada = Math.max(ultimaRodadaFinalizada, rodada);
+  limparRascunho(rodada);
   salvarEstado();
 
   mostrarRanking();
   mostrarEstatisticasAppendixC();
-
-  // Mesma lógica de "próxima rodada" que usamos em finalizarRodada()
-  if (rodada < totalRodadas) {
-    const area = document.getElementById("torneio-area");
-
-    const oldAuto = document.getElementById("btn-proxima-auto");
-    const oldManual = document.getElementById("btn-proxima-manual");
-    if (oldAuto) oldAuto.remove();
-    if (oldManual) oldManual.remove();
-
-    const botaoAuto = document.createElement("button");
-    botaoAuto.id = "btn-proxima-auto";
-    botaoAuto.textContent = "Gerar Próxima Rodada (automática)";
-    botaoAuto.onclick = gerarRodada;
-    area.appendChild(botaoAuto);
-
-    const botaoManual = document.createElement("button");
-    botaoManual.id = "btn-proxima-manual";
-    botaoManual.textContent = "Gerar Próxima Rodada (manual)";
-    botaoManual.onclick = gerarRodadaManual;
-    area.appendChild(botaoManual);
-  } else {
-    const fim = document.createElement("h3");
-    fim.textContent = "Fim do Torneio!";
-    document.getElementById("torneio-area").appendChild(fim);
-  }
+  botoesProximaRodada(rodada);
 }
 
 
@@ -1426,11 +1715,9 @@ function mostrarEstatisticasAppendixC() {
 
   // O 1º da lista já é o campeão pelos critérios oficiais.
   const campeao = stats[0];
-  const empatado = stats[1] &&
-    stats[1].matchPoints === campeao.matchPoints &&
-    stats[1].omwp === campeao.omwp &&
-    stats[1].gameWinPerc === campeao.gameWinPerc &&
-    stats[1].ogwp === campeao.ogwp;
+  // Usa o comparador oficial: comparar campo a campo aqui deixava o piso do
+  // GW% de fora e não reconhecia como empate um 25% x 30% (ambos valem 33%).
+  const empatado = !!stats[1] && MTR.estaoEmpatadosNosCriterios(campeao, stats[1]);
 
   html += `
     <h3 style="margin-top: 30px; color: gold;">🏆 Campeão: ${campeao.jogador}</h3>`;

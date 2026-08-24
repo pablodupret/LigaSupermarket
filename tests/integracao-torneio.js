@@ -382,8 +382,8 @@ function criarTorneio(nomes, numRodadas, liga) {
     },
 
     finalizar: function (rodada) { run("finalizarRodada(" + rodada + ");"); },
-    finalizarReaberta: function (rodada) { run("finalizarRodadaReaberta(" + rodada + ");"); },
-    reabrir: function (rodada) { run("reabrirRodada(" + rodada + ");"); },
+    finalizarReaberta: function (rodada) { run("finalizarCorrecao(" + rodada + ");"); },
+    reabrir: function (rodada) { run("corrigirPlacares(" + rodada + ");"); },
 
     // Chama a FUNÇÃO REAL de exportação usada pela interface.
     exportar: function (dia) {
@@ -403,6 +403,29 @@ function criarTorneio(nomes, numRodadas, liga) {
     },
 
     confrontos: function () { return run("Array.from(confrontosAnteriores)"); },
+    estadoRodadas: function () { return run("estadoRodadas"); },
+    rascunhos: function () { return run("rascunhos"); },
+
+    // Injeta um histórico pronto, para montar cenários de desempate exatos.
+    definirHistorico: function (porJogador) {
+      run("jogadores.forEach(function(j){ j.historico = " +
+          JSON.stringify(porJogador) + "[j.nome] || []; });");
+    },
+
+    // Executa a ordenação REAL usada para parear (não o MTR.compararMTR isolado).
+    ordenar: function () {
+      return run("ordenarJogadoresSuico(jogadores.filter(function(j){return !MTR.ehBye(j.nome);}))" +
+                 "  .map(function(s){ return s.nome; })");
+    },
+
+    // Executa a geração de rodada real e devolve quem ficou com o BYE.
+    byeDaRodada: function () {
+      run("gerarRodada();");
+      var r = run("rodadaAtual");
+      var pares = run("resultadosPorRodada[" + r + "].map(function(p){return [p[0].nome,p[1].nome];})");
+      var bye = pares.filter(function (p) { return p[1] === "Bye"; })[0];
+      return bye ? bye[0] : null;
+    },
 
     // --- persistência
     estadoSalvo: function () { return run("lerEstadoSalvo()"); },

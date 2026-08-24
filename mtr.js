@@ -195,16 +195,20 @@
   }
 
   // Ordem oficial: match points -> OMW% -> GW% -> OGW%.
+  // Devolve 0 quando os QUATRO critérios empatam — nesse caso quem chama decide
+  // o que fazer (sortear, manter a ordem prévia, avisar que houve empate).
   //
-  // O piso de 0.33 do GW% é aplicado AQUI DENTRO, e não só por quem monta o
-  // objeto: assim a regra vale para todos os chamadores, inclusive os que
-  // montam a linha à mão (ordenarJogadoresSuico da ferramenta de torneio).
-  // Dois jogadores com GW% bruto de 25% e 30% valem 33% para fins oficiais e
-  // empatam neste critério — o desempate segue para o OGW%.
+  // O piso de 0.33 do GW% é aplicado AQUI DENTRO, e não por quem monta o objeto:
+  // assim a regra vale para todos os chamadores, inclusive os que montam a linha
+  // à mão. Dois jogadores com GW% bruto de 25% e 30% valem 33% para fins oficiais
+  // e empatam neste critério — o desempate segue para o OGW%.
   //
   // MW% não entra: não é critério de desempate no MTR, só alimenta o OMW%.
   // OMW% e OGW% já vêm com o piso aplicado por adversário.
-  function compararMTR(a, b) {
+  //
+  // ESTA É A ÚNICA IMPLEMENTAÇÃO DESTA ORDEM. Não reconstruir os critérios em
+  // outro arquivo — foi assim que o piso do GW% ficou faltando no pareamento.
+  function compararCriterios(a, b) {
     if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
     if (b.omwp !== a.omwp) return b.omwp - a.omwp;
 
@@ -213,7 +217,18 @@
     if (gwB !== gwA) return gwB - gwA;
 
     if (b.ogwp !== a.ogwp) return b.ogwp - a.ogwp;
-    return String(a.jogador).localeCompare(String(b.jogador), "pt-BR");
+    return 0;
+  }
+
+  function estaoEmpatadosNosCriterios(a, b) {
+    return compararCriterios(a, b) === 0;
+  }
+
+  // Para apresentação: mesma ordem, mas com o nome como último desempate, para
+  // a tabela exibida não mudar de ordem a cada renderização.
+  function compararMTR(a, b) {
+    return compararCriterios(a, b) ||
+           String(a.jogador).localeCompare(String(b.jogador), "pt-BR");
   }
 
   var API = {
@@ -231,6 +246,8 @@
     opponentsGameWinPct: opponentsGameWinPct,
     construirRegistros: construirRegistros,
     classificar: classificar,
+    compararCriterios: compararCriterios,
+    estaoEmpatadosNosCriterios: estaoEmpatadosNosCriterios,
     compararMTR: compararMTR
   };
 

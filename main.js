@@ -229,11 +229,11 @@ function calcularRankingArray(jogos) {
 
     s1.gamesVencidos += g1;
     s1.gamesPerdidos += g2;
-    s1.gamesJogos += g1 + g2;
+    s1.gamesJogos += g1 + g2 + (jogo.gamesEmpatados || 0);
 
     s2.gamesVencidos += g2;
     s2.gamesPerdidos += g1;
-    s2.gamesJogos += g1 + g2;
+    s2.gamesJogos += g1 + g2 + (jogo.gamesEmpatados || 0);
 
     // Lista (não Set): quem enfrenta o mesmo adversário duas vezes conta duas.
     s1.oponentes.push(j2);
@@ -852,11 +852,11 @@ divDia.innerHTML += htmlRanking;
       // games (para Game Win %)
       s1.gamesVencidos += g1;
       s1.gamesPerdidos += g2;
-      s1.gamesJogos += g1 + g2;
+      s1.gamesJogos += g1 + g2 + (jogo.gamesEmpatados || 0);
 
       s2.gamesVencidos += g2;
       s2.gamesPerdidos += g1;
-      s2.gamesJogos += g1 + g2;
+      s2.gamesJogos += g1 + g2 + (jogo.gamesEmpatados || 0);
 
       // oponentes (para OMWP) — lista, não Set: adversário repetido conta 2x
       s1.oponentes.push(j2);
