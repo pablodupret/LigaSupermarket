@@ -75,8 +75,13 @@ Array de objetos, um por partida:
 - `liga`: número da temporada (1, 2, 3...)
 - `dia`: número do dia de competição dentro da liga
 - `rodada`: número da rodada dentro do dia
-- `resultado`: sempre no formato `"N x N"` com espaços (importante para o split)
+- `resultado`: sempre no formato `"N x N"` com espaços (importante para o split) — são os
+  games **vencidos** por cada lado
 - `jogador2` pode ser `"Bye"` em casos de número ímpar de jogadores
+- `gamesEmpatados` (opcional): número de games que terminaram empatados na partida. Vale 1
+  game point cada, contra 3 do game vencido. Ausente = 0, então todas as linhas antigas
+  seguem válidas. Um match 2-0-1 fica
+  `{ ..., "resultado": "2 x 0", ..., "gamesEmpatados": 1 }` — 7 game points em 3 games
 
 ### `ligas.json`
 ```json
@@ -124,9 +129,14 @@ Nunca reimplemente esta matemática em outro arquivo — `main.js`, `appendix_c.
 - Game points: game ganho 3, game empatado 1, game perdido 0
 - **MW% = match points / (3 × rodadas)** — um empate vale **1/3** de vitória, não 1/2
 - **GW% = game points / (3 × games)**
-- Piso de 0.33: entra no cálculo dos **oponentes**. Para o valor próprio do jogador
-  use `matchWinPctRaw` / `gameWinPctRaw` — com o piso, todos abaixo de 33% empatariam
-  e o critério perderia poder de desempate
+- **Piso de 0.33 — onde vale e onde não vale:**
+  - **Vale** no cálculo dos oponentes (OMW%/OGW%) e no **critério oficial de desempate**:
+    `compararMTR` aplica o piso ao GW% internamente, então dois jogadores com 25% e 30%
+    empatam nesse critério e a decisão segue para o OGW%
+  - **Não vale** no ranking da temporada, que usa o esquema próprio da liga (pontos válidos
+    primeiro) e não a ordem do MTR. Ali entram `matchWinPctRaw`/`gameWinPctRaw`, porque com
+    o piso todos abaixo de 33% empatariam e o critério perderia poder de desempate
+  - `classificar()` devolve os dois: `gameWinPerc` (cru, para exibir) e `gameWinPercPiso`
 - **Bye = vitória 2×0**: 3 match points, 6 game points, 2 games, 1 rodada. O bye
   **nunca entra como adversário** no OMW%/OGW% (regra explícita do MTR)
 - Adversário enfrentado duas vezes conta **duas vezes** na média (não deduplicar)
@@ -401,7 +411,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 41 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 88 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -453,6 +463,48 @@ mesma matemática — hoje unificadas em `mtr.js`.
 Os números publicados das Ligas 1-3 **não mudaram**: `liga1/2/3.html` carregam
 `appendix_c-encerradas.js` (snapshot congelado) e `main-liga1/2/3.js`, nenhum deles tocado
 pela auditoria. As correções valem da Liga 4 em diante.
+
+---
+
+## 15. Segunda rodada de correções (24/08/2026)
+
+Fechamento dos pontos que restaram da primeira auditoria.
+
+1. **Piso de 33% no critério oficial.** `compararMTR` aplica o piso ao GW% internamente —
+   assim a regra vale para todos os chamadores, inclusive quem monta a linha à mão.
+2. **Rodada manual passou a registrar os confrontos.** Antes só o caminho automático
+   alimentava `confrontosAnteriores`, então um confronto feito manualmente era invisível
+   para o pareamento das rodadas seguintes e podia se repetir.
+3. **Validação de completude na rodada manual.** Cada jogador tem de aparecer exatamente
+   uma vez; número par sem BYE, ímpar com exatamente um. A mensagem de erro **nomeia** quem
+   ficou de fora.
+4. **BYE manual completo e finalização atômica.** O BYE respeita a regra de um por jogador
+   por torneio. E o fluxo virou *ler → validar → aplicar*: antes o BYE gravava pontos e
+   histórico **durante** a validação, então um erro numa linha posterior deixava o estado
+   sujo e um novo clique em "Finalizar" duplicava o BYE.
+5. **Reabertura restrita à última rodada finalizada.** Mudar uma rodada antiga alteraria a
+   classificação que gerou os pareamentos das seguintes. O botão some das rodadas antigas.
+6. **Game draws** via campo opcional `gamesEmpatados` (ver seção 3), com uma coluna extra
+   na ferramenta que só aparece se o organizador marcar "Registrar empates de game".
+7. **Exportação virou função pura** (`montarJogosExportados`), chamada tanto pela interface
+   quanto pelos testes — antes o teste reimplementava a lógica e poderia passar com a função
+   real quebrada.
+8. **Recuperação do torneio.** O estado é salvo em `localStorage` a cada operação. Ao abrir
+   a ferramenta com um torneio em andamento, ela oferece continuar; há botão para descartar.
+   Os confrontos são salvos como nomes e **religados por referência** ao restaurar — salvar
+   os objetos direto duplicaria cada jogador e os pontos parariam de acompanhar o histórico.
+
+### Sobre conformidade com a Wizards
+
+A redação correta, que deve ser usada ao descrever a ferramenta:
+
+> Motor de pareamento suíço baseado nas regras públicas do *Magic Tournament Rules*, com
+> prevenção de rematches, BYE controlado e critérios oficiais do Appendix C. Validado contra
+> os exemplos públicos do MTR e pela suíte de testes do projeto.
+
+**Não afirmar** que o sistema reproduz o algoritmo do EventLink ou que é matematicamente
+idêntico ao da Wizards: a implementação interna deles não é pública. O que temos é
+conformidade com as regras publicadas no MTR, que é o que a suíte verifica.
 
 ---
 

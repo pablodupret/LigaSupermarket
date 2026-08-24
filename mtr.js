@@ -153,8 +153,13 @@
       var placar = parsePlacar(jogo.resultado);
       if (!placar) return;
 
-      aplicarPartida(reg(j1), placar[0], placar[1], j2);
-      aplicarPartida(reg(j2), placar[1], placar[0], j1);
+      // Campo opcional: games que terminaram empatados (valem 1 game point
+      // cada, não 3). Ausente = 0, então todo o histórico anterior segue
+      // válido sem alteração.
+      var empatados = Number(jogo.gamesEmpatados) || 0;
+
+      aplicarPartida(reg(j1), placar[0], placar[1], j2, empatados);
+      aplicarPartida(reg(j2), placar[1], placar[0], j1, empatados);
     });
 
     return registros;
@@ -177,6 +182,9 @@
         // exibição/desempate do próprio jogador: sem piso
         matchWinPerc: matchWinPctRaw(r),
         gameWinPerc: gameWinPctRaw(r),
+        // valores com piso, como o MTR define — compararMTR usa o GW% assim
+        matchWinPercPiso: matchWinPct(r),
+        gameWinPercPiso: gameWinPct(r),
         omwp: opponentsMatchWinPct(r, registros),
         ogwp: opponentsGameWinPct(r, registros)
       };
@@ -187,11 +195,23 @@
   }
 
   // Ordem oficial: match points -> OMW% -> GW% -> OGW%.
-  // O nome entra por último só para a ordenação ser determinística.
+  //
+  // O piso de 0.33 do GW% é aplicado AQUI DENTRO, e não só por quem monta o
+  // objeto: assim a regra vale para todos os chamadores, inclusive os que
+  // montam a linha à mão (ordenarJogadoresSuico da ferramenta de torneio).
+  // Dois jogadores com GW% bruto de 25% e 30% valem 33% para fins oficiais e
+  // empatam neste critério — o desempate segue para o OGW%.
+  //
+  // MW% não entra: não é critério de desempate no MTR, só alimenta o OMW%.
+  // OMW% e OGW% já vêm com o piso aplicado por adversário.
   function compararMTR(a, b) {
     if (b.matchPoints !== a.matchPoints) return b.matchPoints - a.matchPoints;
     if (b.omwp !== a.omwp) return b.omwp - a.omwp;
-    if (b.gameWinPerc !== a.gameWinPerc) return b.gameWinPerc - a.gameWinPerc;
+
+    var gwA = Math.max(PISO, a.gameWinPerc || 0);
+    var gwB = Math.max(PISO, b.gameWinPerc || 0);
+    if (gwB !== gwA) return gwB - gwA;
+
     if (b.ogwp !== a.ogwp) return b.ogwp - a.ogwp;
     return String(a.jogador).localeCompare(String(b.jogador), "pt-BR");
   }

@@ -430,6 +430,337 @@ grupo("4. Ferramenta de torneio ponta a ponta");
      JSON.stringify(lidos[1]));
 })();
 
+// ================================ 5. Piso de 33% no critério oficial
+grupo("5. Piso de 33% no GW% (critério oficial)");
+
+(function () {
+  // MP e OMW% iguais; GW% bruto 25% vs 30% -> ambos valem 33% e o desempate
+  // tem de seguir para o OGW%.
+  var a = { jogador: "A", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.25, ogwp: 0.60 };
+  var b = { jogador: "B", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.30, ogwp: 0.40 };
+  ok(MTR.compararMTR(a, b) < 0,
+     "GW% 25% vs 30% empatam no piso e o OGW% decide",
+     "compararMTR devolveu " + MTR.compararMTR(a, b));
+
+  // Acima do piso, o valor real vale.
+  var c = { jogador: "C", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.70, ogwp: 0.10 };
+  var d = { jogador: "D", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.50, ogwp: 0.90 };
+  ok(MTR.compararMTR(c, d) < 0,
+     "GW% acima do piso desempata pelo valor real",
+     "compararMTR devolveu " + MTR.compararMTR(c, d));
+
+  // O piso não pode "vazar" para cima: 40% x 33% continua distinguindo.
+  var e = { jogador: "E", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.40, ogwp: 0.10 };
+  var f = { jogador: "F", matchPoints: 9, omwp: 0.50, gameWinPerc: 0.20, ogwp: 0.90 };
+  ok(MTR.compararMTR(e, f) < 0, "GW% 40% vence GW% 20% (que sobe para 33%)");
+
+  // OMW%/OGW% seguem usando os percentuais dos adversários COM piso.
+  var fraco = MTR.novoRegistro();
+  fraco.matchPoints = 0; fraco.partidas = 4; fraco.gamePoints = 0; fraco.games = 8;
+  var eu = MTR.novoRegistro();
+  eu.adversarios.push("fraco");
+  var regs = { fraco: fraco };
+  ok(perto(MTR.opponentsMatchWinPct(eu, regs), 0.33),
+     "adversario com 0% entra no OMW% como 33%",
+     "obtido: " + MTR.opponentsMatchWinPct(eu, regs).toFixed(3));
+  ok(perto(MTR.opponentsGameWinPct(eu, regs), 0.33),
+     "adversario com 0% entra no OGW% como 33%",
+     "obtido: " + MTR.opponentsGameWinPct(eu, regs).toFixed(3));
+
+  // classificar() expõe os dois valores: cru para exibir, com piso para o critério
+  var linhas = MTR.classificar([
+    { jogador1: "X", resultado: "0 x 2", jogador2: "Y" }
+  ]);
+  var x = linhas.filter(function (l) { return l.jogador === "X"; })[0];
+  ok(x.gameWinPerc === 0 && perto(x.gameWinPercPiso, 0.33),
+     "classificar devolve GW% cru (0%) e com piso (33%)",
+     "cru=" + x.gameWinPerc + " piso=" + x.gameWinPercPiso);
+})();
+
+// ==================================== 6. Game draws (gamesEmpatados)
+grupo("6. Game empatado (campo gamesEmpatados)");
+
+(function () {
+  var linhas = MTR.classificar([
+    { jogador1: "A", resultado: "2 x 0", jogador2: "B", gamesEmpatados: 1 }
+  ]);
+  var a = linhas.filter(function (l) { return l.jogador === "A"; })[0];
+  var b = linhas.filter(function (l) { return l.jogador === "B"; })[0];
+
+  // 2-0-1: A tem 2*3 + 1 = 7 game points em 3 games -> 7/9
+  ok(perto(a.gameWinPerc, 7 / 9), "match 2-0-1: GW% do vencedor = 7/9",
+     "obtido: " + a.gameWinPerc.toFixed(3));
+  // B tem 0*3 + 1 = 1 game point em 3 games -> 1/9, abaixo do piso
+  ok(perto(b.gameWinPerc, 1 / 9), "match 2-0-1: GW% cru do perdedor = 1/9",
+     "obtido: " + b.gameWinPerc.toFixed(3));
+  ok(a.matchPoints === 3 && b.matchPoints === 0, "match 2-0-1 continua sendo vitoria");
+
+  // Retrocompatibilidade: sem o campo, nada muda
+  var sem = MTR.classificar([{ jogador1: "A", resultado: "2 x 0", jogador2: "B" }]);
+  var aSem = sem.filter(function (l) { return l.jogador === "A"; })[0];
+  ok(aSem.gameWinPerc === 1, "sem o campo, 2 x 0 continua valendo GW% 100%",
+     "obtido: " + aSem.gameWinPerc);
+})();
+
+// ======================== 7. Fluxo manual, reabertura e exportação
+grupo("7. Fluxo manual, reabertura e exportação");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // -- manual completa
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], ["C", "D"]]);
+    t.preencherPlacaresPorSlot(1, { 0: [2, 0], 1: [1, 2] });
+    t.finalizar(1);
+    ok(t.alertas().length === 0, "rodada manual completa finaliza sem alerta",
+       t.alertas().join(" | "));
+    var exp = t.exportar(1);
+    ok(exp.length === 2, "manual completa exporta os 2 jogos", "exportou " + exp.length);
+  })();
+
+  // -- linha vazia: a tabela manual desenha exatamente ceil(n/2) linhas, entao
+  //    deixar uma vazia significa necessariamente alguem de fora -> bloqueado.
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], null]);
+    var antes = t.estado();
+    t.finalizar(1);
+    ok(/C, D|C,D/.test(t.alertas().join(" ")),
+       "linha vazia deixando jogadores de fora e bloqueada",
+       t.alertas().join(" | "));
+    ok(t.estado() === antes, "linha vazia nao altera estado");
+  })();
+
+  // -- BYE na PRIMEIRA linha: caso real em que o slot desloca os placares.
+  //    Sem o `slot`, A x B leria os campos da linha do BYE (que nao existem)
+  //    e C x D receberia o placar de A x B.
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["E", "Bye"], ["A", "B"], ["C", "D"]]);
+    t.preencherPlacaresPorSlot(1, { 1: [2, 0], 2: [1, 2] });
+    t.finalizar(1);
+
+    ok(t.alertas().length === 0, "BYE na primeira linha finaliza sem alerta",
+       t.alertas().join(" | "));
+
+    var exp = t.exportar(1);
+    var ab = exp.filter(function (o) { return o.jogador1 === "A"; })[0];
+    var cd = exp.filter(function (o) { return o.jogador1 === "C"; })[0];
+    ok(ab && ab.resultado === "2 x 0", "A x B recebe o proprio placar",
+       ab ? ab.resultado : "ausente");
+    ok(cd && cd.resultado === "1 x 2", "C x D recebe o proprio placar",
+       cd ? cd.resultado : "ausente");
+    ok(exp.some(function (o) { return o.jogador1 === "E" && o.jogador2 === "Bye"; }),
+       "o BYE da primeira linha vai para a exportacao");
+  })();
+
+  // -- manual incompleta: bloqueia e nomeia quem ficou de fora
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E", "F", "G", "H"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], ["C", "D"]]);  // E, F, G e H esquecidos
+    var antes = t.estado();
+    t.finalizar(1);
+    var msg = t.alertas().join(" ");
+    ok(t.alertas().length > 0, "rodada incompleta e bloqueada");
+    ok(/E/.test(msg) && /F/.test(msg) && /G/.test(msg) && /H/.test(msg),
+       "a mensagem nomeia os jogadores sem jogo", msg.slice(0, 160));
+    ok(t.estado() === antes, "rodada incompleta nao altera nenhum estado");
+  })();
+
+  // -- jogador duplicado e jogador contra si mesmo
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], ["A", "C"]]);
+    var antes = t.estado();
+    t.finalizar(1);
+    ok(/aparece em 2 jogos/.test(t.alertas().join(" ")), "jogador duplicado e bloqueado",
+       t.alertas().join(" | "));
+    ok(t.estado() === antes, "duplicado nao altera estado");
+
+    var t2 = criar(["A", "B", "C", "D"], 2, 4);
+    t2.gerarManual();
+    t2.preencherManual(1, [["A", "A"], ["C", "D"]]);
+    t2.finalizar(1);
+    ok(/ele mesmo/.test(t2.alertas().join(" ")), "jogador contra si mesmo e bloqueado",
+       t2.alertas().join(" | "));
+  })();
+
+  // -- manual -> automatica: o confronto manual nao pode se repetir
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], ["C", "D"]]);
+    t.preencherPlacaresPorSlot(1, { 0: [2, 0], 1: [2, 0] });
+    t.finalizar(1);
+
+    var confrontos = t.confrontos();
+    ok(confrontos.indexOf("A|B") >= 0 && confrontos.indexOf("C|D") >= 0,
+       "rodada manual registra os confrontos em confrontosAnteriores",
+       confrontos.join(", "));
+
+    t.gerarAuto();
+    var r2 = t.run("resultadosPorRodada[2].map(function(p){return [p[0].nome,p[1].nome];})");
+    var repetiu = r2.some(function (p) {
+      var k = p.slice().sort().join("|");
+      return k === "A|B" || k === "C|D";
+    });
+    ok(!repetiu, "a automatica seguinte nao repete o confronto da manual",
+       JSON.stringify(r2));
+  })();
+
+  // -- BYE manual e BYE repetido
+  (function () {
+    var t = criar(["A", "B", "C"], 3, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"], ["C", "Bye"]]);
+    t.preencherPlacaresPorSlot(1, { 0: [2, 0] });
+    t.finalizar(1);
+    ok(t.alertas().length === 0, "BYE manual funciona", t.alertas().join(" | "));
+
+    var exp = t.exportar(1);
+    ok(exp.some(function (o) { return o.jogador2 === "Bye" && o.jogador1 === "C"; }),
+       "BYE manual aparece na exportacao", JSON.stringify(exp));
+
+    // segundo BYE para o mesmo jogador, havendo outros elegiveis
+    t.gerarManual();
+    t.preencherManual(2, [["A", "B"], ["C", "Bye"]]);
+    var antes = t.estado();
+    t.limparAlertas();
+    t.finalizar(2);
+    ok(/já recebeu Bye|ja recebeu Bye/.test(t.alertas().join(" ")),
+       "segundo BYE para o mesmo jogador e bloqueado", t.alertas().join(" | "));
+    ok(t.estado() === antes, "BYE repetido nao altera estado");
+
+    // corrigindo, finaliza e NAO duplica o BYE do C
+    t.limparAlertas();
+    t.preencherManual(2, [["A", "C"], ["B", "Bye"]]);
+    t.preencherPlacaresPorSlot(2, { 0: [2, 1] });
+    t.finalizar(2);
+    ok(t.alertas().length === 0, "apos corrigir, a rodada finaliza",
+       t.alertas().join(" | "));
+
+    var jogs = t.jogadores();
+    var byesC = jogs.filter(function (j) { return j.nome === "C"; })[0]
+      .historico.filter(function (h) { return h.contra === "Bye"; }).length;
+    ok(byesC === 1, "corrigir e refinalizar nao duplica o BYE", "byes de C: " + byesC);
+  })();
+
+  // -- erro DEPOIS de uma linha de BYE nao pode deixar estado parcial
+  (function () {
+    var t = criar(["A", "B", "C"], 2, 4);
+    t.gerarManual();
+    // linha 0 valida com BYE, linha 1 invalida (jogador contra si mesmo)
+    t.preencherManual(1, [["C", "Bye"], ["A", "A"]]);
+    var antes = t.estado();
+    t.finalizar(1);
+    ok(t.alertas().length > 0, "erro na linha seguinte bloqueia a rodada");
+    ok(t.estado() === antes,
+       "BYE da linha anterior NAO foi aplicado (atomicidade)",
+       "estado mudou");
+  })();
+
+  // -- reabertura: so a ultima rodada
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.gerarAuto();
+    t.preencherPlacares(2, function () { return [2, 0]; });
+    t.finalizar(2);
+
+    t.limparAlertas();
+    t.reabrir(1);
+    ok(/ultima rodada finalizada|última rodada finalizada/.test(t.alertas().join(" ")),
+       "reabrir uma rodada antiga e recusado", t.alertas().join(" | "));
+
+    t.limparAlertas();
+    t.reabrir(2);
+    ok(t.alertas().length === 1 && /reaberta/i.test(t.alertas()[0]),
+       "reabrir a ultima rodada funciona", t.alertas().join(" | "));
+
+    // corrige o placar e confere que a exportacao reflete
+    t.preencherPlacaresReabertos(2, function () { return [0, 2]; });
+    t.limparAlertas();
+    t.finalizarReaberta(2);
+    var exp = t.exportar(1).filter(function (o) { return o.rodada === 2; });
+    ok(exp.length > 0 && exp.every(function (o) { return o.resultado === "0 x 2"; }),
+       "exportacao reflete o placar corrigido apos reabrir",
+       JSON.stringify(exp));
+  })();
+
+  // -- persistencia: recarregar a pagina no meio do torneio
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.gerarAuto();
+    t.preencherPlacares(2, function () { return [2, 1]; });
+    t.finalizar(2);
+
+    var salvo = t.estadoSalvo();
+    ok(!!salvo, "o torneio e salvo automaticamente");
+    ok(salvo && salvo.ultimaRodadaFinalizada === 2,
+       "o estado salvo registra a ultima rodada finalizada",
+       salvo ? String(salvo.ultimaRodadaFinalizada) : "-");
+
+    var antes = t.estado();
+    t.recarregarDoStorage();
+    ok(t.estado() === antes,
+       "recarregar do storage reconstroi exatamente o mesmo estado");
+
+    // As referencias tem de voltar religadas: mexer no jogador pelo array
+    // `jogadores` precisa refletir no confronto guardado em resultadosPorRodada.
+    var mesmaRef = t.run(
+      "(function(){ var alvo = resultadosPorRodada[1][0][0];" +
+      " var doArray = jogadores.filter(function(j){return j.nome===alvo.nome;})[0];" +
+      " return alvo === doArray; })()"
+    );
+    ok(mesmaRef === true,
+       "apos restaurar, os confrontos apontam para os MESMOS objetos de jogadores",
+       "obtido: " + mesmaRef);
+
+    // e o torneio continua de onde parou
+    t.gerarAuto();
+    ok(t.rodadaAtual() === 3, "e possivel continuar o torneio apos restaurar",
+       "rodada atual: " + t.rodadaAtual());
+
+    t.apagarEstadoSalvo();
+    ok(!t.estadoSalvo(), "apagar o torneio salvo limpa o storage");
+  })();
+
+  // -- game draw ponta a ponta pela ferramenta
+  (function () {
+    var t = criar(["A", "B"], 1, 4);
+    t.gerarManual();
+    t.preencherManual(1, [["A", "B"]]);
+    t.preencherPlacaresPorSlot(1, { 0: [2, 0, 1] });   // 2-0-1
+    t.finalizar(1);
+    ok(t.alertas().length === 0, "match 2-0-1 finaliza sem alerta", t.alertas().join(" | "));
+
+    var exp = t.exportar(3);
+    ok(exp.length === 1 && exp[0].gamesEmpatados === 1,
+       "gamesEmpatados sai no JSON exportado", JSON.stringify(exp));
+    ok(exp[0].resultado === "2 x 0",
+       "o campo resultado continua no formato \"N x N\"", exp[0].resultado);
+
+    var rk = t.ranking();
+    var a = rk.filter(function (l) { return l.jogador === "A"; })[0];
+    ok(Math.abs(a.gameWinPerc - 7 / 9) < 0.005,
+       "GW% do 2-0-1 chega correto no ranking da ferramenta (7/9)",
+       "obtido: " + a.gameWinPerc.toFixed(3));
+  })();
+})();
+
 // ---------------------------------------------------------------- fim
 console.log("\n" + "=".repeat(60));
 console.log("  " + passou + " passaram, " + falhou + " falharam");

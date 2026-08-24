@@ -38,11 +38,11 @@ function criarDOM() {
         // Registra os inputs que aparecem no HTML, para getElementById achá-los,
         // montando a mesma estrutura <tr><td><td class=placar><td> que o código
         // percorre via input.parentElement.parentElement.
-        var re = /id="(r\d+_p(\d+))"/g, m;
+        var re = /id="(r\d+_p(\d+)(_r)?)"/g, m;
         while ((m = re.exec(el._html))) {
           if (elementos[m[1]]) continue;
           var idx = Number(m[2]);
-          var trId = m[1].replace(/_p\d+$/, "") + "_tr" + Math.floor(idx / 2);
+          var trId = m[1].replace(/_p\d+(_r)?$/, "") + "_tr" + Math.floor(idx / 2) + (m[3] || "");
 
           var tr = elementos[trId];
           if (!tr) {
@@ -56,6 +56,17 @@ function criarDOM() {
           inp.parentElement = { parentElement: tr };   // <td class="placar-input"> -> <tr>
           elementos[m[1]] = inp;
         }
+
+        // Campos de empate de game e os <select> das rodadas manuais.
+        [/id="(r\d+_e\d+(_r)?)"/g, /id="(r\d+_j[12]_\d+)"/g].forEach(function (rx) {
+          var mm;
+          while ((mm = rx.exec(el._html))) {
+            if (elementos[mm[1]]) continue;
+            var e = novoEl(mm[1].indexOf("_j") >= 0 ? "select" : "input");
+            e.id = mm[1];
+            elementos[mm[1]] = e;
+          }
+        });
       }
     });
     return el;
@@ -118,7 +129,19 @@ function carregarFerramenta(nomes, numRodadas, liga) {
     Date: Date,
     Set: Set,
     JSON: JSON,
-    __alertas: []
+    __alertas: [],
+    // localStorage simulado, para exercitar o autosave/recuperação
+    localStorage: (function () {
+      var dados = {};
+      return {
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(dados, k) ? dados[k] : null; },
+        setItem: function (k, v) { dados[k] = String(v); },
+        removeItem: function (k) { delete dados[k]; },
+        __dump: function () { return dados; }
+      };
+    })(),
+    confirm: function () { return sandbox.__respostaConfirm; },
+    __respostaConfirm: true
   };
 
   sandbox.MTR = require(path.join(RAIZ, "mtr.js"));
@@ -278,7 +301,131 @@ function validar(nomes, numRodadas, seed) {
   };
 }
 
-module.exports = { validar: validar };
+// ---------------------------------------------------------------------------
+// API de controle fino, para os testes dirigirem rodadas manuais, reabertura e
+// exportação. Tudo roda contra o código real da página.
+// ---------------------------------------------------------------------------
+function criarTorneio(nomes, numRodadas, liga) {
+  var ctx = carregarFerramenta(nomes, numRodadas, liga || 4);
+  var sandbox = ctx.sandbox, vm = ctx.vm, elementos = ctx.dom.elementos;
+
+  function run(codigo) { return vm.runInContext(codigo, sandbox); }
+
+  return {
+    sandbox: sandbox,
+    elementos: elementos,
+    run: run,
+
+    alertas: function () { return sandbox.__alertas.slice(); },
+    limparAlertas: function () { sandbox.__alertas.length = 0; },
+
+    gerarAuto: function () { run("gerarRodada();"); },
+    gerarManual: function () { run("gerarRodadaManual();"); },
+
+    // Preenche os <select> de uma rodada manual.
+    // pares: [["A","B"], ["C","Bye"], null]  (null = linha deixada vazia)
+    preencherManual: function (rodada, pares) {
+      pares.forEach(function (par, i) {
+        var s1 = elementos["r" + rodada + "_j1_" + i];
+        var s2 = elementos["r" + rodada + "_j2_" + i];
+        if (!s1 || !s2) return;
+        s1.value = par ? par[0] : "";
+        s2.value = par ? par[1] : "";
+      });
+    },
+
+    // fn(j1, j2, slot) -> [p1, p2] ou [p1, p2, empates]
+    preencherPlacares: function (rodada, fn) {
+      var confrontos = run("resultadosPorRodada[" + rodada + "] || []");
+      confrontos.forEach(function (par, idx) {
+        if (par[1].nome === "Bye") return;
+        var slot = par.slot !== undefined ? par.slot : idx;
+        var i1 = elementos["r" + rodada + "_p" + (slot * 2)];
+        var i2 = elementos["r" + rodada + "_p" + (slot * 2 + 1)];
+        if (!i1 || !i2) return;
+        var v = fn(par[0].nome, par[1].nome, slot) || [2, 0];
+        i1.value = String(v[0]);
+        i2.value = String(v[1]);
+        if (v.length > 2) {
+          var ie = elementos["r" + rodada + "_e" + slot];
+          if (ie) ie.value = String(v[2]);
+        }
+      });
+    },
+
+    // Para rodada manual: os placares são lidos pelo slot da LINHA da tela.
+    preencherPlacaresPorSlot: function (rodada, porSlot) {
+      Object.keys(porSlot).forEach(function (slot) {
+        var v = porSlot[slot];
+        var i1 = elementos["r" + rodada + "_p" + (slot * 2)];
+        var i2 = elementos["r" + rodada + "_p" + (Number(slot) * 2 + 1)];
+        if (i1) i1.value = String(v[0]);
+        if (i2) i2.value = String(v[1]);
+        if (v.length > 2) {
+          var ie = elementos["r" + rodada + "_e" + slot];
+          if (ie) ie.value = String(v[2]);
+        }
+      });
+    },
+
+    preencherPlacaresReabertos: function (rodada, fn) {
+      var confrontos = run("resultadosPorRodada[" + rodada + "] || []");
+      confrontos.forEach(function (par, i) {
+        if (par[1].nome === "Bye") return;
+        var i1 = elementos["r" + rodada + "_p" + (i * 2) + "_r"];
+        var i2 = elementos["r" + rodada + "_p" + (i * 2 + 1) + "_r"];
+        if (!i1 || !i2) return;
+        var v = fn(par[0].nome, par[1].nome, i) || [2, 0];
+        i1.value = String(v[0]);
+        i2.value = String(v[1]);
+      });
+    },
+
+    finalizar: function (rodada) { run("finalizarRodada(" + rodada + ");"); },
+    finalizarReaberta: function (rodada) { run("finalizarRodadaReaberta(" + rodada + ");"); },
+    reabrir: function (rodada) { run("reabrirRodada(" + rodada + ");"); },
+
+    // Chama a FUNÇÃO REAL de exportação usada pela interface.
+    exportar: function (dia) {
+      return run("montarJogosExportados(resultadosPorRodada, ligaAtual, " + dia + ")");
+    },
+
+    // Fotografia do estado, para comparar antes/depois de uma operação inválida.
+    estado: function () {
+      return run(
+        "JSON.stringify({" +
+        "  jogadores: jogadores.map(function(j){return {nome:j.nome,pontos:j.pontos,saldo:j.saldo,historico:j.historico};})," +
+        "  confrontos: Array.from(confrontosAnteriores).sort()," +
+        "  resultados: Object.keys(resultadosPorRodada).map(Number).sort()," +
+        "  ultimaFinalizada: ultimaRodadaFinalizada" +
+        "})"
+      );
+    },
+
+    confrontos: function () { return run("Array.from(confrontosAnteriores)"); },
+
+    // --- persistência
+    estadoSalvo: function () { return run("lerEstadoSalvo()"); },
+    apagarEstadoSalvo: function () { run("apagarEstadoSalvo();"); },
+
+    // Simula recarregar a página: zera as variáveis e restaura do storage,
+    // exatamente como retomarTorneioSalvo() faz no navegador.
+    recarregarDoStorage: function () {
+      run(
+        "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
+        "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
+        "var __e = lerEstadoSalvo(); if (__e) aplicarEstado(__e);"
+      );
+    },
+    jogadores: function () { return run("jogadores"); },
+    rodadaAtual: function () { return run("rodadaAtual"); },
+    ranking: function () {
+      return run("MTR.classificar(historicoParaJogos(jogadores))");
+    }
+  };
+}
+
+module.exports = { validar: validar, criarTorneio: criarTorneio };
 
 // Execução direta
 if (require.main === module) {
