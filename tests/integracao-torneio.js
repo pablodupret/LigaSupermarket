@@ -27,15 +27,25 @@ function criarDOM() {
       _listeners: {},
       style: { cssText: "" },
       classList: { add: function () {}, remove: function () {}, contains: function () { return false; } },
-      appendChild: function (f) { this.children.push(f); return f; },
+      appendChild: function (f) { this.children.push(f); f._parent = el; return f; },
       remove: function () { if (el.id) delete elementos[el.id]; el._removido = true; },
       // Listeners de verdade: é assim que o teste exercita o autosave pelo
       // mesmo caminho do navegador, em vez de chamar capturarRascunho() na mão.
       addEventListener: function (tipo, fn) {
         (el._listeners[tipo] || (el._listeners[tipo] = [])).push(fn);
       },
+      // Propaga pela árvore, como o DOM faz. Sem isto um listener DELEGADO no
+      // container nunca seria exercitado pelos testes — foi exatamente essa
+      // lacuna que deixou uma falha de autosave passar para o Safari.
       dispararEvento: function (tipo) {
-        (el._listeners[tipo] || []).forEach(function (fn) { fn({ type: tipo, target: el }); });
+        var cadeia = [];
+        for (var n = el; n; n = n._parent) cadeia.push(n);
+        var evento = { type: tipo, target: el };
+
+        // fase de captura: da raiz até o alvo
+        cadeia.slice().reverse().forEach(function (n) {
+          (n._listeners[tipo] || []).forEach(function (fn) { fn(evento); });
+        });
       },
       querySelectorAll: function (sel) {
         var alvo = String(sel).split(",")[0].trim();
@@ -79,6 +89,7 @@ function criarDOM() {
           var inp = novoEl("input");
           inp.id = m[1];
           inp.parentElement = { parentElement: tr };   // <td class="placar-input"> -> <tr>
+          inp._parent = el;                            // para a propagação de eventos
           elementos[m[1]] = inp;
           el._filhos.push(inp);
         }
@@ -90,6 +101,7 @@ function criarDOM() {
             if (elementos[mm[1]]) continue;
             var e = novoEl(mm[1].indexOf("_j") >= 0 ? "select" : "input");
             e.id = mm[1];
+            e._parent = el;
             elementos[mm[1]] = e;
             el._filhos.push(e);
           }

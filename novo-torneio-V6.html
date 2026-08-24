@@ -397,31 +397,73 @@ function capturarRascunho(rodada) {
   salvarEstado();
 }
 
-// Liga o autosave nos campos de uma rodada recém-desenhada.
-//   - selects: `change` (só mudam por seleção)
-//   - campos numéricos: `input` com debounce curto, para não perder um placar
-//     digitado e seguido de ⌘R antes de sair do campo. O handler só atualiza o
-//     rascunho e grava no storage — nada de cálculo pesado.
-function ligarAutosave(rodada) {
-  const bloco = document.getElementById("rodada_" + rodada) ||
-                document.getElementById("rodada_" + rodada + "_manual") ||
-                document.getElementById("rodada_" + rodada + "_reaberta");
-  if (!bloco || !bloco.querySelectorAll) return;
+// Autosave por DELEGAÇÃO, instalado uma única vez no container do torneio.
+//
+// Antes cada campo recebia o seu próprio listener quando a rodada era
+// desenhada. Isso é frágil: qualquer re-render (restauração, correção,
+// redesenho) troca os elementos e os listeners antigos vão junto — bastava um
+// caminho de renderização não chamar a função de ligar para a rodada inteira
+// ficar sem autosave, silenciosamente.
+//
+// Com delegação em modo captura, o container escuta os eventos de qualquer
+// campo, inclusive os criados depois. Não há debounce nem nada assíncrono:
+// o volume de dados é ínfimo e a gravação precisa estar concluída antes de um
+// ⌘R inesperado.
+function instalarAutosave() {
+  const area = document.getElementById("torneio-area");
+  if (!area || !area.addEventListener || area._autosaveInstalado) return;
+  area._autosaveInstalado = true;
 
-  let timer = null;
-  const agendar = () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(() => capturarRascunho(rodada), 250);
+  const aoMudar = (ev) => {
+    const alvo = ev && ev.target;
+    const id = alvo && alvo.id;
+    if (!id) return;
+    const m = /^r(\d+)_/.exec(id);
+    if (!m) return;
+    capturarRascunho(Number(m[1]));
   };
 
-  bloco.querySelectorAll("select").forEach(el => {
-    el.addEventListener("change", () => capturarRascunho(rodada));
-  });
+  area.addEventListener("input", aoMudar, true);
+  area.addEventListener("change", aoMudar, true);
+}
 
-  bloco.querySelectorAll("input").forEach(el => {
-    el.addEventListener("input", agendar);
-    el.addEventListener("change", () => capturarRascunho(rodada));  // rede de segurança
-  });
+// Mantido para os pontos de renderização já existentes: garante o autosave
+// instalado e grava o que estiver na tela naquele momento.
+function ligarAutosave(rodada) {
+  instalarAutosave();
+  if (rodada) capturarRascunho(rodada);
+}
+
+// Última chance de gravar antes de a página sair. `pagehide` é o evento
+// confiável no Safari (o iOS não dispara `beforeunload` de forma consistente).
+function instalarFlushDeSaida() {
+  if (typeof window === "undefined" || !window.addEventListener) return;
+  const flush = () => {
+    if (rodadaAtual) capturarRascunho(rodadaAtual);
+    else salvarEstado();
+  };
+  window.addEventListener("pagehide", flush);
+  window.addEventListener("beforeunload", flush);
+}
+
+// Indicador discreto: dá ao organizador — e ao teste no navegador — a
+// confirmação de que o rascunho foi mesmo gravado.
+function marcarRascunhoSalvo() {
+  const area = document.getElementById("torneio-area");
+  if (!area || !document.createElement) return;
+
+  let el = document.getElementById("aviso-rascunho");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "aviso-rascunho";
+    el.style.cssText = "margin:8px 0;font-size:.85em;opacity:.75";
+    area.appendChild(el);
+  }
+  const agora = new Date();
+  const hh = String(agora.getHours()).padStart(2, "0");
+  const mm = String(agora.getMinutes()).padStart(2, "0");
+  const ss = String(agora.getSeconds()).padStart(2, "0");
+  el.textContent = `✅ Rascunho salvo às ${hh}:${mm}:${ss}`;
 }
 
 // Reaplica na tela um rascunho restaurado do localStorage.
@@ -582,6 +624,7 @@ function salvarEstado() {
   if (!temStorage()) { avisarFalhaStorage(new Error("localStorage indisponível")); return; }
   try {
     localStorage.setItem(CHAVE_ESTADO, JSON.stringify(serializarEstado()));
+    marcarRascunhoSalvo();
   } catch (e) {
     avisarFalhaStorage(e);
   }
@@ -860,6 +903,8 @@ function iniciarTorneio() {
   const area = document.getElementById("torneio-area");
   area.innerHTML = "";
   area.style.display = "block";
+  instalarAutosave();
+  instalarFlushDeSaida();
 
   // Botões para escolher como gerar a 1ª rodada
   const btnAuto = document.createElement("button");
@@ -1014,11 +1059,10 @@ if (rodadaAtual === 1) {
   const confrontos = [];
 
   if (resultado.bye) {
-    const byePlayer = porNome[resultado.bye];
-    confrontos.push([byePlayer, { nome: "Bye" }]);
-    byePlayer.pontos += 3;
-    byePlayer.saldo += 2;
-    byePlayer.historico.push({ contra: "Bye", placar: "2x0 (bye)", rodada: rodadaAtual });
+    // O BYE só define QUEM folga. Pontos e histórico entram na finalização,
+    // junto com os placares — antes eram aplicados aqui, e a classificação
+    // já mudava com a rodada ainda em andamento.
+    confrontos.push([porNome[resultado.bye], { nome: "Bye" }]);
   }
 
   resultado.pares.forEach(par => {
@@ -1070,8 +1114,7 @@ if (rodadaAtual === 1) {
 
   html += '</tbody></table>';
   html += blocoEmpatesToggle(rodadaAtual);
-  html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button> ` +
-          `<button id="btn-reabrir-${rodadaAtual}" onclick="corrigirPlacares(${rodadaAtual})">Corrigir Placares</button>`;
+  html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button>`;
   bloco.innerHTML += html;
   area.appendChild(bloco);
   ligarAutosave(rodadaAtual);
@@ -1159,7 +1202,7 @@ function gerarRodadaManual() {
   html += "</tbody></table>";
   html += blocoEmpatesToggle(rodadaAtual);
   html += `<button onclick="finalizarRodada(${rodadaAtual})">Finalizar Rodada ${rodadaAtual}</button>`;
-  html += ` <button id="btn-reabrir-${rodadaAtual}" onclick="corrigirPlacares(${rodadaAtual})">Corrigir Placares</button>`;
+
 
   bloco.innerHTML += html;
   area.appendChild(bloco);
@@ -1467,10 +1510,10 @@ function finalizarRodada(rodada) {
     const input1 = document.getElementById(`r${rodada}_p${slot * 2}`);
     const input2 = document.getElementById(`r${rodada}_p${slot * 2 + 1}`);
 
-    // Linha do Bye não tem inputs: pontos e histórico já foram aplicados
-    // na geração (automática) ou na fase de aplicação (manual).
-    if (!input1 || !input2) continue;
+    // A linha do Bye não tem campos de placar. Ela entra na lista para o BYE
+    // ser aplicado junto com o resto, na fase de aplicação.
     if (MTR.ehBye(j2.nome)) { placares.push({ i, slot, bye: true }); continue; }
+    if (!input1 || !input2) continue;
 
     const p1 = parseInt(input1.value);
     const p2 = parseInt(input2.value);
@@ -1502,6 +1545,17 @@ function finalizarRodada(rodada) {
     const tdJog2 = tr ? tr.children[2] : null;
 
     if (reg.bye) {
+      // O BYE é aplicado AGORA, não na geração da rodada. A guarda impede
+      // duplicar se a finalização for acionada duas vezes.
+      const jaAplicado = (j1.historico || []).some(
+        h => MTR.ehBye(h.contra) && Number(h.rodada) === Number(rodada)
+      );
+      if (!jaAplicado) {
+        j1.pontos += 3;
+        j1.saldo += 2;
+        j1.historico.push({ contra: "Bye", placar: "2x0 (bye)", rodada: rodada });
+      }
+
       if (tdJog1 && tdJog2 && tdPlacar) {
         tdJog1.textContent = j1.nome;
         tdPlacar.innerHTML = "<span>2 x 0</span>";
@@ -1546,9 +1600,24 @@ function finalizarRodada(rodada) {
 
 // Só é chamada depois de uma rodada ser efetivamente finalizada — é isso que
 // impede a próxima rodada de ser oferecida com a atual ainda em andamento.
+// "Corrigir Placares" só existe depois de a rodada estar finalizada — antes
+// disso não há placar para corrigir, basta preencher os campos.
+function adicionarBotaoCorrigir(rodada) {
+  const bloco = document.getElementById("rodada_" + rodada);
+  if (!bloco || !document.createElement) return;
+  if (document.getElementById("btn-reabrir-" + rodada)) return;
+
+  const btn = document.createElement("button");
+  btn.id = "btn-reabrir-" + rodada;
+  btn.textContent = "Corrigir Placares";
+  btn.onclick = () => corrigirPlacares(rodada);
+  bloco.appendChild(btn);
+}
+
 function botoesProximaRodada(rodada) {
   const area = document.getElementById("torneio-area");
   if (!area) return;
+  adicionarBotaoCorrigir(rodada);
 
   const oldAuto = document.getElementById("btn-proxima-auto");
   const oldManual = document.getElementById("btn-proxima-manual");
@@ -1584,9 +1653,15 @@ function mostrarRanking() {
   // Mesma ordenação da tabela Appendix C: antes esta tabela ordenava por
   // pontos + saldo e podia apontar um campeão diferente do que aparecia
   // logo abaixo.
+  //
+  // A classificação sai do histórico, e o histórico só recebe uma rodada
+  // quando ela é FINALIZADA — então nada de uma rodada em andamento entra
+  // aqui. Com nenhuma rodada finalizada, não há classificação a mostrar.
   const ranking = MTR.classificar(
     historicoParaJogos(jogadores.filter(j => !MTR.ehBye(j.nome)))
   );
+
+  if (!ranking.length) return;
 
   let html = "<div class='ranking' id='ranking-atual'><h3>Ranking Atual</h3>" +
              "<table><tr><th>#</th><th>Jogador</th><th>Pontos</th><th>V-D-E</th></tr>";
@@ -1850,21 +1925,34 @@ function mostrarEstatisticasAppendixC() {
   let html = `<div class='ranking' id='appendix-c'>
     <h3>📊 Estatísticas Avançadas (Appendix C)</h3>
     <p style="font-size:.85em;opacity:.75">Desempate oficial: MP → OMW% → GW% → OGW%</p>
-    <table><tr><th>#</th><th>Jogador</th><th>MP</th><th>MW%</th><th>GW%</th><th>OMW%</th><th>OGW%</th></tr>`;
+    <table><tr><th>#</th><th>Jogador</th><th>MP</th><th>OMW%</th><th>GW%</th><th>OGW%</th><th>MW%</th></tr>`;
 
   stats.forEach((s, i) => {
     html += `<tr>
       <td>${i + 1}</td>
       <td>${s.jogador}</td>
       <td>${s.matchPoints}</td>
-      <td>${(s.matchWinPerc * 100).toFixed(1)}%</td>
-      <td>${(s.gameWinPerc * 100).toFixed(1)}%</td>
       <td>${(s.omwp * 100).toFixed(1)}%</td>
+      <td>${(s.gameWinPerc * 100).toFixed(1)}%</td>
       <td>${(s.ogwp * 100).toFixed(1)}%</td>
+      <td>${(s.matchWinPerc * 100).toFixed(1)}%</td>
     </tr>`;
   });
 
   html += "</table>";
+
+  // O campeão só existe quando a ÚLTIMA rodada do torneio está finalizada.
+  // Antes disso a tabela é uma classificação parcial, não um resultado.
+  const torneioEncerrado =
+    Number(rodadaAtual) === Number(totalRodadas) &&
+    estadoRodadas[rodadaAtual] === "finalizada";
+
+  if (!torneioEncerrado) {
+    html += `<p style="font-size:.85em;opacity:.7">Classificação parcial — ` +
+            `considera apenas as rodadas já finalizadas.</p></div>`;
+    area.innerHTML += html;
+    return;
+  }
 
   // O 1º da lista já é o campeão pelos critérios oficiais.
   const campeao = stats[0];

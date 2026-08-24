@@ -424,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 144 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 164 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -572,6 +572,47 @@ Fechamento dos pontos que restaram da primeira auditoria.
 
 Os testes de autosave disparam **eventos reais** no harness (`addEventListener` /
 `dispatchEvent` de verdade no DOM simulado), em vez de chamar `capturarRascunho()` na mão.
+
+---
+
+## 18. Correções vindas do teste real no Safari (24/08/2026)
+
+O primeiro teste em navegador reprovou. Com 7 jogadores e a R1 em andamento, um ⌘R trouxe
+os três placares vazios, e ainda apareceram "Ranking Atual" e "🏆 Campeão: Caio" no meio da
+primeira rodada.
+
+**Causa raiz do autosave — listeners por elemento.** Cada campo recebia o seu próprio
+listener quando a rodada era desenhada. Qualquer re-render troca os elementos e leva os
+listeners junto; bastava um caminho de renderização não religar para a rodada inteira ficar
+sem autosave, em silêncio. Trocado por **delegação de evento no container**, instalada uma
+única vez, em modo captura: funciona para qualquer campo, inclusive os criados depois.
+Também saiu o debounce (gravação imediata, nada assíncrono) e entrou flush em `pagehide` e
+`beforeunload`.
+
+**Causa raiz dos outros três sintomas — o BYE era aplicado na GERAÇÃO da rodada.**
+`gerarRodada` já somava 3 pontos e gravava histórico. Como a classificação sai do histórico,
+o jogador do BYE aparecia pontuando com a rodada ainda em andamento — e, com ele sendo o
+único com pontos, virava "campeão". Agora **gerar a rodada só define os confrontos**; pontos,
+saldo e histórico entram todos na finalização, junto com os placares, com guarda contra
+dupla aplicação. Automático e manual ficaram consistentes.
+
+Como consequência, a classificação passou a refletir **apenas rodadas finalizadas** sem
+precisar de filtro: o histórico só recebe uma rodada quando ela é finalizada.
+
+Outros ajustes: campeão só quando `rodadaAtual === totalRodadas` e a rodada está finalizada;
+"Corrigir Placares" só aparece depois da finalização; colunas do Appendix C reordenadas para
+a sequência de desempate (`# | Jogador | MP | OMW% | GW% | OGW% | MW%`, com MW% ao final por
+ser informativo); e um indicador **"✅ Rascunho salvo às HH:MM:SS"** na tela.
+
+### Lição para os testes
+
+O DOM simulado **não propagava eventos**, então um listener delegado nunca seria exercitado —
+foi essa lacuna que deixou a falha chegar ao Safari. O harness passou a implementar a cadeia
+de propagação de verdade, e os testes de autosave usam **exclusivamente o evento `input`**,
+verificando o conteúdo do `localStorage` logo em seguida.
+
+A suíte nova reprova o commit anterior em **10 casos**, incluindo o "campeão no meio do
+torneio" observado no Safari.
 
 ### Sobre conformidade com a Wizards
 

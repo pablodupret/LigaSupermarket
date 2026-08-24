@@ -1167,6 +1167,183 @@ grupo("10. Autosave em correção, BYE no slot 0 e bloqueios");
   })();
 })();
 
+// ================ 11. Cenário do teste real no Safari (7 jogadores)
+grupo("11. Cenário do Safari: 7 jogadores, R1 em andamento");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+  var ELENCO = ["Caio", "Alex", "Gabriel", "Flavio", "Eduardo", "Pablo", "Bruno Novaes"];
+
+  // -- placares salvos usando SOMENTE o evento `input`
+  (function () {
+    var t = criar(ELENCO, 4, 4);
+    t.gerarAuto();
+
+    var pares = t.run("resultadosPorRodada[1].map(function(p){return [p[0].nome,p[1].nome,p.slot];})");
+    var comBye = pares.filter(function (p) { return p[1] === "Bye"; });
+    var normais = pares.filter(function (p) { return p[1] !== "Bye"; });
+
+    ok(comBye.length === 1 && normais.length === 3,
+       "R1 gerada: 1 BYE e 3 jogos", JSON.stringify(pares));
+
+    // Digita os 3 placares disparando APENAS `input` (nunca `change`)
+    normais.forEach(function (p, k) {
+      var slot = p[2];
+      t.digitar("r1_p" + (slot * 2), [2, 0, 1][k], "input");
+      t.digitar("r1_p" + (slot * 2 + 1), [0, 2, 1][k], "input");
+    });
+
+    // O storage tem de conter os 3 IMEDIATAMENTE — sem esperar timer nenhum
+    var bruto = t.run("localStorage.getItem('ligaSupermarket:torneioEmAndamento')");
+    ok(!!bruto, "o estado foi gravado no localStorage");
+
+    var salvo = JSON.parse(bruto || "{}");
+    var placares = (salvo.rascunhos && salvo.rascunhos["1"] && salvo.rascunhos["1"].placares) || {};
+    ok(Object.keys(placares).length === 3,
+       "os 3 placares estao no localStorage so com evento `input`",
+       JSON.stringify(placares));
+
+    // Reload
+    t.recarregarDoStorage();
+    var depois = t.rascunhos()[1];
+    var pd = (depois && depois.placares) || {};
+    ok(Object.keys(pd).length === 3,
+       "os 3 placares foram restaurados apos o reload", JSON.stringify(pd));
+
+    var valores = Object.keys(pd).sort().map(function (k) { return pd[k][0] + "x" + pd[k][1]; });
+    ok(valores.join(",") === "2x0,0x2,1x1",
+       "os valores restaurados sao exatamente os digitados", valores.join(","));
+  })();
+
+  // -- rodada nao finalizada NAO altera a classificacao, e o BYE nao pontua
+  (function () {
+    var t = criar(ELENCO, 4, 4);
+    t.gerarAuto();
+
+    var jogs = t.jogadores();
+    var comPontos = jogs.filter(function (j) { return j.pontos !== 0; });
+    ok(comPontos.length === 0,
+       "gerar a rodada NAO da pontos a ninguem, nem ao BYE",
+       JSON.stringify(comPontos.map(function (j) { return j.nome + "=" + j.pontos; })));
+
+    var comHistorico = jogs.filter(function (j) { return (j.historico || []).length > 0; });
+    ok(comHistorico.length === 0,
+       "nenhum historico e gravado na geracao da rodada",
+       JSON.stringify(comHistorico.map(function (j) { return j.nome; })));
+
+    ok(t.ranking().length === 0,
+       "sem rodada finalizada nao existe classificacao",
+       JSON.stringify(t.ranking()));
+
+    // Depois de finalizar, o BYE entra
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+
+    var byeJogador = t.run(
+      "resultadosPorRodada[1].filter(function(p){return p[1].nome==='Bye';})[0][0].nome"
+    );
+    var b = t.jogadores().filter(function (j) { return j.nome === byeJogador; })[0];
+    ok(b.pontos === 3 && b.historico.length === 1,
+       "apos finalizar, o BYE vale 3 pontos e uma entrada de historico",
+       byeJogador + ": pontos=" + b.pontos + " historico=" + b.historico.length);
+    ok(t.ranking().length > 0, "com R1 finalizada a classificacao existe");
+  })();
+
+  // -- reload antes de finalizar nao pode duplicar o BYE
+  (function () {
+    var t = criar(ELENCO, 4, 4);
+    t.gerarAuto();
+    t.recarregarDoStorage();
+    t.recarregarDoStorage();          // duas vezes, para caçar acúmulo
+
+    var jogs = t.jogadores();
+    var byes = jogs.reduce(function (n, j) {
+      return n + (j.historico || []).filter(function (h) { return h.contra === "Bye"; }).length;
+    }, 0);
+    ok(byes === 0, "reload de rodada nao finalizada nao aplica BYE", "byes: " + byes);
+
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+
+    var byesDepois = t.jogadores().reduce(function (n, j) {
+      return n + (j.historico || []).filter(function (h) { return h.contra === "Bye"; }).length;
+    }, 0);
+    ok(byesDepois === 1, "apos finalizar existe exatamente UM BYE",
+       "byes: " + byesDepois);
+
+    t.finalizar(1);                   // segunda chamada nao pode duplicar
+    var byesRefinalizar = t.jogadores().reduce(function (n, j) {
+      return n + (j.historico || []).filter(function (h) { return h.contra === "Bye"; }).length;
+    }, 0);
+    ok(byesRefinalizar === 1, "finalizar de novo nao duplica o BYE",
+       "byes: " + byesRefinalizar);
+  })();
+
+  // -- campeao so na ultima rodada finalizada
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+
+    function rodada(n) {
+      t.gerarAuto();
+      t.preencherPlacares(n, function () { return [2, 0]; });
+      t.finalizar(n);
+    }
+
+    rodada(1);
+    ok(!/Campeão|Campeao/.test(t.run("document.getElementById('appendix-c') ? '' : ''") || "") &&
+       t.run("(function(){var a=document.getElementById('torneio-area');return (a&&a.innerHTML)||'';})()")
+         .indexOf("Campeão") === -1,
+       "sem campeao com 1 de 3 rodadas");
+
+    rodada(2);
+    ok(t.run("(function(){var a=document.getElementById('torneio-area');return (a&&a.innerHTML)||'';})()")
+         .indexOf("Campeão") === -1,
+       "sem campeao com 2 de 3 rodadas");
+
+    rodada(3);
+    ok(t.run("(function(){var a=document.getElementById('torneio-area');return (a&&a.innerHTML)||'';})()")
+         .indexOf("Campeão") !== -1,
+       "campeao aparece com a ultima rodada finalizada");
+  })();
+
+  // -- classificacao recuperada considera somente rodadas finalizadas
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+
+    var apos1 = t.ranking().map(function (l) { return l.jogador + ":" + l.matchPoints; }).join(",");
+
+    t.gerarAuto();                                     // R2 gerada
+    t.preencherPlacares(2, function () { return [2, 0]; });   // placares digitados
+    t.run("capturarRascunho(2);");
+
+    ok(t.ranking().map(function (l) { return l.jogador + ":" + l.matchPoints; }).join(",") === apos1,
+       "placares digitados em R2 nao entram na classificacao antes de finalizar",
+       t.ranking().map(function (l) { return l.jogador + ":" + l.matchPoints; }).join(","));
+
+    t.recarregarDoStorage();
+    ok(t.ranking().map(function (l) { return l.jogador + ":" + l.matchPoints; }).join(",") === apos1,
+       "apos o reload a classificacao segue sendo a de R1",
+       t.ranking().map(function (l) { return l.jogador + ":" + l.matchPoints; }).join(","));
+  })();
+
+  // -- "Corrigir Placares" so existe depois de finalizar
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarAuto();
+    ok(!t.campoExiste("btn-reabrir-1"),
+       "o botao Corrigir Placares nao existe com a rodada em andamento");
+
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    ok(t.campoExiste("btn-reabrir-1"),
+       "o botao Corrigir Placares aparece apos a finalizacao");
+  })();
+})();
+
 // ---------------------------------------------------------------- fim
 console.log("\n" + "=".repeat(60));
 console.log("  " + passou + " passaram, " + falhou + " falharam");
