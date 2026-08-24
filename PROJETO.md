@@ -26,12 +26,19 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 ├── bookLiga1.html          → eBook da 1ª Liga (PDF embutido)
 ├── novo-torneio-V6.html    → Ferramenta de geração de dias de competição
 │
+├── mtr.js                  → Núcleo de cálculo do MTR Appendix C (fonte única)
+├── pareamento.js           → Motor de pareamento suíço (faixas + backtracking)
+│
 ├── main.js                 → Lógica da liga ATIVA (evolui livremente)
 ├── main-liga1.js           → Snapshot congelado da Liga 1 (NÃO EDITAR)
 ├── main-liga2.js           → Snapshot congelado da Liga 2 (NÃO EDITAR)
 ├── main-liga3.js           → Snapshot congelado da Liga 3 (NÃO EDITAR)
-├── appendix_c.js           → Lógica de ranking por dia (torneio suíço)
+├── appendix_c.js           → Ranking do dia da liga ativa (delega ao mtr.js)
+├── appendix_c-encerradas.js→ Snapshot congelado usado por liga1/2/3 (NÃO EDITAR)
 ├── carta-do-dia.js         → Integração com API Scryfall
+│
+├── tests/run.js            → Suíte de validação (node tests/run.js)
+├── tests/integracao-torneio.js → Roda a ferramenta de torneio ponta a ponta
 │
 ├── style2.css              → CSS principal (tema escuro/dourado)
 │
@@ -104,10 +111,25 @@ Array de objetos, um por partida:
 5. Pontos totais
 6. Ordem alfabética
 
-### OMWP — regra oficial
-- Floor de 33% (0.333): nenhum jogador pode ter MWP abaixo de 1/3 no cálculo do OMWP dos adversários
-- Calculado sobre todos os oponentes únicos enfrentados na liga inteira
-- **Atenção:** o OMWP do ranking geral da liga é diferente do OMWP calculado no `appendix_c.js` (que é por dia, para o torneio suíço)
+### Desempate oficial de um DIA de competição (MTR Appendix C)
+Ordem obrigatória, implementada em `mtr.js` → `compararMTR()`:
+**Match Points → OMW% → GW% → OGW%**
+
+### Regras do Appendix C — todas em `mtr.js`
+Desde a auditoria de 24/08/2026 existe **uma única implementação** desses cálculos.
+Nunca reimplemente esta matemática em outro arquivo — `main.js`, `appendix_c.js` e
+`novo-torneio-V6.html` todos chamam o `mtr.js`.
+
+- Match points: vitória 3, empate 1, derrota 0
+- Game points: game ganho 3, game empatado 1, game perdido 0
+- **MW% = match points / (3 × rodadas)** — um empate vale **1/3** de vitória, não 1/2
+- **GW% = game points / (3 × games)**
+- Piso de 0.33: entra no cálculo dos **oponentes**. Para o valor próprio do jogador
+  use `matchWinPctRaw` / `gameWinPctRaw` — com o piso, todos abaixo de 33% empatariam
+  e o critério perderia poder de desempate
+- **Bye = vitória 2×0**: 3 match points, 6 game points, 2 games, 1 rodada. O bye
+  **nunca entra como adversário** no OMW%/OGW% (regra explícita do MTR)
+- Adversário enfrentado duas vezes conta **duas vezes** na média (não deduplicar)
 
 ### Separação conceitual importante
 O projeto tem dois sistemas de ranking que NÃO devem ser confundidos:
@@ -379,12 +401,58 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 41 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
+   (as linhas de Bye **já vêm no export** — não precisa mais acrescentar na mão)
 4. Adicionar o dia em `infoPorLiga[liga ativa]` no `main.js`: `N: { data: "DD/MM/AAAA", draft: "..." }`
 5. Jogador novo: acrescentar em `jogadores.json` com o nome **exatamente** igual ao do `jogos.json`.
    Se for jogador eventual que não deve pontuar no ranking, acrescentar em `jogadoresOcultos` no `main.js`
+
+Se a ferramenta exibir o aviso amarelo **"Não existe pareamento sem repetição nesta rodada"**,
+não é bug: os jogadores já se enfrentaram o suficiente para esgotar as combinações. O sistema
+mostra quais confrontos se repetem para você decidir se aceita ou ajusta manualmente.
+
+---
+
+## 14. Auditoria do gerador de torneios (24/08/2026)
+
+O sistema foi auditado contra o **MTR Appendix C**. Foram encontrados e corrigidos 16 problemas.
+Os quatro mais graves:
+
+1. **Pareamento repetia confrontos em silêncio.** O algoritmo guloso não tinha backtracking:
+   em 48% dos torneios de 6 jogadores × 4 rodadas ele gerava uma repetição que era evitável
+   (medido contra busca exaustiva). Substituído por `pareamento.js` — hoje 0%.
+2. **O mesmo jogador podia receber vários byes.** Agora o bye vai para o pior colocado
+   **que ainda não folgou**.
+3. **Pareamento manual com linha vazia gravava o placar no jogo errado.** Os inputs eram
+   lidos pelo índice do array de confrontos, não pela linha da tabela. Corrigido com `slot`.
+4. **A exportação descartava as linhas de Bye**, que o `jogos.json` precisa para contar a
+   rodada no MW% do jogador.
+
+E os erros de cálculo: o Bye entrava como adversário no OMW% (o MTR manda ignorar), o empate
+valia 1/2 de vitória no MW% em vez de 1/3, o desempate parava no OMW% (faltavam GW% e OGW%),
+adversários repetidos eram deduplicados, e havia **quatro implementações divergentes** da
+mesma matemática — hoje unificadas em `mtr.js`.
+
+### O que a suíte de testes cobre
+
+`node tests/run.js` (roda em menos de 1 segundo, sem dependências):
+
+- **MTR Appendix C**: os exemplos numéricos do próprio documento viram asserção, inclusive
+  os dois cálculos de OMW% de 8 rodadas (0.62 e 0.63) e o caso com bye
+- **Pareamento**: ~11.700 rodadas sorteadas, conferindo contra busca exaustiva que nenhuma
+  repetição evitável acontece, que ninguém recebe dois byes e que toda rodada é bem formada
+- **Integração**: 40 torneios completos rodados de verdade na ferramenta (com DOM simulado),
+  conferindo histórico espelhado, uma partida por rodada e o formato do JSON exportado
+- **Regressão**: os campeões das Ligas 1, 2 e 3 recalculados a partir do `jogos.json`
+
+### Ligas encerradas
+
+Os números publicados das Ligas 1-3 **não mudaram**: `liga1/2/3.html` carregam
+`appendix_c-encerradas.js` (snapshot congelado) e `main-liga1/2/3.js`, nenhum deles tocado
+pela auditoria. As correções valem da Liga 4 em diante.
 
 ---
 

@@ -179,7 +179,7 @@ function calcularRankingArray(jogos) {
         gamesVencidos: 0,
         gamesPerdidos: 0,
         gamesJogos: 0,
-        oponentes: new Set()
+        oponentes: []
       };
     }
 
@@ -199,6 +199,25 @@ function calcularRankingArray(jogos) {
     const j2 = jogo.jogador2;
     const dia = jogo.dia;
 
+    // Bye: vitória automática 2x0 (3 match points, 2 games). O "Bye" não é um
+    // jogador — não entra no ranking nem na lista de oponentes de ninguém.
+    // (MTR Appendix C: "A player's byes are ignored when computing their
+    //  opponents' match-win and opponents' game-win percentages.")
+    if (MTR.ehBye(j1) || MTR.ehBye(j2)) {
+      const real = MTR.ehBye(j1) ? j2 : j1;
+      if (!real || MTR.ehBye(real)) return;
+
+      ensureJogador(real);
+      const s = statsPorJogador[real];
+      s.matchesJogos++;
+      s.vitorias++;
+      s.pontos += 3;
+      s.gamesVencidos += 2;
+      s.gamesJogos += 2;
+      adicionarPontosNoDia(real, dia, 3);
+      return;
+    }
+
     ensureJogador(j1);
     ensureJogador(j2);
 
@@ -216,8 +235,9 @@ function calcularRankingArray(jogos) {
     s2.gamesPerdidos += g1;
     s2.gamesJogos += g1 + g2;
 
-    s1.oponentes.add(j2);
-    s2.oponentes.add(j1);
+    // Lista (não Set): quem enfrenta o mesmo adversário duas vezes conta duas.
+    s1.oponentes.push(j2);
+    s2.oponentes.push(j1);
 
     if (g1 > g2) {
       s1.pontos += 3;
@@ -246,13 +266,16 @@ function calcularRankingArray(jogos) {
 
   const jogadores = Object.keys(statsPorJogador);
 
+  // MW%, GW%, OMW% e OGW% pelo MTR Appendix C (mtr.js). O empate vale 1/3 de
+  // vitória — não 1/2 — e os byes ficam fora da média dos oponentes.
+  const registrosMTR = MTR.construirRegistros(jogos);
+
   jogadores.forEach(nome => {
     const s = statsPorJogador[nome];
-    const mJ = s.matchesJogos;
-    const gJ = s.gamesJogos;
+    const r = registrosMTR[nome];
 
-    s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
-    s.gameWinPerc = gJ > 0 ? s.gamesVencidos / gJ : 0;
+    s.matchWinPerc = r ? MTR.matchWinPctRaw(r) : 0;
+    s.gameWinPerc = r ? MTR.gameWinPctRaw(r) : 0;
   });
 
   const diasLigaSet = new Set();
@@ -265,21 +288,10 @@ function calcularRankingArray(jogos) {
 
   jogadores.forEach(nome => {
     const s = statsPorJogador[nome];
-    const oponentes = Array.from(s.oponentes);
+    const r = registrosMTR[nome];
 
-    if (oponentes.length === 0) {
-      s.omwp = 0;
-      return;
-    }
-
-    let soma = 0;
-    oponentes.forEach(opp => {
-      let mw = statsPorJogador[opp]?.matchWinPerc || 0;
-      if (mw < 1 / 3) mw = 1 / 3;
-      soma += mw;
-    });
-
-    s.omwp = soma / oponentes.length;
+    s.omwp = r ? MTR.opponentsMatchWinPct(r, registrosMTR) : 0;
+    s.ogwp = r ? MTR.opponentsGameWinPct(r, registrosMTR) : 0;
   });
 
   return Object.entries(statsPorJogador)
@@ -306,7 +318,8 @@ function calcularRankingArray(jogos) {
         empates: s.empates,
         matchWinPerc: s.matchWinPerc || 0,
         gameWinPerc: s.gameWinPerc || 0,
-        omwp: s.omwp || 0
+        omwp: s.omwp || 0,
+        ogwp: s.ogwp || 0
       };
     })
     .filter(entry => jogadorEhVisivel(entry.jogador))
@@ -773,7 +786,7 @@ divDia.innerHTML += htmlRanking;
           gamesVencidos: 0,
           gamesPerdidos: 0,
           gamesJogos: 0,
-          oponentes: new Set()
+          oponentes: []
         };
       }
       if (currentWinStreak[nome] == null) {
@@ -805,29 +818,49 @@ divDia.innerHTML += htmlRanking;
       const j1 = jogo.jogador1;
       const j2 = jogo.jogador2;
       const dia = jogo.dia;   // 👈 NOVO
-  
+
+      // Bye: vitória automática 2x0. O "Bye" não é jogador e não entra como
+      // oponente de ninguém (MTR Appendix C).
+      if (MTR.ehBye(j1) || MTR.ehBye(j2)) {
+        const real = MTR.ehBye(j1) ? j2 : j1;
+        if (!real || MTR.ehBye(real)) return;
+
+        ensureJogador(real);
+        const s = statsPorJogador[real];
+        s.matchesJogos++;
+        s.vitorias++;
+        s.pontos += 3;
+        s.gamesVencidos += 2;
+        s.gamesJogos += 2;
+        adicionarPontosNoDia(real, dia, 3);
+
+        currentWinStreak[real] = (currentWinStreak[real] || 0) + 1;
+        currentLoseStreak[real] = 0;
+        return;
+      }
+
       ensureJogador(j1);
       ensureJogador(j2);
-  
+
       const s1 = statsPorJogador[j1];
       const s2 = statsPorJogador[j2];
-  
+
       // matches jogados
       s1.matchesJogos++;
       s2.matchesJogos++;
-  
+
       // games (para Game Win %)
       s1.gamesVencidos += g1;
       s1.gamesPerdidos += g2;
       s1.gamesJogos += g1 + g2;
-  
+
       s2.gamesVencidos += g2;
       s2.gamesPerdidos += g1;
       s2.gamesJogos += g1 + g2;
-  
-      // oponentes (para OMWP)
-      s1.oponentes.add(j2);
-      s2.oponentes.add(j1);
+
+      // oponentes (para OMWP) — lista, não Set: adversário repetido conta 2x
+      s1.oponentes.push(j2);
+      s2.oponentes.push(j1);
   
       // pontos, V–D–E e streak
       if (g1 > g2) {
@@ -889,14 +922,15 @@ divDia.innerHTML += htmlRanking;
   
     const jogadores = Object.keys(statsPorJogador);
   
-    // 2) Match Win % e Game Win %
+    // 2) Match Win % e Game Win % pelo MTR Appendix C (mtr.js)
+    const registrosMTR = MTR.construirRegistros(jogos);
+
     jogadores.forEach(nome => {
       const s = statsPorJogador[nome];
-      const mJ = s.matchesJogos;
-      const gJ = s.gamesJogos;
-  
-      s.matchWinPerc = mJ > 0 ? (s.vitorias + 0.5 * s.empates) / mJ : 0;
-      s.gameWinPerc  = gJ > 0 ? s.gamesVencidos / gJ : 0;
+      const r = registrosMTR[nome];
+
+      s.matchWinPerc = r ? MTR.matchWinPctRaw(r) : 0;
+      s.gameWinPerc  = r ? MTR.gameWinPctRaw(r) : 0;
     });
 
     // 3) Calcula lista de dias da liga para usar no cálculo de pontos válidos
@@ -914,24 +948,13 @@ divDia.innerHTML += htmlRanking;
 
 
   
-    // 3) OMWP (média do Match Win % dos oponentes, com floor 33%)
+    // 3) OMWP e OGWP (média dos oponentes, piso 33%, byes ignorados)
     jogadores.forEach(nome => {
       const s = statsPorJogador[nome];
-      const oponentes = Array.from(s.oponentes);
-  
-      if (oponentes.length === 0) {
-        s.omwp = 0;
-        return;
-      }
-  
-      let soma = 0;
-      oponentes.forEach(opp => {
-        let mw = statsPorJogador[opp]?.matchWinPerc || 0;
-        if (mw < 1 / 3) mw = 1 / 3;
-        soma += mw;
-      });
-  
-      s.omwp = soma / oponentes.length;
+      const r = registrosMTR[nome];
+
+      s.omwp = r ? MTR.opponentsMatchWinPct(r, registrosMTR) : 0;
+      s.ogwp = r ? MTR.opponentsGameWinPct(r, registrosMTR) : 0;
     });
   
     // 4) monta ranking com stats e streak
@@ -964,6 +987,7 @@ divDia.innerHTML += htmlRanking;
             matchWinPerc: s.matchWinPerc || 0,
             gameWinPerc: s.gameWinPerc || 0,
             omwp: s.omwp || 0,
+            ogwp: s.ogwp || 0,
             streakVitorias: currentWinStreak[jogador] || 0,
             streakDerrotas: currentLoseStreak[jogador] || 0
     };
