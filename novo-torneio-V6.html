@@ -162,6 +162,31 @@ function baixarPagina() {
 </script>
 <!-- Selecionar Jogadores -->
 <script>
+function idDoJogador(nome) {
+  return "jog_" + nome.replace(/\s+/g, "_");
+}
+
+// Monta a linha de UM jogador como um nó novo, pronto para appendChild.
+//
+// É de propósito que esta função devolva um elemento em vez de uma string de
+// HTML para ser concatenada na lista: `div.innerHTML += ...` reserializa o
+// container inteiro e recria TODOS os checkboxes. Como `checked` é propriedade
+// (e não atributo), toda a seleção anterior era perdida a cada jogador
+// acrescentado; e como `data-listener="1"` é atributo, ele sobrevivia à
+// reserialização e fazia vincularEventosCheckbox() pular os elementos novos —
+// então os listeners não voltavam e o contador congelava.
+//
+// Acrescentando um nó por vez, os que já estão na tela não são tocados.
+function criarLinhaJogador(nome) {
+  const id = idDoJogador(nome);
+  const linha = document.createElement("div");
+  linha.style.cssText = "display: flex; align-items: center; margin-bottom: 0px;";
+  linha.innerHTML =
+    `<input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;" />` +
+    `<label for="${id}" style="color: #f5f5dc;">${nome}</label>`;
+  return linha;
+}
+
 async function carregarJogadores() {
   try {
     const res = await fetch("jogadores.json");
@@ -171,16 +196,7 @@ async function carregarJogadores() {
 
     lista.sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-
-    lista.forEach(nome => {
-      const id = "jog_" + nome.replace(/\s+/g, "_");
-      div.innerHTML += `
-        <div style="display: flex; align-items: center; margin-bottom: 0px;">
-        <input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;" />
-        <label for="${id}" style="color: #f5f5dc;">${nome}</label>
-       </div>`;
-       
-    });
+    lista.forEach(nome => div.appendChild(criarLinhaJogador(nome)));
 
     vincularEventosCheckbox();
     atualizarContadorSelecionados();
@@ -195,22 +211,16 @@ async function carregarJogadores() {
 function adicionarJogador() {
   const nome = document.getElementById("novo-jogador").value.trim();
   if (!nome) return;
-  const id = "jog_" + nome.replace(/\s+/g, "_");
-  if (document.getElementById(id)) {
+  if (document.getElementById(idDoJogador(nome))) {
     alert("Jogador já está na lista.");
     return;
   }
   const div = document.getElementById("lista-jogadores");
-  div.innerHTML += `
-        <div style="display: flex; align-items: center; margin-bottom: 1px;">
-        <input type="checkbox" value="${nome}" id="${id}" style="width: 16px; height: 16px; margin-right: 6px;"  />
-        <label for="${id}" style="margin-left: 0px; color: #f5f5dc;">${nome}</label>
-        </div>`;
+  div.appendChild(criarLinhaJogador(nome));
   document.getElementById("novo-jogador").value = "";
-  
-  vincularEventosCheckbox(); // AQUI ESTOU NA DUVIDA SE COLOQUEI NO LUGAR CERTO
+
+  vincularEventosCheckbox();       // liga o listener só do jogador novo
   atualizarContadorSelecionados();
-  
 }
 
 carregarJogadores();

@@ -611,7 +611,237 @@ function criarTorneio(nomes, numRodadas, liga) {
   };
 }
 
-module.exports = { validar: validar, criarTorneio: criarTorneio };
+// ---------------------------------------------------------------------------
+// Harness da TELA DE SELEÇÃO de jogadores.
+//
+// É deliberadamente separado do harness do torneio: aquele é afinado no detalhe
+// para confrontos, slots e persistência, e não vale arriscá-lo para cobrir uma
+// tela de formulário. Aqui basta um DOM pequeno com checkboxes de verdade.
+//
+// A seleção vive num <script> ANTERIOR ao do torneio, então carregarFerramenta()
+// (que pega o último bloco) não a alcança.
+// ---------------------------------------------------------------------------
+
+function blocosDeScript() {
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  var blocos = [], re = /<script>([\s\S]*?)<\/script>/g, m;
+  while ((m = re.exec(html))) blocos.push(m[1]);
+  return blocos;
+}
+
+function coletarCheckboxes(el, saida) {
+  (el.children || []).forEach(function (f) {
+    if (f.type === "checkbox") saida.push(f);
+    coletarCheckboxes(f, saida);
+  });
+  return saida;
+}
+
+function criarDOMSelecao() {
+  var elementos = {};
+
+  function novoEl(tag) {
+    var el = {
+      tagName: tag || "div",
+      type: "",
+      value: "",
+      checked: false,
+      disabled: false,
+      textContent: "",
+      innerText: "",
+      dataset: {},
+      children: [],
+      _html: "",
+      _listeners: {},
+      style: { cssText: "" },
+      classList: {
+        add: function () {}, remove: function () {}, contains: function () { return false; }
+      },
+      appendChild: function (f) { el.children.push(f); f._parent = el; return f; },
+      remove: function () { if (el.id) delete elementos[el.id]; el._removido = true; },
+      addEventListener: function (t, fn) {
+        (el._listeners[t] || (el._listeners[t] = [])).push(fn);
+      },
+      // Propaga pela árvore, como o navegador — é assim que o teste prova que o
+      // listener do checkbox continua ligado depois de acrescentar um jogador.
+      dispararEvento: function (t) {
+        var ev = { type: t, target: el };
+        for (var n = el; n; n = n._parent) {
+          (n._listeners[t] || []).forEach(function (fn) { fn(ev); });
+        }
+      },
+      querySelectorAll: function () { return []; },
+      querySelector: function () { return null; }
+    };
+
+    var _id = "";
+    Object.defineProperty(el, "id", {
+      get: function () { return _id; },
+      set: function (v) { _id = String(v); if (_id) elementos[_id] = el; }
+    });
+
+    Object.defineProperty(el, "innerHTML", {
+      get: function () { return el._html; },
+      set: function (v) {
+        el._html = String(v);
+        el.children = [];             // innerHTML= SUBSTITUI o conteúdo
+        var re = /<input[^>]*>/g, m;
+        while ((m = re.exec(el._html))) {
+          if (!/type="checkbox"/.test(m[0])) continue;
+          var cb = novoEl("input");
+          cb.type = "checkbox";
+          var mval = /value="([^"]*)"/.exec(m[0]);
+          cb.value = mval ? mval[1] : "";
+          var mid = /id="([^"]*)"/.exec(m[0]);
+          if (mid) cb.id = mid[1];
+          cb._parent = el;
+          el.children.push(cb);
+        }
+      }
+    });
+
+    return el;
+  }
+
+  // Elementos fixos da página
+  ["lista-jogadores", "qtd-selecionados", "aviso-impar", "confirmacao-jogadores",
+   "lista-confirmacao", "novo-jogador", "btn-iniciar", "btn-incluir-jogadores"]
+    .forEach(function (id) { novoEl("div").id = id; });
+
+  var doc = {
+    getElementById: function (id) { return elementos[id] || null; },
+    createElement: function (tag) { return novoEl(tag); },
+    querySelector: function () { return null; },
+    // Só os dois seletores que a tela realmente usa.
+    querySelectorAll: function (sel) {
+      var s = String(sel);
+      if (s.indexOf("#lista-jogadores") !== 0) return [];
+      var lista = elementos["lista-jogadores"];
+      if (!lista) return [];
+      var todos = coletarCheckboxes(lista, []);
+      return /:checked/.test(s)
+        ? todos.filter(function (c) { return c.checked; })
+        : todos;
+    },
+    body: { classList: { add: function () {}, remove: function () {} } },
+    addEventListener: function () {},
+    documentElement: { outerHTML: "" }
+  };
+
+  return { doc: doc, elementos: elementos };
+}
+
+function criarSelecao(lista) {
+  var blocos = blocosDeScript();
+  var codigoTorneio = blocos[blocos.length - 1];
+  var codigoSelecao = blocos.filter(function (b) {
+    return /function carregarJogadores/.test(b);
+  })[0];
+  if (!codigoSelecao) throw new Error("bloco da selecao de jogadores nao encontrado");
+
+  var dom = criarDOMSelecao();
+  var elementos = dom.elementos;
+
+  var sandbox = {
+    document: dom.doc,
+    alert: function (msg) { sandbox.__alertas.push(msg); },
+    __alertas: [],
+    fetch: function () {
+      return Promise.resolve({
+        ok: true,
+        json: function () { return Promise.resolve(lista.slice()); }
+      });
+    },
+    console: { log: console.log, error: console.error, warn: function () {} },
+    Math: Math, Number: Number, String: String, Array: Array, Object: Object,
+    isNaN: isNaN, parseInt: parseInt, parseFloat: parseFloat,
+    Date: Date, Set: Set, JSON: JSON, Promise: Promise,
+    setTimeout: setTimeout, clearTimeout: clearTimeout,
+    confirm: function () { return true; },
+    localStorage: {
+      getItem: function () { return null; },
+      setItem: function () {},
+      removeItem: function () {}
+    }
+  };
+
+  sandbox.MTR = require(path.join(RAIZ, "mtr.js"));
+  sandbox.Pareamento = require(path.join(RAIZ, "pareamento.js"));
+
+  var vm = require("vm");
+  vm.createContext(sandbox);
+
+  // Ordem inversa à do arquivo, de propósito: no navegador o bloco da seleção é
+  // avaliado primeiro, mas só chama carregarJogadores() de forma ASSÍNCRONA —
+  // quando o `await fetch` resolve, o bloco do torneio já foi avaliado e os
+  // helpers de apresentação dele (avatar) já existem. Avaliar o torneio antes
+  // aqui reproduz esse estado sem depender da ordem das microtasks.
+  vm.runInContext(codigoTorneio, sandbox);
+  vm.runInContext(codigoSelecao, sandbox);
+
+  function run(codigo) { return vm.runInContext(codigo, sandbox); }
+
+  function checkboxes() {
+    return coletarCheckboxes(elementos["lista-jogadores"], []);
+  }
+  function acharCheckbox(nome) {
+    var cb = checkboxes().filter(function (c) { return c.value === nome; })[0];
+    if (!cb) throw new Error("checkbox inexistente: " + nome);
+    return cb;
+  }
+
+  return {
+    run: run,
+    // Um macrotask drena todas as microtasks do await de carregarJogadores().
+    pronto: function () { return new Promise(function (r) { setTimeout(r, 0); }); },
+
+    nomes: function () { return checkboxes().map(function (c) { return c.value; }); },
+    selecionados: function () {
+      return checkboxes().filter(function (c) { return c.checked; })
+        .map(function (c) { return c.value; });
+    },
+    contador: function () {
+      var el = elementos["qtd-selecionados"];
+      return el ? Number(el.textContent) : null;
+    },
+
+    // Marca/desmarca disparando o EVENTO REAL, como um clique faria.
+    marcar: function (nome) {
+      var cb = acharCheckbox(nome);
+      cb.checked = true;
+      cb.dispararEvento("change");
+    },
+    desmarcar: function (nome) {
+      var cb = acharCheckbox(nome);
+      cb.checked = false;
+      cb.dispararEvento("change");
+    },
+
+    adicionar: function (nome) {
+      elementos["novo-jogador"].value = nome;
+      run("adicionarJogador();");
+    },
+
+    abrirConfirmacao: function () { run("abrirConfirmacaoJogadores();"); },
+    confirmar: function () { run("confirmarJogadores();"); },
+    confirmado: function () { return run("jogadoresConfirmados"); },
+    confirmacaoVisivel: function () {
+      return elementos["confirmacao-jogadores"].style.display !== "none";
+    },
+    textoConfirmacao: function () { return elementos["lista-confirmacao"].innerHTML; },
+    iniciarHabilitado: function () { return !elementos["btn-iniciar"].disabled; },
+
+    campoNovoJogador: function () { return elementos["novo-jogador"].value; },
+    alertas: function () { return sandbox.__alertas.slice(); },
+    elementos: elementos
+  };
+}
+
+module.exports = {
+  validar: validar,
+  criarTorneio: criarTorneio,
+  criarSelecao: criarSelecao
+};
 
 // Execução direta
 if (require.main === module) {

@@ -2192,6 +2192,92 @@ grupo("18. Lembrete operacional após exportar");
   });
 })();
 
+// ============ 19. Tela de seleção de jogadores
+//
+// carregarJogadores() é assíncrona (faz fetch), então a seção inteira roda na
+// fila assíncrona — inclusive o grupo(), para o cabeçalho sair na ordem certa e
+// para uma falha aqui não ser rotulada como da seção 18.
+testeAsync(function () {
+  grupo("19. Seleção de jogadores (lista, contador e inclusão)");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var ELENCO = ["Pablo", "Alex", "Caio", "Bruno Novaes", "Sérgio"];
+  var t = integracao.criarSelecao(ELENCO);
+
+  return t.pronto().then(function () {
+    // ---- carga inicial
+    ok(t.nomes().length === ELENCO.length,
+       "a lista carrega todos os jogadores do cadastro", t.nomes().join(", "));
+
+    var ordenado = ELENCO.slice().sort(function (a, b) { return a.localeCompare(b, "pt-BR"); });
+    ok(t.nomes().join("|") === ordenado.join("|"),
+       "os jogadores vem em ordem alfabetica", t.nomes().join("|"));
+
+    ok(t.contador() === 0, "o contador comeca em 0", String(t.contador()));
+
+    // ---- marcar atualiza o contador
+    t.marcar("Alex");
+    t.marcar("Caio");
+    t.marcar("Pablo");
+    ok(t.contador() === 3, "marcar 3 jogadores leva o contador a 3", String(t.contador()));
+    ok(t.selecionados().sort().join(",") === "Alex,Caio,Pablo",
+       "os 3 marcados sao os esperados", t.selecionados().join(","));
+
+    // ---- O BUG: acrescentar um jogador reconstruia a lista inteira
+    t.adicionar("Nick");
+    ok(t.nomes().indexOf("Nick") !== -1,
+       "o jogador novo entra na lista", t.nomes().join(", "));
+    ok(t.selecionados().sort().join(",") === "Alex,Caio,Pablo",
+       "os jogadores ja marcados CONTINUAM marcados apos adicionar outro",
+       t.selecionados().join(","));
+    ok(t.contador() === 3,
+       "o contador continua 3 depois da adicao", String(t.contador()));
+    ok(t.campoNovoJogador() === "",
+       "o campo de novo jogador e limpo", t.campoNovoJogador());
+
+    // ---- os listeners dos jogadores antigos sobreviveram
+    t.desmarcar("Caio");
+    ok(t.contador() === 2,
+       "desmarcar um jogador ANTIGO ainda atualiza o contador (listener vivo)",
+       String(t.contador()));
+
+    // ---- e o jogador novo tambem recebeu listener
+    t.marcar("Nick");
+    ok(t.contador() === 3,
+       "marcar o jogador recem-adicionado atualiza o contador", String(t.contador()));
+
+    // ---- nome repetido
+    t.adicionar("Nick");
+    ok(/est[áa] na lista/i.test(t.alertas().join(" ")),
+       "adicionar um nome repetido alerta", t.alertas().join(" | "));
+    ok(t.nomes().filter(function (n) { return n === "Nick"; }).length === 1,
+       "e nao duplica a linha", t.nomes().join(", "));
+
+    // ---- nome vazio
+    var antes = t.nomes().length;
+    t.adicionar("");
+    ok(t.nomes().length === antes, "adicionar com o campo vazio nao cria linha");
+    t.adicionar("   ");
+    ok(t.nomes().length === antes, "so espacos em branco tambem nao cria linha");
+
+    // ---- confirmacao e sua invalidacao
+    t.abrirConfirmacao();
+    ok(t.confirmacaoVisivel(), "o bloco de confirmacao aparece");
+    ok(t.textoConfirmacao().indexOf("Nick") !== -1,
+       "a confirmacao lista o jogador acrescentado");
+
+    t.confirmar();
+    ok(t.confirmado() === true, "confirmar marca os jogadores como confirmados");
+    ok(t.iniciarHabilitado(), "o botao Iniciar Torneio fica habilitado");
+
+    t.marcar("Sérgio");
+    ok(t.confirmado() === false, "mudar a selecao invalida a confirmacao");
+    ok(!t.iniciarHabilitado(), "e o botao Iniciar Torneio volta a ficar desabilitado");
+    ok(!t.confirmacaoVisivel(), "o bloco de confirmacao some ao mudar a selecao");
+    ok(t.contador() === 4, "e o contador acompanha a nova selecao", String(t.contador()));
+  });
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));
