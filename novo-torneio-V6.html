@@ -430,8 +430,11 @@ function instalarAutosave() {
 // Mantido para os pontos de renderização já existentes: garante o autosave
 // instalado e grava o que estiver na tela naquele momento.
 function ligarAutosave(rodada) {
+  // NÃO capturar aqui. Capturar logo após renderizar é destrutivo: se a
+  // reaplicação do rascunho falhar por qualquer motivo, os campos estão vazios
+  // e capturarRascunho APAGA as entradas correspondentes — e salvarEstado()
+  // persiste a perda. O rascunho só é reescrito quando o organizador digita.
   instalarAutosave();
-  if (rodada) capturarRascunho(rodada);
 }
 
 // Última chance de gravar antes de a página sair. `pagehide` é o evento
@@ -467,10 +470,14 @@ function marcarRascunhoSalvo() {
 }
 
 // Reaplica na tela um rascunho restaurado do localStorage.
-function aplicarRascunho(rodada) {
+//
+// `sufixoExplicito` vem de quem acabou de desenhar a tela e sabe quais campos
+// criou. Depender só de estadoRodadas aqui tornava a reaplicação sensível à
+// ordem em que o estado é atualizado durante a recuperação.
+function aplicarRascunho(rodada, sufixoExplicito) {
   const r = rascunhos[rodada];
   if (!r) return;
-  const sufixo = sufixoCampos(rodada);
+  const sufixo = sufixoExplicito !== undefined ? sufixoExplicito : sufixoCampos(rodada);
 
   Object.keys(r.pares || {}).forEach(i => {
     const s1 = document.getElementById(`r${rodada}_j1_${i}`);
@@ -718,20 +725,25 @@ function redesenharRodadaEditavel(r) {
   let html = `<h2>Rodada ${r}</h2>` +
     '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
 
+  // Mesma ideia da tela de correção: o que já foi digitado vai no atributo
+  // `value` do HTML, sem depender de uma reaplicação posterior.
+  const valores = (rascunhos[r] && rascunhos[r].placares) || {};
+
   (resultadosPorRodada[r] || []).forEach((par, i) => {
     const slot = par.slot !== undefined ? par.slot : i;
     if (MTR.ehBye(par[1].nome)) {
       html += `<tr data-slot="${slot}"><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
       return;
     }
+    const v = valores[slot] || ["", "", ""];
     html += `
       <tr data-slot="${slot}">
         <td>${par[0].nome}</td>
         <td class="placar-input">
-          <input type="number" min="0" id="r${r}_p${slot * 2}">
+          <input type="number" min="0" id="r${r}_p${slot * 2}" value="${v[0]}">
           <span>x</span>
-          <input type="number" min="0" id="r${r}_p${slot * 2 + 1}">
-          ${campoEmpates(r, slot)}
+          <input type="number" min="0" id="r${r}_p${slot * 2 + 1}" value="${v[1]}">
+          ${campoEmpates(r, slot, v[2])}
         </td>
         <td>${par[1].nome}</td>
       </tr>`;
@@ -743,7 +755,7 @@ function redesenharRodadaEditavel(r) {
   bloco.innerHTML = html;
   area.appendChild(bloco);
 
-  aplicarRascunho(r);
+  aplicarRascunho(r, "");
   ligarAutosave(r);
 }
 
@@ -785,7 +797,7 @@ function redesenharRodadaManual(r) {
   bloco.innerHTML = html;
   area.appendChild(bloco);
 
-  aplicarRascunho(r);
+  aplicarRascunho(r, "");
   ligarAutosave(r);
 }
 
@@ -1148,9 +1160,9 @@ function alternarEmpates(rodada) {
 
 // Campo de empates embutido na própria célula do placar — assim a tabela
 // continua com 3 colunas e o código que lê tr.children[0..2] segue válido.
-function campoEmpates(rodada, slot) {
+function campoEmpates(rodada, slot, valor) {
   return `<span class="emp-wrap" style="display:none"> emp:
-    <input type="number" min="0" style="width:3em" id="r${rodada}_e${slot}"></span>`;
+    <input type="number" min="0" style="width:3em" id="r${rodada}_e${slot}" value="${valor || ""}"></span>`;
 }
 
 function gerarRodadaManual() {
@@ -1684,6 +1696,12 @@ function mostrarRanking() {
   const existente = document.getElementById("ranking-atual");
   if (existente) existente.remove();
 
+  // Durante a correção a rodada está desfeita pela metade: os jogos normais
+  // saíram do histórico e o BYE (que não é editável) permaneceu. Qualquer
+  // classificação aqui seria um estado intermediário — no teste real aparecia
+  // só o jogador do BYE, com 3 pontos. Volta ao salvar a correção.
+  if (estadoRodadas[rodadaAtual] === "corrigindo") return;
+
   // Mesma ordenação da tabela Appendix C: antes esta tabela ordenava por
   // pontos + saldo e podia apontar um campeão diferente do que aparecia
   // logo abaixo.
@@ -1796,6 +1814,13 @@ function corrigirPlacares(rodada, restaurando) {
   // logo acima dos campos de correção.
   removerBlocosDaRodada(rodada);
 
+  // Some também com a classificação: ela ficaria congelada num estado
+  // intermediário até a correção ser salva.
+  ["ranking-atual", "appendix-c"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.remove) el.remove();
+  });
+
   const area = document.getElementById("torneio-area");
   const bloco = document.createElement("div");
   bloco.className = "rodada-bloco";
@@ -1805,8 +1830,19 @@ function corrigirPlacares(rodada, restaurando) {
     `<p style="font-size:.9em;opacity:.8;margin-top:-6px">` +
     `Altera somente os resultados. Os confrontos permanecem os mesmos.</p>`;
 
+  // Valores que a tela deve mostrar: o rascunho (se veio de um reload) ou o
+  // placar que estava valendo, capturado antes do rollback.
+  const temRascunho =
+    rascunhos[rodada] && Object.keys(rascunhos[rodada].placares || {}).length > 0;
+  if (!temRascunho) rascunhos[rodada] = { pares: {}, placares: placarAtual };
+  const valores = rascunhos[rodada].placares || {};
+
   // Os campos usam o mesmo `slot` da rodada normal (com sufixo "_r"), para o
   // rascunho e a leitura seguirem uma única convenção de índice.
+  //
+  // Os valores vão no atributo `value` do próprio HTML, e não por uma busca
+  // no DOM depois de renderizar: assim não existe caminho em que a tela é
+  // desenhada mas os placares não aparecem.
   let html = '<table><thead><tr><th>Jogador 1</th><th>Placar</th><th>Jogador 2</th></tr></thead><tbody>';
   confrontos.forEach((par, i) => {
     const slot = par.slot !== undefined ? par.slot : i;
@@ -1814,15 +1850,16 @@ function corrigirPlacares(rodada, restaurando) {
       html += `<tr data-slot="${slot}"><td colspan="3">${par[0].nome} folga nesta rodada (Bye)</td></tr>`;
       return;
     }
+    const v = valores[slot] || ["", "", ""];
     html += `
       <tr data-slot="${slot}">
         <td>${par[0].nome}</td>
         <td class="placar-input">
-          <input type="number" min="0" id="r${rodada}_p${slot * 2}_r">
+          <input type="number" min="0" id="r${rodada}_p${slot * 2}_r" value="${v[0]}">
           <span>x</span>
-          <input type="number" min="0" id="r${rodada}_p${slot * 2 + 1}_r">
+          <input type="number" min="0" id="r${rodada}_p${slot * 2 + 1}_r" value="${v[1]}">
           <span class="emp-wrap" style="display:none"> emp:
-            <input type="number" min="0" style="width:3em" id="r${rodada}_e${slot}_r"></span>
+            <input type="number" min="0" style="width:3em" id="r${rodada}_e${slot}_r" value="${v[2] || ""}"></span>
         </td>
         <td>${par[1].nome}</td>
       </tr>
@@ -1833,14 +1870,9 @@ function corrigirPlacares(rodada, restaurando) {
   bloco.innerHTML += html;
   area.appendChild(bloco);
 
-  // Preenche com o rascunho (se veio de um reload) ou com o placar que estava
-  // valendo, capturado antes do rollback.
-  if (rascunhos[rodada] && Object.keys(rascunhos[rodada].placares || {}).length) {
-    aplicarRascunho(rodada);
-  } else {
-    rascunhos[rodada] = { pares: {}, placares: placarAtual };
-    aplicarRascunho(rodada);
-  }
+  // Rede de segurança: se algum navegador ignorar o atributo `value`, isto
+  // reaplica pela propriedade. Não apaga nada se falhar.
+  aplicarRascunho(rodada, "_r");
 
   ligarAutosave(rodada);
   salvarEstado();
@@ -1947,6 +1979,10 @@ function mostrarEstatisticasAppendixC() {
   const area = document.getElementById("torneio-area");
   const existente = document.getElementById("appendix-c");
   if (existente) existente.remove(); // Remove tabela anterior
+
+  // Mesma razão de mostrarRanking(): nada de classificação com a rodada
+  // parcialmente desfeita durante a correção.
+  if (estadoRodadas[rodadaAtual] === "corrigindo") return;
 
   // Toda a matemática vem do mtr.js (validado por tests/run.js). Antes esta
   // função tinha a própria implementação, que divergia da usada no pareamento.

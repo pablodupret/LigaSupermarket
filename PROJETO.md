@@ -424,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 171 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 182 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -610,6 +610,22 @@ Placares", que sumia após o reload. `retomarTorneioSalvo()` não passa por
 única, `atualizarBotaoCorrigir()`, aplicada nos dois fluxos: o botão existe quando a rodada
 atual está finalizada **e** é a última finalizada (se uma rodada posterior tivesse sido
 gerada, `rodadaAtual` já teria passado de `ultimaRodadaFinalizada`).
+
+**Terceiro teste no Safari:** durante "Corrigir Placares", um ⌘R trouxe todos os campos
+vazios e uma classificação com só o jogador do BYE. Duas correções:
+
+- **Os placares agora são renderizados no atributo `value` do HTML**, em vez de preenchidos
+  por uma busca no DOM depois de a tela ser desenhada. Não existe mais um caminho em que a
+  tela aparece e os valores não. Verificado neutralizando `aplicarRascunho()` por completo:
+  os 182 testes continuam passando.
+- **`ligarAutosave()` não captura mais o rascunho ao renderizar.** Capturar logo após
+  desenhar é destrutivo: se a reaplicação falhasse, os campos estariam vazios,
+  `capturarRascunho()` APAGARIA as entradas correspondentes e `salvarEstado()` persistiria a
+  perda. O rascunho só é reescrito quando o organizador digita.
+- **Ranking e Appendix C ficam ocultos enquanto `estadoRodadas[rodadaAtual] === "corrigindo"`.**
+  Durante a correção a rodada está desfeita pela metade — os jogos normais saem do histórico
+  e o BYE, que não é editável, permanece —, então qualquer classificação ali é um estado
+  intermediário. Voltam ao salvar a correção, já recalculadas.
 
 ### Lição para os testes
 

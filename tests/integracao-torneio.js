@@ -73,7 +73,10 @@ function criarDOM() {
         // Registra os inputs que aparecem no HTML, para getElementById achá-los,
         // montando a mesma estrutura <tr><td><td class=placar><td> que o código
         // percorre via input.parentElement.parentElement.
-        var re = /id="(r\d+_p(\d+)(_r)?)"/g, m;
+        // Captura a tag inteira, para honrar também o atributo `value` — o
+        // código de produção passou a renderizar os placares direto no HTML,
+        // e ignorar isso aqui mascararia se o atributo funciona.
+        var re = /<input[^>]*id="(r\d+_p(\d+)(_r)?)"[^>]*>/g, m;
         while ((m = re.exec(el._html))) {
           if (elementos[m[1]]) continue;
           var idx = Number(m[2]);
@@ -88,6 +91,8 @@ function criarDOM() {
 
           var inp = novoEl("input");
           inp.id = m[1];
+          var mv = /value="([^"]*)"/.exec(m[0]);
+          inp.value = mv ? mv[1] : "";
           inp.parentElement = { parentElement: tr };   // <td class="placar-input"> -> <tr>
           inp._parent = el;                            // para a propagação de eventos
           elementos[m[1]] = inp;
@@ -410,14 +415,17 @@ function criarTorneio(nomes, numRodadas, liga) {
       });
     },
 
+    // A tela de correção indexa os campos pelo `slot` do confronto, não pela
+    // posição no array — com BYE no slot 0 os dois divergem.
     preencherPlacaresReabertos: function (rodada, fn) {
       var confrontos = run("resultadosPorRodada[" + rodada + "] || []");
       confrontos.forEach(function (par, i) {
         if (par[1].nome === "Bye") return;
-        var i1 = elementos["r" + rodada + "_p" + (i * 2) + "_r"];
-        var i2 = elementos["r" + rodada + "_p" + (i * 2 + 1) + "_r"];
+        var slot = par.slot !== undefined ? par.slot : i;
+        var i1 = elementos["r" + rodada + "_p" + (slot * 2) + "_r"];
+        var i2 = elementos["r" + rodada + "_p" + (slot * 2 + 1) + "_r"];
         if (!i1 || !i2) return;
-        var v = fn(par[0].nome, par[1].nome, i) || [2, 0];
+        var v = fn(par[0].nome, par[1].nome, slot) || [2, 0];
         i1.value = String(v[0]);
         i2.value = String(v[1]);
       });

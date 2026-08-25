@@ -1377,6 +1377,96 @@ grupo("11. Cenário do Safari: 7 jogadores, R1 em andamento");
   })();
 })();
 
+// ============ 12. Correção com BYE: rascunho visual e standings
+grupo("12. Correção de placares com BYE (cenário do Safari)");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+  var ELENCO7 = ["Caio", "Alex", "Gabriel", "Flavio", "Eduardo", "Pablo", "Bruno Novaes"];
+
+  (function () {
+    var t = criar(ELENCO7, 4, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+
+    // Slots reais dos jogos (o BYE ocupa o slot 0)
+    var pares = t.run("resultadosPorRodada[1].map(function(p){return [p[0].nome,p[1].nome,p.slot];})");
+    var normais = pares.filter(function (p) { return p[1] !== "Bye"; });
+    var slotAlvo = normais[0][2];
+
+    t.reabrir(1);
+
+    ok(t.valorDoCampo("r1_p" + (slotAlvo * 2) + "_r") === "2",
+       "a correcao abre com o placar atual nos campos _r",
+       String(t.valorDoCampo("r1_p" + (slotAlvo * 2) + "_r")));
+
+    // Altera 2x0 -> 1x2 usando SOMENTE o evento `input`
+    t.digitar("r1_p" + (slotAlvo * 2) + "_r", 1, "input");
+    t.digitar("r1_p" + (slotAlvo * 2 + 1) + "_r", 2, "input");
+
+    // O localStorage tem de conter 1 e 2
+    var salvo = JSON.parse(t.run("localStorage.getItem('ligaSupermarket:torneioEmAndamento')") || "{}");
+    var pl = (salvo.rascunhos && salvo.rascunhos["1"] && salvo.rascunhos["1"].placares) || {};
+    ok(pl[String(slotAlvo)] && pl[String(slotAlvo)][0] === "1" && pl[String(slotAlvo)][1] === "2",
+       "o localStorage contem 1 e 2 apos o evento input",
+       JSON.stringify(pl));
+
+    // Reload COM renderizacao
+    t.recarregarComRender();
+
+    ok(t.estadoRodadas()[1] === "corrigindo", "volta em Corrigindo Placares");
+
+    // O que o Safari mostrou vazio: os VALORES nos inputs _r
+    ok(t.valorDoCampo("r1_p" + (slotAlvo * 2) + "_r") === "1" &&
+       t.valorDoCampo("r1_p" + (slotAlvo * 2 + 1) + "_r") === "2",
+       "os inputs _r exibem 1 e 2 depois do reload",
+       t.valorDoCampo("r1_p" + (slotAlvo * 2) + "_r") + " x " +
+       t.valorDoCampo("r1_p" + (slotAlvo * 2 + 1) + "_r"));
+
+    // Os demais jogos tambem reaparecem
+    var outros = normais.slice(1);
+    var todosOk = outros.every(function (p) {
+      return t.valorDoCampo("r1_p" + (p[2] * 2) + "_r") === "2" &&
+             t.valorDoCampo("r1_p" + (p[2] * 2 + 1) + "_r") === "0";
+    });
+    ok(todosOk, "os outros placares tambem reaparecem nos campos _r",
+       JSON.stringify(outros.map(function (p) {
+         return t.valorDoCampo("r1_p" + (p[2] * 2) + "_r") + "x" +
+                t.valorDoCampo("r1_p" + (p[2] * 2 + 1) + "_r");
+       })));
+
+    // Nenhuma classificacao durante a correcao
+    var html = t.run("(function(){var a=document.getElementById('torneio-area');return (a&&a.innerHTML)||'';})()");
+    ok(html.indexOf("Ranking Atual") === -1,
+       "Ranking Atual nao aparece durante a correcao");
+    ok(html.indexOf("Appendix C") === -1,
+       "Appendix C nao aparece durante a correcao");
+
+    // Salva a correcao com o que esta na tela — que e justamente o rascunho
+    // restaurado (1 x 2 no jogo alterado, 2 x 0 nos demais).
+    t.finalizarCorrecao(1);
+
+    var html2 = t.run("(function(){var a=document.getElementById('torneio-area');return (a&&a.innerHTML)||'';})()");
+    ok(html2.indexOf("Ranking Atual") !== -1,
+       "apos salvar, Ranking Atual reaparece");
+    ok(html2.indexOf("Appendix C") !== -1,
+       "apos salvar, Appendix C reaparece");
+
+    // O BYE segue contabilizado uma unica vez
+    var byes = t.jogadores().reduce(function (n, j) {
+      return n + (j.historico || []).filter(function (h) { return h.contra === "Bye"; }).length;
+    }, 0);
+    ok(byes === 1, "o BYE continua contabilizado uma unica vez", "byes: " + byes);
+
+    // E o placar corrigido valeu
+    var exp = t.exportar(1).filter(function (o) { return o.resultado === "1 x 2"; });
+    ok(exp.length === 1, "o placar corrigido consta na exportacao",
+       JSON.stringify(t.exportar(1)));
+  })();
+})();
+
 // ---------------------------------------------------------------- fim
 console.log("\n" + "=".repeat(60));
 console.log("  " + passou + " passaram, " + falhou + " falharam");
