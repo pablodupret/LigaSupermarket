@@ -934,6 +934,33 @@ existente barrar o início do torneio sem o número de rodadas. A seção 24 da 
 lados chamando `iniciarTorneio()` de verdade — recusa sem escolha, e `totalRodadas === 4` com a
 opção 4 marcada.
 
+### Símbolo VS nos confrontos (25/08/2026)
+
+`img/Symbol-VS.png` entra no centro de cada match card, entre os dois placares, por
+`simboloVS()`. Aparece na rodada aberta, na finalizada, nas rodadas anteriores e na tela de
+correção — e **nunca** no card de Bye, onde não há confronto.
+
+Encaixou sem mexer em estrutura: o símbolo ocupa exatamente o lugar do antigo `<span>×</span>`,
+como irmão dos inputs dentro de `.match-score`. Os inputs continuam sendo filhos diretos do
+bloco do placar, então `input.parentElement.parentElement` segue chegando ao `.match` com os
+três filhos que `finalizarRodada()` e `finalizarCorrecao()` percorrem.
+
+Detalhes que valem lembrar:
+
+- **`pointer-events: none`** no símbolo. Ele fica entre dois campos numéricos; sem isso, um
+  toque de raspão nele não faria nada e pareceria um campo que não responde.
+- **A imagem foi reduzida de 1254×1254 / 927 KB para 256×256 / 58 KB** — é decoração de 36px, e
+  quase um mega num celular no wi-fi da loja não se justifica. O original ficou fora do
+  repositório.
+- `confrontoFinalizado()` passou a receber o par devolvido por `MTR.parsePlacar()` em vez de um
+  texto pronto, para os dois números ficarem de lados opostos do símbolo. A nota de games
+  empatados saiu para uma linha própria embaixo.
+
+**Seção 27 da suíte**: toda referência estática a `img/...` no HTML é conferida contra
+`readdirSync` do diretório, comparando o nome **exato**. O macOS não diferencia maiúsculas de
+minúsculas e o GitHub Pages sim — foi assim que `avatar_TRC.jpg` funcionou local e deu 404
+publicado.
+
 ### Pendências registradas
 
 - **Empates de game na correção**: a tela de correção renderiza os campos `emp-wrap` mas não o

@@ -429,13 +429,27 @@ button:disabled:hover { border-color: var(--border-strong); }
   text-align: center; font-size: 1.15rem; font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.match-score .vs { color: var(--text-faint); font-size: 1.05rem; }
-.match-score .final {
-  font-size: 1.2rem; font-weight: 700; letter-spacing: .04em;
-  font-variant-numeric: tabular-nums; white-space: nowrap;
+/* Símbolo VS entre os dois placares. É decoração: não recebe clique, para
+   nunca disputar o toque com os campos que estão de cada lado. */
+.vs-simbolo {
+  width: 36px; height: 36px; flex: none;
+  object-fit: contain;
+  opacity: .92;
+  filter: drop-shadow(0 2px 5px rgba(0,0,0,.45));
+  pointer-events: none;
+  -webkit-user-select: none; user-select: none;
 }
-.match-score .final .emp { display: block; font-size: .72rem; font-weight: 600;
-                           color: var(--text-dim); letter-spacing: 0; }
+
+.match-score .final {
+  font-size: 1.35rem; font-weight: 700; letter-spacing: .04em;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+  min-width: 1.2em; text-align: center;
+}
+/* Nota de games empatados: linha própria embaixo, como o campo de empates. */
+.match-score .emp-nota {
+  flex: 1 0 100%; text-align: center;
+  font-size: .74rem; font-weight: 600; color: var(--text-dim);
+}
 
 /* O JS alterna entre display:none e display:inline neste span, então o
    layout tem de funcionar sem depender de flex aqui. */
@@ -595,6 +609,7 @@ code { font-family: var(--mono); font-size: .9em;
   .match-side--r { flex-direction: row; text-align: left; }
   .match-score { justify-content: flex-start; }
   .match-score input[type=number] { width: 64px; padding: 11px 4px; }
+  .vs-simbolo { width: 30px; height: 30px; }
 
   .players { max-height: none; grid-template-columns: 1fr; }
   button { padding: 12px 18px; }
@@ -1094,6 +1109,12 @@ function ladoDoConfronto(nome, direita) {
          `<span class="nome">${escaparHtml(nome)}</span></div>`;
 }
 
+// Símbolo do duelo, entre os dois placares. Só decoração — não entra em regra
+// nenhuma, e não aparece no card de Bye, onde não há confronto.
+function simboloVS() {
+  return '<img class="vs-simbolo" src="img/Symbol-VS.png" alt="VS">';
+}
+
 // Confronto EDITÁVEL.
 //
 // A forma de 3 filhos [jogador1, placar, jogador2] com os inputs direto dentro
@@ -1108,7 +1129,7 @@ function confrontoEditavel(rodada, slot, j1, j2, valores, sufixo) {
       ${ladoDoConfronto(j1)}
       <div class="match-score">
         <input type="number" min="0" inputmode="numeric" id="r${rodada}_p${slot * 2}${suf}" value="${v[0]}">
-        <span class="vs">×</span>
+        ${simboloVS()}
         <input type="number" min="0" inputmode="numeric" id="r${rodada}_p${slot * 2 + 1}${suf}" value="${v[1]}">
         ${campoEmpates(rodada, slot, v[2], suf)}
       </div>
@@ -1116,14 +1137,21 @@ function confrontoEditavel(rodada, slot, j1, j2, valores, sufixo) {
     </div>`;
 }
 
-// Confronto já resolvido: mesmo card, com o placar como texto.
-function confrontoFinalizado(slot, j1, j2, texto, empates) {
+// Confronto já resolvido: mesmo card, com o placar como texto dos dois lados do
+// VS. `placar` é o par devolvido por MTR.parsePlacar(), ou null quando não há
+// resultado registrado.
+function confrontoFinalizado(slot, j1, j2, placar, empates) {
+  const centro = placar
+    ? `<span class="final">${placar[0]}</span>` + simboloVS() +
+      `<span class="final">${placar[1]}</span>`
+    : '<span class="final">—</span>';
+
   return `
     <div class="match" data-slot="${slot}">
       ${ladoDoConfronto(j1)}
-      <div class="match-score"><span class="final">${texto}` +
-        (empates ? `<span class="emp">${empates} game(s) empatado(s)</span>` : "") +
-      `</span></div>
+      <div class="match-score">${centro}` +
+        (empates ? `<span class="emp-nota">${empates} game(s) empatado(s)</span>` : "") +
+      `</div>
       ${ladoDoConfronto(j2, true)}
     </div>`;
 }
@@ -1736,8 +1764,7 @@ function redesenharRodadaLeitura(r) {
       x => x.contra === par[1].nome && Number(x.rodada) === Number(r)
     );
     const p = h ? MTR.parsePlacar(h.placar) : null;
-    const texto = p ? `${p[0]} × ${p[1]}` : "—";
-    html += confrontoFinalizado(slot, par[0].nome, par[1].nome, texto,
+    html += confrontoFinalizado(slot, par[0].nome, par[1].nome, p,
                                 h && h.gamesEmpatados);
   });
 

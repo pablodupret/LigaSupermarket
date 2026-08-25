@@ -2725,6 +2725,93 @@ testeAsync(function () {
   return Promise.resolve();
 });
 
+// ============ 26. Símbolo VS nos confrontos
+testeAsync(function () {
+  grupo("26. Símbolo VS nos confrontos");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var VS = "img/Symbol-VS.png";
+
+  function contarVS(html) {
+    return (String(html).match(/Symbol-VS\.png/g) || []).length;
+  }
+
+  // 5 jogadores: 2 confrontos reais + 1 BYE. O VS tem de aparecer duas vezes.
+  var t = integracao.criarTorneio(["Pablo", "Alex", "Caio", "Gabriel", "Ana"], 2, 4);
+  t.gerarAuto();
+
+  var aberto = t.run("document.getElementById('rodada_1').innerHTML");
+  ok(contarVS(aberto) === 2,
+     "rodada aberta: um VS por confronto real (o BYE nao conta)",
+     "VS encontrados: " + contarVS(aberto));
+  ok(aberto.indexOf(VS) !== -1, "e o caminho usado e " + VS);
+
+  // O card de BYE, isolado, nunca traz o simbolo.
+  var bye = t.run("cartaoBye('Ana', 0)");
+  ok(contarVS(bye) === 0, "o card de BYE nao usa o simbolo VS", bye);
+  var byePassado = t.run("cartaoBye('Ana', 0, true)");
+  ok(contarVS(byePassado) === 0, "nem na versao de rodada ja passada");
+
+  // Rodada finalizada: o VS continua, agora entre os dois placares.
+  t.preencherPlacares(1, function () { return [2, 1]; });
+  t.finalizar(1);
+  var fim = t.run("document.getElementById('rodada_1').innerHTML");
+  ok(contarVS(fim) === 2,
+     "rodada finalizada: o VS continua nos dois confrontos",
+     "VS encontrados: " + contarVS(fim));
+  ok(/<span class="final">2<\/span>[\s\S]*?Symbol-VS[\s\S]*?<span class="final">1<\/span>/.test(fim),
+     "e fica ENTRE os dois placares");
+
+  // Tela de correcao (campos com sufixo _r).
+  t.reabrir(1);
+  var correcao = t.run("document.getElementById('rodada_1_reaberta').innerHTML");
+  ok(contarVS(correcao) === 2,
+     "a tela de correcao tambem mostra o VS",
+     "VS encontrados: " + contarVS(correcao));
+  ok(correcao.indexOf('id="r1_p2_r"') !== -1,
+     "  ↳ e os campos de correcao seguem com os ids de sempre");
+
+  // Sem resultado registrado o card cai no travessao, sem VS solto.
+  var semPlacar = t.run("confrontoFinalizado(0, 'A', 'B', null, 0)");
+  ok(contarVS(semPlacar) === 0 && semPlacar.indexOf("—") !== -1,
+     "confronto sem resultado mostra travessao e nenhum VS", semPlacar);
+
+  // O simbolo e decorativo: nao pode roubar o clique dos campos ao lado.
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  ok(/\.vs-simbolo[^}]*pointer-events:\s*none/.test(html),
+     "o simbolo tem pointer-events: none, para nao disputar o toque");
+
+  return Promise.resolve();
+});
+
+// ============ 27. Imagens estáticas existem com o nome EXATO
+//
+// O macOS não diferencia maiúsculas de minúsculas, o GitHub Pages sim. Já
+// aconteceu neste projeto: avatar_TRC.jpg funcionava aqui e dava 404 publicado.
+testeAsync(function () {
+  grupo("27. Imagens estáticas com nome exato (case-sensitive)");
+
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  var arquivos = fs.readdirSync(path.join(RAIZ, "img"));
+
+  // Só as referências literais; as de avatar são montadas em tempo de execução.
+  var refs = (html.match(/src="img\/[^"$]+"/g) || [])
+    .map(function (s) { return s.slice(9, -1); });
+
+  ok(refs.length > 0, "ha referencias estaticas a imagens no HTML",
+     refs.join(", "));
+
+  refs.forEach(function (nome) {
+    ok(arquivos.indexOf(nome) !== -1,
+       'img/' + nome + " existe com esse nome exato",
+       "nao encontrado entre: " + arquivos.filter(function (a) {
+         return a.toLowerCase() === nome.toLowerCase();
+       }).join(", "));
+  });
+
+  return Promise.resolve();
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));
