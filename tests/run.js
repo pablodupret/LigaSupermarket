@@ -2278,6 +2278,74 @@ testeAsync(function () {
   });
 });
 
+// ============ 20. Painel do torneio (apresentação derivada do estado)
+//
+// Roda na fila assíncrona só para o cabeçalho do grupo sair na ordem certa,
+// depois das seções 18 e 19.
+testeAsync(function () {
+  grupo("20. Painel do torneio (cabeçalho e trilha de rodadas)");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var t = integracao.criarTorneio(["A", "B", "C", "D"], 3, 4);
+
+  function painel() {
+    return t.run("(document.getElementById('th-corpo')||{}).innerHTML || ''");
+  }
+  function rodada(n) {
+    t.gerarAuto();
+    t.preencherPlacares(n, function () { return [2, 0]; });
+    t.finalizar(n);
+  }
+
+  // Data e coleção são preenchidas por iniciarTorneio(), que os testes não
+  // percorrem; aqui são postas direto, como a tela faria.
+  t.run("colecaoAtual = 'Chaos Draft'; dataAtual = '2026-08-25';");
+  t.gerarAuto();
+
+  var h = painel();
+  ok(h.indexOf("Liga 4") !== -1, "o cabecalho mostra a liga", h.slice(0, 140));
+  ok(h.indexOf("4 jogadores") !== -1, "...e a quantidade de jogadores");
+  ok(h.indexOf("3 rodadas") !== -1, "...e o total de rodadas");
+  ok(h.indexOf("Chaos Draft") !== -1, "...e a colecao informada");
+  ok(h.indexOf("25/08/2026") !== -1, "...com a data no formato brasileiro");
+  ok(h.indexOf("Torneio em andamento") !== -1, "situacao: torneio em andamento");
+  ok((h.match(/rail-dot/g) || []).length === 3,
+     "a trilha tem exatamente um passo por rodada",
+     String((h.match(/rail-dot/g) || []).length));
+  ok(h.indexOf("rail-step--now") !== -1, "a rodada em andamento aparece como atual");
+  ok(h.indexOf("rail-step--done") === -1, "nenhuma rodada aparece concluida ainda");
+
+  t.preencherPlacares(1, function () { return [2, 0]; });
+  t.finalizar(1);
+  ok(painel().indexOf("rail-step--done") !== -1,
+     "rodada finalizada vira concluida na trilha");
+
+  t.reabrir(1);
+  ok(painel().indexOf("Corrigindo placares") !== -1,
+     "situacao: corrigindo placares", painel().slice(0, 200));
+  t.preencherPlacaresReabertos(1, function () { return [2, 0]; });
+  t.finalizarCorrecao(1);
+  ok(painel().indexOf("Torneio em andamento") !== -1,
+     "ao salvar a correcao a situacao volta a em andamento");
+
+  rodada(2);
+  rodada(3);
+  ok(painel().indexOf("Torneio encerrado") !== -1,
+     "situacao: torneio encerrado na ultima rodada", painel().slice(0, 200));
+
+  // Depois de um reload, data e coleção não existem mais (não são
+  // persistidas) — o cabeçalho tem de OMITIR a linha, nunca inventar.
+  t.recarregarComRender();
+  var hr = painel();
+  ok(hr.indexOf("Liga 4") !== -1, "apos o reload o cabecalho volta a ser desenhado");
+  ok(hr.indexOf("Chaos Draft") === -1 && hr.indexOf("25/08/2026") === -1,
+     "e NAO inventa data nem colecao, que nao entram no estado salvo", hr.slice(0, 200));
+  ok(hr.indexOf("4 jogadores") !== -1,
+     "o que esta no estado salvo continua aparecendo");
+
+  return Promise.resolve();
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));

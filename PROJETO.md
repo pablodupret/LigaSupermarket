@@ -813,4 +813,82 @@ conformidade com as regras publicadas no MTR, que é o que a suíte verifica.
 
 ---
 
+## 20. Redesign V1 da Central de Torneios (25/08/2026)
+
+O `novo-torneio-V6.html` ganhou uma camada de apresentação nova — **Dark Tournament
+Dashboard** — sem que nenhuma regra de negócio fosse alterada. As funções de domínio
+(`finalizarRodada`, `finalizarCorrecao`, `montarJogosExportados`, `serializarEstado`,
+`aplicarEstado`, `torneioEncerrado`, `atualizarBotaoExportar`, `calcularProximoDia`,
+`capturarRascunho`, `slotsDaRodada`, `podeGerarNovaRodada`, `atualizarBotaoCorrigir`,
+`historicoParaJogos`, `ordenarJogadoresSuico`, `exportarResultadosParaJSON`, …) saíram
+**byte a byte idênticas**, o que foi conferido programaticamente contra o commit anterior.
+
+### Design system
+
+Tokens centralizados em `:root` no `<style>` da própria página. O dourado passou de `#FFD700`
+para `#d9b166` — sóbrio, parente do `--accent: #f5d27a` que o `style2.css` já usa no site.
+Fundo grafite levemente azulado, bordas finas de baixo contraste e sombras discretas; verde =
+concluído, azul = rodada atual, âmbar = atenção, vermelho = perigo.
+
+**O CSS fica inline de propósito.** `baixarPagina()` grava `document.documentElement.outerHTML`
+num arquivo avulso; um `<link href="torneio.css">` faria o "Salvar este Dia (HTML)" produzir
+uma página sem estilo nenhum fora desta pasta. Pelo mesmo movimento saiu o
+`<link href="style.css">`, que apontava para um arquivo inexistente (o do site é `style2.css`)
+e dava 404 desde sempre. Também entrou o `<meta name="viewport">`, que faltava — sem ele nada
+de responsivo funciona no celular.
+
+### Restrições estruturais (leia antes de mexer no HTML)
+
+A camada visual está presa a decisões que os testes verificam. Quebrar qualquer uma destas
+derruba a suíte — ou, pior, quebra o Safari sem derrubar a suíte:
+
+| Restrição | Por quê |
+|---|---|
+| O **último `<script>` sem atributos** é o que `carregarFerramenta()` carrega | Todo JS do torneio, inclusive `obterAvatarJogador`, tem de morar nele. Um `<script src="…">` não seria carregado pelo sandbox |
+| Inputs de placar em **tag única**, com `id="rN_pM"` / `rN_pM_r` e `value="…"` entre aspas duplas | É o regex do stub de DOM |
+| `input.parentElement.parentElement` tem de ser o **container do confronto**, com exatamente **3 filhos** `[jogador1, placar, jogador2]` | `finalizarRodada()` e `finalizarCorrecao()` leem `children[0..2]`. O match card reproduz a semântica do antigo `<tr>` |
+| `mostrarRanking()` e `mostrarEstatisticasAppendixC()` seguem usando `area.innerHTML +=`, com os literais **"Ranking Atual"**, **"Appendix C"** e **"Campeão"** | Os testes leem `torneio-area.innerHTML` por string. E, como esse `+=` reserializa a área, **todo valor digitado tem de ir no atributo `value=`** |
+| A palavra `manual` **entre aspas** não pode existir no arquivo | Guarda da seção 13, que prova que o fluxo manual não voltou |
+| No bloco "Próximo passo", o comando é **texto direto** dentro do `<pre>` | O stub extrai o conteúdo por `id="X"[^>]*>([^<]*)<` |
+
+### Onde vive o cabeçalho do torneio
+
+`#torneio-header` fica **fora** de `#torneio-area`, no HTML estático. A área é zerada com
+`innerHTML = ""` ao iniciar e reescrita com `innerHTML +=` pelo ranking — um cabeçalho criado
+lá dentro seria destruído. Ele guarda um `#th-corpo`, reescrito por
+`atualizarCabecalhoTorneio()`, e recebe o `#aviso-rascunho` como irmão, para o status do
+autosave sobreviver às reescritas.
+
+**Data e coleção não entram no estado persistido.** Ficam em `dataAtual` / `colecaoAtual`,
+usadas só para exibição. Depois de um reload elas não existem mais e o cabeçalho **omite a
+linha inteira** — nunca inventa. Isso evitou mexer em `serializarEstado` e no `VERSAO_ESTADO`.
+
+### Avatares
+
+Uma regra só, `obterAvatarJogador(nome)`, com a mesma convenção do ranking geral em
+`main.js`: minúsculas, `normalize("NFD")` sem diacríticos, sem espaços, prefixo `avatar_`,
+extensão `.jpg`, e `onerror` caindo para `img/avatar_padrao.jpg`. Usada na seleção, na
+confirmação, nos confrontos, no ranking e no card de campeão. **Não** existe um segundo
+cadastro de fotos, e o `jogadores.json` não guarda avatar.
+
+### Bug corrigido junto (commit próprio)
+
+`adicionarJogador()` montava a lista com `div.innerHTML += …`, o que recria todos os
+checkboxes: como `checked` é propriedade, a seleção anterior era perdida; e como
+`data-listener="1"` é atributo e sobrevive à reserialização, `vincularEventosCheckbox()`
+pulava os elementos novos e o contador congelava. A lista passou a ser montada com
+`createElement`/`appendChild`, por um único `criarLinhaJogador(nome)`. Coberto pela seção 19
+da suíte, com um harness próprio (`criarSelecao`) — as asserções centrais foram verificadas
+falhando contra o código anterior.
+
+### Pendências registradas
+
+- **Empates de game na correção**: a tela de correção renderiza os campos `emp-wrap` mas não o
+  checkbox `blocoEmpatesToggle()`, então games empatados não podem ser *editados* durante uma
+  correção. O valor é preservado no campo escondido e faz round-trip corretamente. É lacuna
+  funcional, não visual — fica para um commit próprio.
+- Os dois `resultado.split(" x ")` do `main.js` deveriam usar `MTR.parsePlacar()`.
+
+---
+
 *Documento gerado a partir da análise completa do código e das conversas de contexto do projeto. Atualizar sempre que decisões importantes forem tomadas.*

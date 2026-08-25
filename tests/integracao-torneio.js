@@ -14,6 +14,10 @@ var RAIZ = path.join(__dirname, "..");
 // --------------------------------------------------------------- DOM falso
 var sandboxAtual = null;   // para o stub registrar downloads
 
+// Containers que existem no HTML estático da página. Só estes podem ser
+// fabricados sob demanda pelo getElementById do stub.
+var FIXOS = ["torneio-area", "torneio-header", "th-corpo"];
+
 function criarDOM() {
   var elementos = {};
 
@@ -97,7 +101,10 @@ function criarDOM() {
           inp.id = m[1];
           var mv = /value="([^"]*)"/.exec(m[0]);
           inp.value = mv ? mv[1] : "";
-          inp.parentElement = { parentElement: tr };   // <td class="placar-input"> -> <tr>
+          // input -> .match-score -> .match  (era <td class=placar> -> <tr>).
+          // `tr` aqui é o container do confronto, com os 3 filhos que
+          // finalizarRodada()/finalizarCorrecao() leem por children[0..2].
+          inp.parentElement = { parentElement: tr };
           inp._parent = el;                            // para a propagação de eventos
           elementos[m[1]] = inp;
           el._filhos.push(inp);
@@ -137,12 +144,12 @@ function criarDOM() {
   var doc = {
     getElementById: function (id) {
       if (!elementos[id]) {
-        // Só o container fixo da página é fabricado sob demanda. Todo o resto
-        // devolve null como no navegador: fabricar um bloco de rodada
-        // inexistente mascarava o autosave nunca encontrar os campos, e um
-        // input de placar ausente é justamente como o código detecta a linha
-        // do Bye.
-        if (id !== "torneio-area") return null;
+        // Só os containers FIXOS da página são fabricados sob demanda — eles
+        // existem mesmo no HTML estático. Todo o resto devolve null como no
+        // navegador: fabricar um bloco de rodada inexistente mascarava o
+        // autosave nunca encontrar os campos, e um input de placar ausente é
+        // justamente como o código detecta a linha do Bye.
+        if (FIXOS.indexOf(id) === -1) return null;
         var el = novoEl();
         el.id = id;
       }
@@ -590,15 +597,20 @@ function criarTorneio(nomes, numRodadas, liga) {
     // caminho real de retomada, com renderização. É o que expõe problemas de
     // botões/blocos que só aparecem no fluxo normal.
     recarregarComRender: function () {
+      // Os containers fixos sobrevivem ao reload (estão no HTML estático), mas
+      // voltam vazios; todo o resto é reconstruído pelo caminho de retomada.
       Object.keys(elementos).forEach(function (id) {
-        if (id !== "torneio-area") delete elementos[id];
+        if (FIXOS.indexOf(id) === -1) delete elementos[id];
       });
-      var area = elementos["torneio-area"];
-      if (area) { area.innerHTML = ""; area.children.length = 0; area._filhos.length = 0; }
+      FIXOS.forEach(function (id) {
+        var el = elementos[id];
+        if (el) { el.innerHTML = ""; el.children.length = 0; el._filhos.length = 0; }
+      });
 
       run(
         "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
         "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
+        "dataAtual = null; colecaoAtual = null;" +
         "estadoRodadas = {}; rascunhos = {};" +
         "var __e = lerEstadoSalvo(); if (__e) retomarTorneioSalvo(__e);"
       );
