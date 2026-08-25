@@ -176,7 +176,9 @@ button:disabled:hover { border-color: var(--border-strong); }
 #pp-copiar-publicar:hover {
   background: var(--accent-hover); border-color: var(--accent-hover);
 }
-#btn-exportar { font-size: 1.02rem; padding: 13px 24px; }
+/* Respiro depois do card de encerramento, para o botão não encostar na borda. */
+#btn-exportar { font-size: 1.02rem; padding: 13px 24px;
+                display: inline-block; margin-top: 18px; }
 
 /* Manutenção: não pode competir com avançar o torneio. */
 .btn-ghost,
@@ -522,6 +524,30 @@ code { font-family: var(--mono); font-size: .9em;
        background: var(--bg-inset); border: 1px solid var(--border);
        border-radius: 5px; padding: 1px 6px; }
 
+/* --------------------------------------------------------- modal -- */
+#modal-torneio {
+  position: fixed; inset: 0; z-index: 100;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(6,8,11,.72);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+}
+#modal-torneio.aberto { display: flex; }
+
+.modal-caixa {
+  width: min(100%, 450px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,.55);
+  padding: 24px;
+}
+.modal-caixa h2 { font-size: 1.15rem; margin: 0 0 6px; }
+.modal-meta { color: var(--text-dim); font-size: .9rem; margin-bottom: 14px; }
+.modal-texto { margin-bottom: 22px; }
+.modal-acoes { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
 /* ---------------------------------------------------- responsivo -- */
 @media (max-width: 860px) {
   .field-grid { grid-template-columns: 1fr; }
@@ -543,6 +569,12 @@ code { font-family: var(--mono); font-size: .9em;
   .players { max-height: none; grid-template-columns: 1fr; }
   button { padding: 12px 18px; }
   .rail-num { font-size: .68rem; }
+}
+
+@media (max-width: 480px) {
+  /* A ação de confirmar fica embaixo, sob o polegar. */
+  .modal-acoes { flex-direction: column-reverse; }
+  .modal-acoes button { width: 100%; }
 }
 </style>
 </head>
@@ -655,6 +687,20 @@ code { font-family: var(--mono); font-size: .9em;
   </div>
 </div>
 
+<!-- Diálogo da página, no lugar do confirm() nativo. O conteúdo e as ações são
+     preenchidos por abrirDialogo(). -->
+<div id="modal-torneio" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <div class="modal-caixa">
+    <h2 id="modal-titulo"></h2>
+    <div id="modal-meta" class="modal-meta"></div>
+    <div id="modal-texto" class="modal-texto"></div>
+    <div class="modal-acoes">
+      <button type="button" id="modal-nao" class="btn-ghost"></button>
+      <button type="button" id="modal-sim" class="btn-primary"></button>
+    </div>
+  </div>
+</div>
+
 <!-- Núcleo de cálculo (MTR Appendix C) e motor de pareamento suíço.
      Ambos são validados por tests/run.js — rode antes de um dia oficial. -->
 <script src="mtr.js"></script>
@@ -739,7 +785,28 @@ function adicionarJogador() {
   atualizarContadorSelecionados();
 }
 
+// Data de HOJE no fuso do navegador, montada a partir dos componentes locais.
+//
+// Não usar toISOString(): ele converte para UTC, e no Brasil (UTC-3) qualquer
+// horário depois das 21h já cai no dia seguinte — um dia de competição que
+// termina tarde seria registrado com a data errada.
+function dataDeHojeLocal() {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Só preenche o que estiver vazio: nunca sobrescreve uma data já informada
+// (inclusive num HTML reaberto pelo "Salvar este Dia").
+function preencherDataPadrao() {
+  const campo = document.getElementById("data");
+  if (!campo || campo.value) return;
+  campo.value = dataDeHojeLocal();
+}
+
 carregarJogadores();
+preencherDataPadrao();
 
 
 
@@ -1121,6 +1188,11 @@ function instalarAutosave() {
   if (!area || !area.addEventListener || area._autosaveInstalado) return;
   area._autosaveInstalado = true;
 
+  // Antes do autosave, de propósito: os dois escutam o mesmo container em modo
+  // captura, e quem registra primeiro roda primeiro. Assim o rascunho já é
+  // gravado com o valor corrigido do passo.
+  instalarPassoDoPlacar();
+
   const aoMudar = (ev) => {
     const alvo = ev && ev.target;
     const id = alvo && alvo.id;
@@ -1132,6 +1204,88 @@ function instalarAutosave() {
 
   area.addEventListener("input", aoMudar, true);
   area.addEventListener("change", aoMudar, true);
+}
+
+function ehCampoDePlacar(el) {
+  return !!(el && el.id && /^r\d+_[pe]\d+(_r)?$/.test(el.id));
+}
+
+// Notifica o resto da página de que o campo mudou por nossa conta. No navegador
+// dispara o evento de verdade, para o autosave rodar pelo mesmo caminho de
+// sempre; sem a API de eventos, grava o rascunho direto.
+function avisarMudanca(el) {
+  try {
+    if (typeof Event === "function" && el.dispatchEvent) {
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+  } catch (e) { /* segue para o caminho direto */ }
+
+  const m = /^r(\d+)_/.exec(el.id || "");
+  if (m) capturarRascunho(Number(m[1]));
+}
+
+// Primeiro passo do spinner num campo VAZIO.
+//
+// Pelo HTML, um <input type="number"> vazio vale 0 para efeito de passo, e a
+// seta soma 1 em cima disso — o primeiro ↑ entrega 1 e o 0 fica inalcançável.
+// Deixar os campos nascerem com value="0" resolveria a seta, mas destruiria a
+// proteção que existe hoje: é o vazio que finalizarRodada() usa para saber que
+// um placar ainda não foi informado e recusar a finalização.
+//
+// Então o vazio continua vazio e só o PASSO é corrigido:
+//
+//   vazio -> ↑ -> 0 -> ↑ -> 1 -> ↑ -> 2 ...
+//
+// Pelo teclado, as setas são tratadas aqui. Pelo mouse não há evento anterior
+// ao passo, então o valor é fotografado antes da interação (pointerdown /
+// mousedown / focusin) e o resultado é corrigido depois. Digitar nunca é
+// corrigido: qualquer outra tecla marca o campo como digitação, e é por isso
+// que teclar "1" num campo vazio continua valendo 1.
+function instalarPassoDoPlacar() {
+  const area = document.getElementById("torneio-area");
+  if (!area || !area.addEventListener || area._passoInstalado) return;
+  area._passoInstalado = true;
+
+  const fotografar = (ev) => {
+    const el = ev && ev.target;
+    if (ehCampoDePlacar(el)) el._antesDoPasso = el.value;
+  };
+  ["pointerdown", "mousedown", "focusin"].forEach(tipo =>
+    area.addEventListener(tipo, fotografar, true));
+
+  area.addEventListener("keydown", (ev) => {
+    const el = ev && ev.target;
+    if (!ehCampoDePlacar(el)) return;
+
+    if (ev.key === "ArrowUp" || ev.key === "ArrowDown") {
+      if (el.value === "") {
+        el.value = "0";
+        el._antesDoPasso = "0";
+        if (ev.preventDefault) ev.preventDefault();
+        avisarMudanca(el);
+        return;
+      }
+      el._antesDoPasso = el.value;
+      return;
+    }
+
+    el._digitando = true;
+    el._antesDoPasso = el.value;
+  }, true);
+
+  area.addEventListener("input", (ev) => {
+    const el = ev && ev.target;
+    if (!ehCampoDePlacar(el)) return;
+
+    const digitou = el._digitando;
+    el._digitando = false;
+
+    if (!digitou && el._antesDoPasso === "" && el.value === "1") {
+      el.value = "0";
+    }
+    el._antesDoPasso = el.value;
+  }, true);
 }
 
 // Mantido para os pontos de renderização já existentes: garante o autosave
@@ -1374,10 +1528,70 @@ function apagarEstadoSalvo() {
   try { localStorage.removeItem(CHAVE_ESTADO); } catch (e) {}
 }
 
+// ---------------------------------------------------------------------------
+// Diálogo próprio da página, no lugar do confirm() nativo — que aparecia como
+// "Cancelar / OK" e não dizia o que cada botão faria.
+//
+// Isto NÃO decide nada: são as mesmas perguntas, nas mesmas condições, chamando
+// as mesmas funções. Só muda quem desenha a caixa.
+// ---------------------------------------------------------------------------
+function fecharDialogo() {
+  const caixa = document.getElementById("modal-torneio");
+  if (caixa) caixa.className = "";
+}
+
+function abrirDialogo(op) {
+  const caixa = document.getElementById("modal-torneio");
+  const titulo = document.getElementById("modal-titulo");
+  const meta = document.getElementById("modal-meta");
+  const texto = document.getElementById("modal-texto");
+  const btnNao = document.getElementById("modal-nao");
+  const btnSim = document.getElementById("modal-sim");
+
+  const responder = (sim) => {
+    fecharDialogo();
+    const acao = sim ? op.aoSim : op.aoNao;
+    if (acao) acao();
+  };
+
+  // Página sem a marcação do diálogo — por exemplo um HTML gerado por
+  // "Salvar este Dia" numa versão anterior. Perguntar de outro jeito é melhor
+  // do que decidir pelo organizador.
+  if (!caixa || !titulo || !meta || !texto || !btnNao || !btnSim) {
+    const pergunta = op.titulo + (op.meta ? "\n" + op.meta : "") +
+                     (op.texto ? "\n\n" + op.texto : "");
+    responder(typeof confirm === "function" && confirm(pergunta));
+    return;
+  }
+
+  titulo.textContent = op.titulo;
+  meta.textContent = op.meta || "";
+  meta.style.display = op.meta ? "block" : "none";
+  texto.textContent = op.texto || "";
+  btnNao.textContent = op.rotuloNao;
+  btnSim.textContent = op.rotuloSim;
+  btnNao.onclick = () => responder(false);
+  btnSim.onclick = () => responder(true);
+  caixa.className = "aberto";
+}
+
+// Segunda confirmação do descarte. É a mesma pergunta nos dois caminhos que
+// apagam o torneio salvo, então mora numa função só.
+function confirmarDescarteDoTorneio(aoApagar) {
+  abrirDialogo({
+    titulo: "Apagar torneio salvo?",
+    texto: "Esta ação não poderá ser desfeita.",
+    rotuloNao: "NÃO",
+    rotuloSim: "SIM, APAGAR",
+    aoSim: aoApagar
+  });
+}
+
 function descartarTorneioSalvo() {
-  if (!confirm("Apagar o torneio salvo e começar do zero?")) return;
-  apagarEstadoSalvo();
-  location.reload();
+  confirmarDescarteDoTorneio(() => {
+    apagarEstadoSalvo();
+    location.reload();
+  });
 }
 
 // Redesenha cada rodada CONFORME O SEU ESTADO. Antes tudo que estivesse em
@@ -1525,17 +1739,22 @@ function verificarTorneioSalvo() {
   const estado = lerEstadoSalvo();
   if (!estado) return;
 
-  const quando = estado.salvoEm ? new Date(estado.salvoEm).toLocaleString("pt-BR") : "?";
-  const msg =
-    `Existe um torneio em andamento (Liga ${estado.ligaAtual}, ` +
-    `rodada ${estado.rodadaAtual} de ${estado.totalRodadas}, salvo em ${quando}).\n\n` +
-    `Deseja continuar de onde parou?`;
+  const quando = estado.salvoEm
+    ? " · salvo em " + new Date(estado.salvoEm).toLocaleString("pt-BR")
+    : "";
 
-  if (confirm(msg)) {
-    retomarTorneioSalvo(estado);
-  } else if (confirm("Apagar o torneio salvo? Ele não poderá ser recuperado depois.")) {
-    apagarEstadoSalvo();
-  }
+  // Mesma decisão de sempre: continuar retoma; recusar leva à segunda pergunta;
+  // recusar a segunda deixa o torneio salvo intacto.
+  abrirDialogo({
+    titulo: "Torneio em andamento encontrado",
+    meta: `Liga ${estado.ligaAtual} · Rodada ${estado.rodadaAtual} de ` +
+          `${estado.totalRodadas}${quando}`,
+    texto: "Deseja continuar de onde parou?",
+    rotuloNao: "NÃO, COMEÇAR NOVO",
+    rotuloSim: "SIM, CONTINUAR",
+    aoSim: () => retomarTorneioSalvo(estado),
+    aoNao: () => confirmarDescarteDoTorneio(apagarEstadoSalvo)
+  });
 }
 
 if (typeof window !== "undefined") {

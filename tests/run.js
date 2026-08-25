@@ -2346,6 +2346,267 @@ testeAsync(function () {
   return Promise.resolve();
 });
 
+// ============ 21. Refinamentos: diálogo, data padrão e passo do placar
+testeAsync(function () {
+  grupo("21. Diálogo de recuperação, data padrão e passo do placar");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // ---------------------------------------------------- diálogo próprio
+  //
+  // Um torneio salvo, e a página reaberta pelo caminho real do
+  // DOMContentLoaded (que antes usava confirm()).
+  function comTorneioSalvo() {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.gerarAuto();                       // R2 gerada: rodada 2 de 3
+    return t;
+  }
+
+  (function () {
+    var t = comTorneioSalvo();
+    t.reabrirPagina();
+
+    var d = t.dialogo();
+    ok(d.aberto, "o dialogo de recuperacao abre ao reabrir a pagina");
+    ok(d.titulo === "Torneio em andamento encontrado",
+       "com o titulo pedido", String(d.titulo));
+    ok(d.meta.indexOf("Liga 4") !== -1 && d.meta.indexOf("Rodada 2 de 3") !== -1,
+       "e a liga e a rodada no subtitulo", String(d.meta));
+    ok(d.texto === "Deseja continuar de onde parou?",
+       "e a pergunta", String(d.texto));
+    ok(d.nao === "NÃO, COMEÇAR NOVO" && d.sim === "SIM, CONTINUAR",
+       "os botoes dizem o que fazem", d.nao + " / " + d.sim);
+    ok(t.alertas().length === 0, "nenhum alert nativo foi usado",
+       t.alertas().join(" | "));
+  })();
+
+  // -- SIM, CONTINUAR retoma o torneio
+  (function () {
+    var t = comTorneioSalvo();
+    t.reabrirPagina();
+    ok(t.responderDialogo(true), "o botao de continuar tem acao");
+
+    ok(!t.dialogo().aberto, "o dialogo fecha ao responder");
+    ok(t.rodadaAtual() === 2, "o torneio foi retomado na rodada 2",
+       String(t.rodadaAtual()));
+    ok(t.jogadores().length === 4, "com os jogadores de volta");
+    ok(!!t.lerStorageBruto(), "e o estado salvo continua no localStorage");
+  })();
+
+  // -- NÃO, COMEÇAR NOVO leva à segunda pergunta (não apaga de imediato)
+  (function () {
+    var t = comTorneioSalvo();
+    t.reabrirPagina();
+    t.responderDialogo(false);
+
+    var d = t.dialogo();
+    ok(d.aberto, "recusar abre a SEGUNDA pergunta");
+    ok(d.titulo === "Apagar torneio salvo?", "com o titulo pedido", String(d.titulo));
+    ok(d.texto === "Esta ação não poderá ser desfeita.",
+       "e o aviso de irreversibilidade", String(d.texto));
+    ok(d.nao === "NÃO" && d.sim === "SIM, APAGAR",
+       "e os botoes da confirmacao", d.nao + " / " + d.sim);
+    ok(!!t.lerStorageBruto(),
+       "o torneio salvo AINDA nao foi apagado nesta etapa");
+  })();
+
+  // -- recusar a segunda pergunta preserva o torneio salvo
+  (function () {
+    var t = comTorneioSalvo();
+    t.reabrirPagina();
+    t.responderDialogo(false);
+    t.responderDialogo(false);
+
+    ok(!t.dialogo().aberto, "o dialogo fecha");
+    ok(!!t.lerStorageBruto(),
+       "recusar a segunda pergunta mantem o torneio salvo intacto");
+    ok(t.rodadaAtual() === 0, "e nada foi retomado", String(t.rodadaAtual()));
+  })();
+
+  // -- confirmar a segunda pergunta apaga
+  (function () {
+    var t = comTorneioSalvo();
+    t.reabrirPagina();
+    t.responderDialogo(false);
+    t.responderDialogo(true);
+
+    ok(!t.dialogo().aberto, "o dialogo fecha");
+    ok(!t.lerStorageBruto(), "confirmar apaga o torneio salvo",
+       String(t.lerStorageBruto()));
+  })();
+
+  // -- o botão "Apagar torneio salvo / iniciar novo" usa o mesmo dialogo
+  (function () {
+    var t = comTorneioSalvo();
+    t.descartarSalvo();
+
+    var d = t.dialogo();
+    ok(d.aberto && d.titulo === "Apagar torneio salvo?",
+       "o descarte pelo botao usa o mesmo dialogo", String(d.titulo));
+
+    t.responderDialogo(false);
+    ok(!!t.lerStorageBruto() && t.reloads() === 0,
+       "recusar nao apaga nem recarrega");
+
+    t.descartarSalvo();
+    t.responderDialogo(true);
+    ok(!t.lerStorageBruto(), "confirmar apaga");
+    ok(t.reloads() === 1, "e recarrega a pagina uma vez", String(t.reloads()));
+  })();
+
+  // ------------------------------------------------ passo a partir do vazio
+  function comRodadaAberta() {
+    var t = criar(["A", "B"], 1, 4);
+    t.gerarAuto();
+    return t;
+  }
+
+  (function () {
+    var t = comRodadaAberta();
+    ok(t.valorDoCampo("r1_p0") === "", "o campo nasce vazio");
+
+    ok(t.passoDoSpinner("r1_p0") === "0",
+       "a primeira seta ↑ num campo vazio entrega 0",
+       t.valorDoCampo("r1_p0"));
+    ok(t.passoDoSpinner("r1_p0") === "1", "a segunda entrega 1");
+    ok(t.passoDoSpinner("r1_p0") === "2", "a terceira entrega 2");
+    ok(t.passoDoSpinner("r1_p0", -1) === "1", "a seta ↓ volta para 1");
+    ok(t.passoDoSpinner("r1_p0", -1) === "0", "e para 0");
+    ok(t.passoDoSpinner("r1_p0", -1) === "0", "o minimo continua sendo 0");
+  })();
+
+  (function () {
+    var t = comRodadaAberta();
+    ok(t.setaDoTeclado("r1_p0") === "0",
+       "pelo teclado, a seta ↑ num campo vazio tambem entrega 0",
+       t.valorDoCampo("r1_p0"));
+    ok(t.setaDoTeclado("r1_p0") === "1", "e a seguinte entrega 1");
+
+    var t2 = comRodadaAberta();
+    ok(t2.setaDoTeclado("r1_p0", -1) === "0",
+       "a seta ↓ num campo vazio tambem para em 0", t2.valorDoCampo("r1_p0"));
+  })();
+
+  // -- digitar NUNCA é corrigido: teclar 1 num campo vazio vale 1
+  (function () {
+    var t = comRodadaAberta();
+    ok(t.teclar("r1_p0", "1") === "1",
+       "digitar 1 num campo vazio continua valendo 1", t.valorDoCampo("r1_p0"));
+
+    var t2 = comRodadaAberta();
+    t2.teclar("r1_p0", "2");
+    ok(t2.valorDoCampo("r1_p0") === "2", "digitar 2 tambem nao e tocado");
+  })();
+
+  // -- o campo continua vazio até alguém mexer, e o vazio segue barrando
+  (function () {
+    var t = comRodadaAberta();
+    t.limparAlertas();
+    t.finalizar(1);
+    ok(/Preencha todos os placares/.test(t.alertas().join(" ")),
+       "o vazio continua impedindo a finalizacao", t.alertas().join(" | "));
+    ok(t.estadoRodadas()[1] === "gerada", "e a rodada segue em andamento");
+
+    // Um dos lados em 0 pelo spinner e o outro ainda vazio: continua barrando.
+    t.passoDoSpinner("r1_p0");
+    t.limparAlertas();
+    t.finalizar(1);
+    ok(/Preencha todos os placares/.test(t.alertas().join(" ")),
+       "com um lado em 0 e o outro vazio, ainda barra");
+
+    // Preenchidos os dois — inclusive com 0 —, finaliza.
+    t.passoDoSpinner("r1_p1");
+    t.passoDoSpinner("r1_p0");
+    t.passoDoSpinner("r1_p0");           // 2 x 0
+    t.limparAlertas();
+    t.finalizar(1);
+    ok(t.estadoRodadas()[1] === "finalizada",
+       "com 2 x 0 montado pelas setas, a rodada finaliza",
+       t.alertas().join(" | "));
+  })();
+
+  // -- o autosave grava o valor JÁ corrigido
+  (function () {
+    var t = comRodadaAberta();
+    t.passoDoSpinner("r1_p0");           // vazio -> 0
+    var salvo = JSON.parse(t.lerStorageBruto() || "{}");
+    var pl = (salvo.rascunhos && salvo.rascunhos["1"] &&
+              salvo.rascunhos["1"].placares) || {};
+    ok(pl["0"] && pl["0"][0] === "0",
+       "o rascunho guarda 0, nao 1", JSON.stringify(pl));
+
+    t.recarregarDoStorage();
+    var pl2 = t.rascunhos()["1"].placares;
+    ok(pl2["0"][0] === "0", "e o 0 sobrevive ao reload", JSON.stringify(pl2));
+  })();
+
+  // -- vale também nos campos de correção (sufixo _r) e de empates
+  (function () {
+    var t = comRodadaAberta();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.reabrir(1);
+    t.run("document.getElementById('r1_p0_r').value = '';");
+    ok(t.passoDoSpinner("r1_p0_r") === "0",
+       "na correcao, a seta num campo vazio tambem entrega 0",
+       t.valorDoCampo("r1_p0_r"));
+  })();
+
+  (function () {
+    var t = comRodadaAberta();
+    ok(t.passoDoSpinner("r1_e0") === "0",
+       "o campo de games empatados segue a mesma regra",
+       t.valorDoCampo("r1_e0"));
+  })();
+
+  // ------------------------------------------------------- data padrão
+  //
+  // 25/08/2026 às 23h40 no fuso local: um horário em que a conversão para UTC
+  // muda o dia em qualquer fuso a oeste de Greenwich. A promise é DEVOLVIDA,
+  // senão estas asserções rodariam depois do resumo da suíte.
+  var instante = new Date(2026, 7, 25, 23, 40, 0);
+  var sel = integracao.criarSelecao(["Alex"], instante);
+
+  return sel.pronto().then(function () {
+    ok(sel.valorDoCampo("data") === "2026-08-25",
+       "o campo Data abre com a data LOCAL de hoje",
+       String(sel.valorDoCampo("data")));
+
+    // Não sobrescreve o que já estiver preenchido.
+    sel.definirCampo("data", "2026-01-09");
+    sel.preencherDataPadrao();
+    ok(sel.valorDoCampo("data") === "2026-01-09",
+       "e nao sobrescreve uma data ja informada",
+       String(sel.valorDoCampo("data")));
+
+    // E o campo vazio volta a ser preenchido.
+    sel.definirCampo("data", "");
+    sel.preencherDataPadrao();
+    ok(sel.valorDoCampo("data") === "2026-08-25",
+       "e volta a preencher se o campo for esvaziado",
+       String(sel.valorDoCampo("data")));
+  });
+});
+
+// -- a data padrão não pode ser derivada de UTC
+//
+// Também na fila assíncrona: um grupo() síncrono aqui sobrescreveria o rótulo
+// usado pelas seções 18 a 21, que rodam depois.
+testeAsync(function () {
+  grupo("22. Data padrão sem UTC");
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  var i = html.indexOf("function dataDeHojeLocal");
+  var corpo = i === -1 ? "" : html.slice(i, html.indexOf("}", i));
+  ok(i !== -1, "dataDeHojeLocal existe");
+  ok(corpo.indexOf("toISOString") === -1 && corpo.indexOf("toUTC") === -1,
+     "e monta a data pelos componentes locais, sem passar por UTC", corpo);
+  return Promise.resolve();
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));

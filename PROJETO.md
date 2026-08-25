@@ -881,6 +881,42 @@ pulava os elementos novos e o contador congelava. A lista passou a ser montada c
 da suíte, com um harness próprio (`criarSelecao`) — as asserções centrais foram verificadas
 falhando contra o código anterior.
 
+### Refinamentos após o teste no Safari (25/08/2026)
+
+**Diálogo próprio no lugar do `confirm()`.** Os `confirm()` nativos apareciam como
+"Cancelar / OK", sem dizer o que cada botão faria. Entrou um `#modal-torneio` na página,
+preenchido por `abrirDialogo()`. As decisões são as mesmas: continuar retoma; recusar leva à
+segunda pergunta; recusar a segunda deixa o torneio salvo intacto. O botão "Apagar torneio
+salvo / iniciar novo" passou a usar o **mesmo** segundo diálogo, para a mesma pergunta não
+aparecer de duas formas diferentes. Se a marcação do diálogo não existir — um HTML gerado por
+"Salvar este Dia" numa versão anterior —, `abrirDialogo()` cai no `confirm()` nativo: perguntar
+de outro jeito é melhor do que decidir pelo organizador.
+
+**Data local no `#data`.** `preencherDataPadrao()` preenche o campo com a data de hoje, só
+quando ele está vazio. `dataDeHojeLocal()` monta a string pelos componentes locais
+(`getFullYear`/`getMonth`/`getDate`) e **não** por `toISOString()`: no Brasil (UTC−3),
+qualquer horário depois das 21h já cai no dia seguinte em UTC, e um dia de competição que
+termina tarde seria registrado com a data errada. Há teste estrutural garantindo que
+`toISOString` não volte para dentro dessa função.
+
+**Passo do spinner a partir do vazio.** Pelo HTML, um `<input type="number">` vazio vale 0 para
+efeito de passo e a seta soma 1 em cima disso — o primeiro ↑ entregava 1 e o 0 ficava
+inalcançável. Dar `value="0"` aos campos resolveria a seta e **destruiria a proteção**: é o
+vazio que `finalizarRodada()` usa para saber que um placar ainda não foi informado. Então o
+vazio continua vazio e só o passo é corrigido, em `instalarPassoDoPlacar()`:
+
+- pelo teclado, ↑/↓ num campo vazio são tratados na própria página (`preventDefault` + `"0"`);
+- pelo mouse não há evento antes do passo, então o valor é fotografado em
+  `pointerdown`/`mousedown`/`focusin` e o resultado é corrigido no `input`;
+- **digitar nunca é corrigido**: qualquer outra tecla marca o campo como digitação, e é por
+  isso que teclar `1` num campo vazio continua valendo 1.
+
+Registra-se antes do autosave de propósito — os dois escutam o mesmo container em captura, e
+quem registra primeiro roda primeiro, então o rascunho já é gravado com o valor corrigido.
+
+Limitação conhecida: colar `1` num campo vazio pelo **menu de contexto** (sem `keydown`) seria
+tratado como passo e viraria `0`. Colar com ⌘V dispara `keydown` e é seguro.
+
 ### Pendências registradas
 
 - **Empates de game na correção**: a tela de correção renderiza os campos `emp-wrap` mas não o

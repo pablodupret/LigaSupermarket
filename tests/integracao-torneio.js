@@ -16,7 +16,9 @@ var sandboxAtual = null;   // para o stub registrar downloads
 
 // Containers que existem no HTML estático da página. Só estes podem ser
 // fabricados sob demanda pelo getElementById do stub.
-var FIXOS = ["torneio-area", "torneio-header", "th-corpo"];
+var FIXOS = ["torneio-area", "torneio-header", "th-corpo",
+             "modal-torneio", "modal-titulo", "modal-meta", "modal-texto",
+             "modal-nao", "modal-sim"];
 
 function criarDOM() {
   var elementos = {};
@@ -45,15 +47,22 @@ function criarDOM() {
       // Propaga pela árvore, como o DOM faz. Sem isto um listener DELEGADO no
       // container nunca seria exercitado pelos testes — foi exatamente essa
       // lacuna que deixou uma falha de autosave passar para o Safari.
-      dispararEvento: function (tipo) {
+      dispararEvento: function (tipo, extras) {
         var cadeia = [];
         for (var n = el; n; n = n._parent) cadeia.push(n);
-        var evento = { type: tipo, target: el };
+        var evento = {
+          type: tipo, target: el, __default: true,
+          preventDefault: function () { evento.__default = false; }
+        };
+        if (extras) {
+          Object.keys(extras).forEach(function (k) { evento[k] = extras[k]; });
+        }
 
         // fase de captura: da raiz até o alvo
         cadeia.slice().reverse().forEach(function (n) {
           (n._listeners[tipo] || []).forEach(function (fn) { fn(evento); });
         });
+        return evento;
       },
       querySelectorAll: function (sel) {
         var alvo = String(sel).split(",")[0].trim();
@@ -235,6 +244,9 @@ function carregarFerramenta(nomes, numRodadas, liga) {
     })(),
     confirm: function () { return sandbox.__respostaConfirm; },
     __respostaConfirm: true,
+    // descartarTorneioSalvo() recarrega a página; aqui só contamos.
+    location: { reload: function () { sandbox.__reloads++; } },
+    __reloads: 0,
     setTimeout: setTimeout,
     clearTimeout: clearTimeout
   };
@@ -399,6 +411,21 @@ function validar(nomes, numRodadas, seed) {
   };
 }
 
+// Passo de um <input type="number" min="0"> segundo o HTML: um campo vazio
+// vale 0, e é por isso que a primeira seta ↑ entrega 1 e não 0.
+function passo(valor, direcao) {
+  var base = valor === "" || valor === undefined || valor === null ? 0 : Number(valor);
+  var novo = base + (direcao === -1 ? -1 : 1);
+  return novo < 0 ? 0 : novo;             // min="0"
+}
+
+// Zera as variáveis do torneio, como um carregamento novo da página faria.
+var ZERAR_MEMORIA =
+  "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
+  "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
+  "dataAtual = null; colecaoAtual = null;" +
+  "estadoRodadas = {}; rascunhos = {};";
+
 // ---------------------------------------------------------------------------
 // API de controle fino, para os testes dirigirem rodadas manuais, reabertura e
 // exportação. Tudo roda contra o código real da página.
@@ -408,6 +435,24 @@ function criarTorneio(nomes, numRodadas, liga) {
   var sandbox = ctx.sandbox, vm = ctx.vm, elementos = ctx.dom.elementos;
 
   function run(codigo) { return vm.runInContext(codigo, sandbox); }
+
+  // Apaga o DOM como o navegador faria: os containers fixos sobrevivem (estão
+  // no HTML estático) mas voltam vazios; todo o resto some.
+  function zerarPagina() {
+    Object.keys(elementos).forEach(function (id) {
+      if (FIXOS.indexOf(id) === -1) delete elementos[id];
+    });
+    FIXOS.forEach(function (id) {
+      var el = elementos[id];
+      if (!el) return;
+      el.innerHTML = "";
+      el.children.length = 0;
+      el._filhos.length = 0;
+      el.className = "";
+      el.textContent = "";
+      el.onclick = null;
+    });
+  }
 
   return {
     sandbox: sandbox,
@@ -597,23 +642,75 @@ function criarTorneio(nomes, numRodadas, liga) {
     // caminho real de retomada, com renderização. É o que expõe problemas de
     // botões/blocos que só aparecem no fluxo normal.
     recarregarComRender: function () {
-      // Os containers fixos sobrevivem ao reload (estão no HTML estático), mas
-      // voltam vazios; todo o resto é reconstruído pelo caminho de retomada.
-      Object.keys(elementos).forEach(function (id) {
-        if (FIXOS.indexOf(id) === -1) delete elementos[id];
-      });
-      FIXOS.forEach(function (id) {
-        var el = elementos[id];
-        if (el) { el.innerHTML = ""; el.children.length = 0; el._filhos.length = 0; }
-      });
+      zerarPagina();
+      run(ZERAR_MEMORIA + "var __e = lerEstadoSalvo(); if (__e) retomarTorneioSalvo(__e);");
+    },
 
-      run(
-        "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
-        "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
-        "dataAtual = null; colecaoAtual = null;" +
-        "estadoRodadas = {}; rascunhos = {};" +
-        "var __e = lerEstadoSalvo(); if (__e) retomarTorneioSalvo(__e);"
-      );
+    // Abertura da página COM o caminho real do DOMContentLoaded, que hoje abre
+    // o diálogo de recuperação em vez de um confirm().
+    reabrirPagina: function () {
+      zerarPagina();
+      run(ZERAR_MEMORIA + "verificarTorneioSalvo();");
+    },
+
+    // --- diálogo da página (no lugar do confirm nativo)
+    dialogo: function () {
+      var caixa = elementos["modal-torneio"];
+      function texto(id) {
+        return elementos[id] ? String(elementos[id].textContent) : null;
+      }
+      return {
+        aberto: !!(caixa && caixa.className === "aberto"),
+        titulo: texto("modal-titulo"),
+        meta: texto("modal-meta"),
+        texto: texto("modal-texto"),
+        nao: texto("modal-nao"),
+        sim: texto("modal-sim")
+      };
+    },
+    responderDialogo: function (sim) {
+      var el = elementos[sim ? "modal-sim" : "modal-nao"];
+      if (!el || !el.onclick) return false;
+      el.onclick();
+      return true;
+    },
+    descartarSalvo: function () { run("descartarTorneioSalvo();"); },
+    reloads: function () { return sandbox.__reloads; },
+
+    // --- passo do spinner
+    //
+    // Reproduz o que o NAVEGADOR faz: mousedown, o passo em si (um campo vazio
+    // vale 0 pelo HTML, então a seta entrega 1) e o evento input.
+    passoDoSpinner: function (id, direcao) {
+      var el = elementos[id];
+      if (!el) throw new Error("campo inexistente: " + id);
+      el.dispararEvento("mousedown");
+      el.value = String(passo(el.value, direcao));
+      el.dispararEvento("input");
+      return el.value;
+    },
+
+    // Seta do TECLADO: a página trata o keydown e pode impedir o passo nativo.
+    setaDoTeclado: function (id, direcao) {
+      var el = elementos[id];
+      if (!el) throw new Error("campo inexistente: " + id);
+      var ev = el.dispararEvento("keydown", {
+        key: direcao === -1 ? "ArrowDown" : "ArrowUp"
+      });
+      if (ev.__default === false) return el.value;   // a página assumiu o passo
+      el.value = String(passo(el.value, direcao));
+      el.dispararEvento("input");
+      return el.value;
+    },
+
+    // Digitação de um caractere: keydown da tecla, o caractere no campo, input.
+    teclar: function (id, tecla) {
+      var el = elementos[id];
+      if (!el) throw new Error("campo inexistente: " + id);
+      el.dispararEvento("keydown", { key: tecla });
+      el.value = String(el.value || "") + tecla;
+      el.dispararEvento("input");
+      return el.value;
     },
     jogadores: function () { return run("jogadores"); },
     rodadaAtual: function () { return run("rodadaAtual"); },
@@ -717,7 +814,8 @@ function criarDOMSelecao() {
 
   // Elementos fixos da página
   ["lista-jogadores", "qtd-selecionados", "aviso-impar", "confirmacao-jogadores",
-   "lista-confirmacao", "novo-jogador", "btn-iniciar", "btn-incluir-jogadores"]
+   "lista-confirmacao", "novo-jogador", "btn-iniciar", "btn-incluir-jogadores",
+   "liga", "data", "colecao", "numRodadas"]
     .forEach(function (id) { novoEl("div").id = id; });
 
   var doc = {
@@ -743,7 +841,9 @@ function criarDOMSelecao() {
   return { doc: doc, elementos: elementos };
 }
 
-function criarSelecao(lista) {
+// `agora`, quando informado, é a Date que a página vai enxergar como "hoje".
+// Sem ele, o relógio é o real.
+function criarSelecao(lista, agora) {
   var blocos = blocosDeScript();
   var codigoTorneio = blocos[blocos.length - 1];
   var codigoSelecao = blocos.filter(function (b) {
@@ -779,6 +879,15 @@ function criarSelecao(lista) {
 
   sandbox.MTR = require(path.join(RAIZ, "mtr.js"));
   sandbox.Pareamento = require(path.join(RAIZ, "pareamento.js"));
+
+  // Relógio controlado: `new Date()` sem argumentos devolve o instante pedido.
+  if (agora) {
+    var DataReal = Date;
+    sandbox.Date = function (a) {
+      return arguments.length === 0 ? new DataReal(agora.getTime()) : new DataReal(a);
+    };
+    sandbox.Date.now = function () { return agora.getTime(); };
+  }
 
   var vm = require("vm");
   vm.createContext(sandbox);
@@ -844,6 +953,11 @@ function criarSelecao(lista) {
     iniciarHabilitado: function () { return !elementos["btn-iniciar"].disabled; },
 
     campoNovoJogador: function () { return elementos["novo-jogador"].value; },
+    valorDoCampo: function (id) { return elementos[id] ? elementos[id].value : null; },
+    definirCampo: function (id, valor) {
+      if (elementos[id]) elementos[id].value = String(valor);
+    },
+    preencherDataPadrao: function () { run("preencherDataPadrao();"); },
     alertas: function () { return sandbox.__alertas.slice(); },
     elementos: elementos
   };
