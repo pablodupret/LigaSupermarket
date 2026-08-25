@@ -3,3 +3,7 @@
 
 # Backups criados pelo importar-resultados.js (o Git ja e a protecao real)
 jogos.backup-*.json
+
+# Arquivos exportados pela ferramenta de torneio. Sao intermediarios para
+# alimentar o importador; depois de publicados, a fonte oficial e o jogos.json
+resultados_*.json
