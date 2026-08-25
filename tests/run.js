@@ -503,169 +503,19 @@ grupo("6. Game empatado (campo gamesEmpatados)");
 })();
 
 // ======================== 7. Fluxo manual, reabertura e exportação
-grupo("7. Fluxo manual, reabertura e exportação");
+grupo("7. Reabertura, persistência e exportação");
 
 (function () {
   var integracao = require(path.join(__dirname, "integracao-torneio.js"));
   var criar = integracao.criarTorneio;
 
-  // -- manual completa
-  (function () {
-    var t = criar(["A", "B", "C", "D"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], ["C", "D"]]);
-    t.preencherPlacaresPorSlot(1, { 0: [2, 0], 1: [1, 2] });
-    t.finalizar(1);
-    ok(t.alertas().length === 0, "rodada manual completa finaliza sem alerta",
-       t.alertas().join(" | "));
-    var exp = t.exportar(1);
-    ok(exp.length === 2, "manual completa exporta os 2 jogos", "exportou " + exp.length);
-  })();
 
-  // -- linha vazia: a tabela manual desenha exatamente ceil(n/2) linhas, entao
-  //    deixar uma vazia significa necessariamente alguem de fora -> bloqueado.
-  (function () {
-    var t = criar(["A", "B", "C", "D"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], null]);
-    var antes = t.estado();
-    t.finalizar(1);
-    ok(/C, D|C,D/.test(t.alertas().join(" ")),
-       "linha vazia deixando jogadores de fora e bloqueada",
-       t.alertas().join(" | "));
-    ok(t.estado() === antes, "linha vazia nao altera estado");
-  })();
 
-  // -- BYE na PRIMEIRA linha: caso real em que o slot desloca os placares.
-  //    Sem o `slot`, A x B leria os campos da linha do BYE (que nao existem)
-  //    e C x D receberia o placar de A x B.
-  (function () {
-    var t = criar(["A", "B", "C", "D", "E"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["E", "Bye"], ["A", "B"], ["C", "D"]]);
-    t.preencherPlacaresPorSlot(1, { 1: [2, 0], 2: [1, 2] });
-    t.finalizar(1);
 
-    ok(t.alertas().length === 0, "BYE na primeira linha finaliza sem alerta",
-       t.alertas().join(" | "));
 
-    var exp = t.exportar(1);
-    var ab = exp.filter(function (o) { return o.jogador1 === "A"; })[0];
-    var cd = exp.filter(function (o) { return o.jogador1 === "C"; })[0];
-    ok(ab && ab.resultado === "2 x 0", "A x B recebe o proprio placar",
-       ab ? ab.resultado : "ausente");
-    ok(cd && cd.resultado === "1 x 2", "C x D recebe o proprio placar",
-       cd ? cd.resultado : "ausente");
-    ok(exp.some(function (o) { return o.jogador1 === "E" && o.jogador2 === "Bye"; }),
-       "o BYE da primeira linha vai para a exportacao");
-  })();
 
-  // -- manual incompleta: bloqueia e nomeia quem ficou de fora
-  (function () {
-    var t = criar(["A", "B", "C", "D", "E", "F", "G", "H"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], ["C", "D"]]);  // E, F, G e H esquecidos
-    var antes = t.estado();
-    t.finalizar(1);
-    var msg = t.alertas().join(" ");
-    ok(t.alertas().length > 0, "rodada incompleta e bloqueada");
-    ok(/E/.test(msg) && /F/.test(msg) && /G/.test(msg) && /H/.test(msg),
-       "a mensagem nomeia os jogadores sem jogo", msg.slice(0, 160));
-    ok(t.estado() === antes, "rodada incompleta nao altera nenhum estado");
-  })();
 
-  // -- jogador duplicado e jogador contra si mesmo
-  (function () {
-    var t = criar(["A", "B", "C", "D"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], ["A", "C"]]);
-    var antes = t.estado();
-    t.finalizar(1);
-    ok(/aparece em 2 jogos/.test(t.alertas().join(" ")), "jogador duplicado e bloqueado",
-       t.alertas().join(" | "));
-    ok(t.estado() === antes, "duplicado nao altera estado");
 
-    var t2 = criar(["A", "B", "C", "D"], 2, 4);
-    t2.gerarManual();
-    t2.preencherManual(1, [["A", "A"], ["C", "D"]]);
-    t2.finalizar(1);
-    ok(/ele mesmo/.test(t2.alertas().join(" ")), "jogador contra si mesmo e bloqueado",
-       t2.alertas().join(" | "));
-  })();
-
-  // -- manual -> automatica: o confronto manual nao pode se repetir
-  (function () {
-    var t = criar(["A", "B", "C", "D"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], ["C", "D"]]);
-    t.preencherPlacaresPorSlot(1, { 0: [2, 0], 1: [2, 0] });
-    t.finalizar(1);
-
-    var confrontos = t.confrontos();
-    ok(confrontos.indexOf("A|B") >= 0 && confrontos.indexOf("C|D") >= 0,
-       "rodada manual registra os confrontos em confrontosAnteriores",
-       confrontos.join(", "));
-
-    t.gerarAuto();
-    var r2 = t.run("resultadosPorRodada[2].map(function(p){return [p[0].nome,p[1].nome];})");
-    var repetiu = r2.some(function (p) {
-      var k = p.slice().sort().join("|");
-      return k === "A|B" || k === "C|D";
-    });
-    ok(!repetiu, "a automatica seguinte nao repete o confronto da manual",
-       JSON.stringify(r2));
-  })();
-
-  // -- BYE manual e BYE repetido
-  (function () {
-    var t = criar(["A", "B", "C"], 3, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], ["C", "Bye"]]);
-    t.preencherPlacaresPorSlot(1, { 0: [2, 0] });
-    t.finalizar(1);
-    ok(t.alertas().length === 0, "BYE manual funciona", t.alertas().join(" | "));
-
-    var exp = t.exportar(1);
-    ok(exp.some(function (o) { return o.jogador2 === "Bye" && o.jogador1 === "C"; }),
-       "BYE manual aparece na exportacao", JSON.stringify(exp));
-
-    // segundo BYE para o mesmo jogador, havendo outros elegiveis
-    t.gerarManual();
-    t.preencherManual(2, [["A", "B"], ["C", "Bye"]]);
-    var antes = t.estado();
-    t.limparAlertas();
-    t.finalizar(2);
-    ok(/já recebeu Bye|ja recebeu Bye/.test(t.alertas().join(" ")),
-       "segundo BYE para o mesmo jogador e bloqueado", t.alertas().join(" | "));
-    ok(t.estado() === antes, "BYE repetido nao altera estado");
-
-    // corrigindo, finaliza e NAO duplica o BYE do C
-    t.limparAlertas();
-    t.preencherManual(2, [["A", "C"], ["B", "Bye"]]);
-    t.preencherPlacaresPorSlot(2, { 0: [2, 1] });
-    t.finalizar(2);
-    ok(t.alertas().length === 0, "apos corrigir, a rodada finaliza",
-       t.alertas().join(" | "));
-
-    var jogs = t.jogadores();
-    var byesC = jogs.filter(function (j) { return j.nome === "C"; })[0]
-      .historico.filter(function (h) { return h.contra === "Bye"; }).length;
-    ok(byesC === 1, "corrigir e refinalizar nao duplica o BYE", "byes de C: " + byesC);
-  })();
-
-  // -- erro DEPOIS de uma linha de BYE nao pode deixar estado parcial
-  (function () {
-    var t = criar(["A", "B", "C"], 2, 4);
-    t.gerarManual();
-    // linha 0 valida com BYE, linha 1 invalida (jogador contra si mesmo)
-    t.preencherManual(1, [["C", "Bye"], ["A", "A"]]);
-    var antes = t.estado();
-    t.finalizar(1);
-    ok(t.alertas().length > 0, "erro na linha seguinte bloqueia a rodada");
-    ok(t.estado() === antes,
-       "BYE da linha anterior NAO foi aplicado (atomicidade)",
-       "estado mudou");
-  })();
 
   // -- reabertura: so a ultima rodada
   (function () {
@@ -741,9 +591,8 @@ grupo("7. Fluxo manual, reabertura e exportação");
   // -- game draw ponta a ponta pela ferramenta
   (function () {
     var t = criar(["A", "B"], 1, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"]]);
-    t.preencherPlacaresPorSlot(1, { 0: [2, 0, 1] });   // 2-0-1
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0, 1]; });   // 2-0-1
     t.finalizar(1);
     ok(t.alertas().length === 0, "match 2-0-1 finaliza sem alerta", t.alertas().join(" | "));
 
@@ -753,11 +602,13 @@ grupo("7. Fluxo manual, reabertura e exportação");
     ok(exp[0].resultado === "2 x 0",
        "o campo resultado continua no formato \"N x N\"", exp[0].resultado);
 
+    // O pareamento automatico e sorteado: o vencedor e o jogador1 do confronto.
+    var vencedor = t.run("resultadosPorRodada[1][0][0].nome");
     var rk = t.ranking();
-    var a = rk.filter(function (l) { return l.jogador === "A"; })[0];
-    ok(Math.abs(a.gameWinPerc - 7 / 9) < 0.005,
+    var v = rk.filter(function (l) { return l.jogador === vencedor; })[0];
+    ok(Math.abs(v.gameWinPerc - 7 / 9) < 0.005,
        "GW% do 2-0-1 chega correto no ranking da ferramenta (7/9)",
-       "obtido: " + a.gameWinPerc.toFixed(3));
+       vencedor + " obteve " + v.gameWinPerc.toFixed(3));
   })();
 })();
 
@@ -883,36 +734,40 @@ grupo("9. Transação completa e rodada em andamento");
   // -- BYE valido + ultimo placar vazio => NADA aplicado
   (function () {
     var t = criar(["A", "B", "C", "D", "E"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["E", "Bye"], ["A", "B"], ["C", "D"]]);
-    t.preencherPlacaresPorSlot(1, { 1: [2, 0] });   // slot 2 (C x D) fica vazio
+    t.gerarAuto();   // 5 jogadores: BYE no slot 0 e 2 jogos
+
+    // Preenche so o primeiro jogo; o segundo fica sem placar.
+    var slots = t.run("resultadosPorRodada[1].filter(function(p){return p[1].nome!=='Bye';})" +
+                      ".map(function(p){return p.slot;})");
+    t.digitar("r1_p" + (slots[0] * 2), 2, "input");
+    t.digitar("r1_p" + (slots[0] * 2 + 1), 0, "input");
 
     var antes = t.estado();
     t.finalizar(1);
 
-    ok(/Falta o placar/.test(t.alertas().join(" ")),
+    ok(/Preencha todos os placares/.test(t.alertas().join(" ")),
        "placar faltando bloqueia a finalizacao", t.alertas().join(" | "));
     ok(t.estado() === antes,
-       "BYE, pontos, historico e confrontos NAO foram aplicados (transacao)");
-    ok(Object.keys(t.run("resultadosPorRodada")).length === 0,
-       "resultadosPorRodada segue vazio apos a tentativa invalida");
+       "BYE, pontos e historico NAO foram aplicados (transacao)");
 
     // Agora completa e finaliza: tudo aplicado UMA vez
     t.limparAlertas();
-    t.preencherPlacaresPorSlot(1, { 1: [2, 0], 2: [1, 2] });
+    t.digitar("r1_p" + (slots[1] * 2), 1, "input");
+    t.digitar("r1_p" + (slots[1] * 2 + 1), 2, "input");
     t.finalizar(1);
     ok(t.alertas().length === 0, "apos completar, finaliza sem alerta",
        t.alertas().join(" | "));
 
+    var nomeBye = t.run("resultadosPorRodada[1].filter(function(p){return p[1].nome==='Bye';})[0][0].nome");
     var jogs = t.jogadores();
-    var e = jogs.filter(function (j) { return j.nome === "E"; })[0];
+    var e = jogs.filter(function (j) { return j.nome === nomeBye; })[0];
     ok(e.historico.length === 1 && e.pontos === 3,
        "o BYE foi aplicado exatamente uma vez",
-       "historico=" + e.historico.length + " pontos=" + e.pontos);
-    var a = jogs.filter(function (j) { return j.nome === "A"; })[0];
-    ok(a.historico.length === 1 && a.pontos === 3,
-       "o vencedor recebeu os pontos uma unica vez",
-       "historico=" + a.historico.length + " pontos=" + a.pontos);
+       nomeBye + ": historico=" + e.historico.length + " pontos=" + e.pontos);
+    var totalHist = jogs.reduce(function (n, j) { return n + j.historico.length; }, 0);
+    ok(totalHist === 5,
+       "cada jogador tem exatamente uma partida na rodada (2 jogos + 1 bye)",
+       "total: " + totalHist);
   })();
 
   // -- corrigir placares: guarda de dominio
@@ -959,24 +814,6 @@ grupo("9. Transação completa e rodada em andamento");
        JSON.stringify(rascunho));
   })();
 
-  // -- rodada manual em preenchimento sobrevive ao reload
-  (function () {
-    var t = criar(["A", "B", "C", "D"], 2, 4);
-    t.gerarManual();
-    t.preencherManual(1, [["A", "B"], null]);   // so um par escolhido
-    t.run("capturarRascunho(1);");
-
-    ok(t.estadoRodadas()[1] === "manual",
-       "rodada manual gerada fica marcada como 'manual'",
-       JSON.stringify(t.estadoRodadas()));
-
-    t.recarregarDoStorage();
-    var r = t.rascunhos()[1];
-    ok(r && r.pares && r.pares["0"] && r.pares["0"][0] === "A" && r.pares["0"][1] === "B",
-       "os pares ja escolhidos na manual foram restaurados", JSON.stringify(r));
-    ok(t.run("rodadaAtualEstaFinalizada()") === false,
-       "manual em preenchimento nao libera a proxima rodada");
-  })();
 
   // -- rodada em correcao sobrevive ao reload
   (function () {
@@ -1107,11 +944,6 @@ grupo("10. Autosave em correção, BYE no slot 0 e bloqueios");
        "gerarRodada() e recusada durante a correcao", t.alertas().join(" | "));
     ok(t.estado() === antes, "gerarRodada() recusada nao altera estado");
 
-    t.limparAlertas();
-    t.gerarManual();
-    ok(/correção|correcao/i.test(t.alertas().join(" ")),
-       "gerarRodadaManual() e recusada durante a correcao", t.alertas().join(" | "));
-    ok(t.estado() === antes, "gerarRodadaManual() recusada nao altera estado");
     ok(t.rodadaAtual() === 1, "rodadaAtual nao avancou", "rodadaAtual=" + t.rodadaAtual());
   })();
 
@@ -1465,6 +1297,50 @@ grupo("12. Correção de placares com BYE (cenário do Safari)");
     ok(exp.length === 1, "o placar corrigido consta na exportacao",
        JSON.stringify(t.exportar(1)));
   })();
+})();
+
+// ==================== 13. Fluxo único: não existe geração manual
+grupo("13. Fluxo único (geração manual removida)");
+
+(function () {
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+
+  // Nenhum símbolo do fluxo manual pode ter sobrado no código ativo.
+  var simbolos = [
+    "gerarRodadaManual", "lerRodadaManual", "validarRodadaManual",
+    "lerPlacaresManual", "aplicarRodadaManual", "redesenharRodadaManual",
+    "btn-proxima-manual", "_j1_", "_j2_"
+  ];
+  var encontrados = simbolos.filter(function (s) { return html.indexOf(s) !== -1; });
+  ok(encontrados.length === 0,
+     "nenhum simbolo do fluxo manual restou no codigo",
+     encontrados.join(", "));
+
+  // Nenhum botão que ofereça geração manual.
+  ok(!/Rodada[^"'`]*\(manual\)/i.test(html),
+     "nenhum botao oferece geracao manual de rodada");
+
+  // O estado "manual" deixou de existir.
+  ok(html.indexOf('"manual"') === -1 && html.indexOf("'manual'") === -1,
+     "o estado \"manual\" nao existe mais em estadoRodadas");
+
+  // Nenhum <select> de montagem de confronto.
+  ok(!/<select id="r\$\{/.test(html),
+     "nao ha selects de montagem manual de confrontos");
+
+  // O caminho automático continua inteiro.
+  ["gerarRodada", "Pareamento.gerarRodada", "corrigirPlacares",
+   "finalizarCorrecao", "montarJogosExportados", "capturarRascunho"]
+    .forEach(function (s) {
+      ok(html.indexOf(s) !== -1, "o fluxo automatico preserva " + s);
+    });
+
+  // E a função de gerar rodada manual realmente não existe no runtime.
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var t = integracao.criarTorneio(["A", "B", "C", "D"], 2, 4);
+  var existe = t.run("typeof gerarRodadaManual");
+  ok(existe === "undefined",
+     "gerarRodadaManual nao existe no runtime", "typeof = " + existe);
 })();
 
 // ---------------------------------------------------------------- fim

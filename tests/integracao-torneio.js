@@ -100,11 +100,11 @@ function criarDOM() {
         }
 
         // Campos de empate de game e os <select> das rodadas manuais.
-        [/id="(r\d+_e\d+(_r)?)"/g, /id="(r\d+_j[12]_\d+)"/g].forEach(function (rx) {
+        [/id="(r\d+_e\d+(_r)?)"/g].forEach(function (rx) {
           var mm;
           while ((mm = rx.exec(el._html))) {
             if (elementos[mm[1]]) continue;
-            var e = novoEl(mm[1].indexOf("_j") >= 0 ? "select" : "input");
+            var e = novoEl("input");
             e.id = mm[1];
             e._parent = el;
             elementos[mm[1]] = e;
@@ -367,19 +367,6 @@ function criarTorneio(nomes, numRodadas, liga) {
     limparAlertas: function () { sandbox.__alertas.length = 0; },
 
     gerarAuto: function () { run("gerarRodada();"); },
-    gerarManual: function () { run("gerarRodadaManual();"); },
-
-    // Preenche os <select> de uma rodada manual.
-    // pares: [["A","B"], ["C","Bye"], null]  (null = linha deixada vazia)
-    preencherManual: function (rodada, pares) {
-      pares.forEach(function (par, i) {
-        var s1 = elementos["r" + rodada + "_j1_" + i];
-        var s2 = elementos["r" + rodada + "_j2_" + i];
-        if (!s1 || !s2) return;
-        s1.value = par ? par[0] : "";
-        s2.value = par ? par[1] : "";
-      });
-    },
 
     // fn(j1, j2, slot) -> [p1, p2] ou [p1, p2, empates]
     preencherPlacares: function (rodada, fn) {
@@ -393,21 +380,6 @@ function criarTorneio(nomes, numRodadas, liga) {
         var v = fn(par[0].nome, par[1].nome, slot) || [2, 0];
         i1.value = String(v[0]);
         i2.value = String(v[1]);
-        if (v.length > 2) {
-          var ie = elementos["r" + rodada + "_e" + slot];
-          if (ie) ie.value = String(v[2]);
-        }
-      });
-    },
-
-    // Para rodada manual: os placares são lidos pelo slot da LINHA da tela.
-    preencherPlacaresPorSlot: function (rodada, porSlot) {
-      Object.keys(porSlot).forEach(function (slot) {
-        var v = porSlot[slot];
-        var i1 = elementos["r" + rodada + "_p" + (slot * 2)];
-        var i2 = elementos["r" + rodada + "_p" + (Number(slot) * 2 + 1)];
-        if (i1) i1.value = String(v[0]);
-        if (i2) i2.value = String(v[1]);
         if (v.length > 2) {
           var ie = elementos["r" + rodada + "_e" + slot];
           if (ie) ie.value = String(v[2]);

@@ -424,9 +424,10 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 182 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 163 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
-2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
+2. Gerar as rodadas (sempre automáticas) e lançar os resultados; ao final a ferramenta gera o
+   JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
    (as linhas de Bye **já vêm no export** — não precisa mais acrescentar na mão)
 4. Adicionar o dia em `infoPorLiga[liga ativa]` no `main.js`: `N: { data: "DD/MM/AAAA", draft: "..." }`
@@ -440,7 +441,7 @@ a rodada.
 
 Se a ferramenta exibir o aviso amarelo **"Não existe pareamento sem repetição nesta rodada"**,
 não é bug: os jogadores já se enfrentaram o suficiente para esgotar as combinações. O sistema
-mostra quais confrontos se repetem para você decidir se aceita ou ajusta manualmente.
+mostra quais confrontos se repetem, para você saber o que está acontecendo.
 
 ---
 
@@ -524,7 +525,7 @@ Fechamento dos pontos que restaram da primeira auditoria.
    `compararCriterios` e `estaoEmpatadosNosCriterios`; não há mais comparador fora do `mtr.js`.
 2. **Detecção de empate do campeão** passou a usar `estaoEmpatadosNosCriterios` em vez de
    comparar campo a campo (que não reconhecia 25% × 30% como empate no piso).
-3. **Finalização manual totalmente transacional:** agora é
+3. **Finalização totalmente transacional:** agora é
    *ler pares → validar → ler placares → validar → aplicar*. Antes o pareamento era aplicado
    antes da leitura dos placares, então um placar faltando na última linha já deixava BYE,
    pontos, histórico e `confrontosAnteriores` gravados.
@@ -532,7 +533,7 @@ Fechamento dos pontos que restaram da primeira auditoria.
    `rodada === rodadaAtual`. Antes a regra valia só na interface (o botão sumia), mas a função
    aceitaria a chamada direta.
 5. **Recuperação de rodada em andamento.** Passou a existir `estadoRodadas[n]`
-   (`gerada` / `manual` / `finalizada` / `corrigindo`) e um rascunho por rodada com o que já
+   (`gerada` / `finalizada` / `corrigindo`) e um rascunho por rodada com o que já
    foi digitado, salvo nos eventos `change`. Na volta, cada rodada é redesenhada conforme o
    seu estado e **a próxima só é oferecida se a atual estiver finalizada**. Antes uma rodada
    manual apenas gerada **desaparecia** na recarga — ela só entra em `resultadosPorRodada` na
@@ -557,7 +558,7 @@ Fechamento dos pontos que restaram da primeira auditoria.
    Resultado: com 7 jogadores, **nenhum** dos três placares era salvo. Agora
    `slotsDaRodada(rodada)` percorre os slots conhecidos e apenas ignora os de Bye.
 3. **Bloqueio de nova rodada no domínio.** `podeGerarNovaRodada()` recusa enquanto a rodada
-   atual estiver em `gerada`, `manual` ou `corrigindo` — vale também para chamada direta pelo
+   atual estiver em `gerada` ou `corrigindo` — vale também para chamada direta pelo
    console. Entrar em correção remove os botões de próxima rodada na hora.
 4. **Uma única representação da rodada.** A tabela de leitura sai ao entrar em correção e a de
    correção sai ao salvar, com a rodada redesenhada uma vez só. Os campos já abrem com o
@@ -594,7 +595,7 @@ Também saiu o debounce (gravação imediata, nada assíncrono) e entrou flush e
 o jogador do BYE aparecia pontuando com a rodada ainda em andamento — e, com ele sendo o
 único com pontos, virava "campeão". Agora **gerar a rodada só define os confrontos**; pontos,
 saldo e histórico entram todos na finalização, junto com os placares, com guarda contra
-dupla aplicação. Automático e manual ficaram consistentes.
+dupla aplicação.
 
 Como consequência, a classificação passou a refletir **apenas rodadas finalizadas** sem
 precisar de filtro: o histórico só recebe uma rodada quando ela é finalizada.
@@ -636,6 +637,51 @@ verificando o conteúdo do `localStorage` logo em seguida.
 
 A suíte nova reprova o commit anterior em **10 casos**, incluindo o "campeão no meio do
 torneio" observado no Safari.
+
+---
+
+## 19. Fluxo único: geração manual removida (24/08/2026)
+
+**As rodadas da Liga são sempre geradas automaticamente pelo motor suíço.** A antiga geração
+manual foi removida para reduzir complexidade e eliminar caminhos alternativos de estado.
+Correções posteriores limitam-se aos **placares** da rodada atual, antes da geração da
+rodada seguinte.
+
+A geração manual existia como contingência, de quando o pareamento automático ainda tinha
+falhas. Depois do backtracking, do controle de BYE, da prevenção de rematches, da unificação
+das regras no `mtr.js` e da suíte de testes, essa razão deixou de existir — e o caminho
+manual era a origem de uma família inteira de estados e validações paralelas.
+
+### O fluxo operacional, agora único
+
+```
+Gerar rodada (automática)
+      ↓
+Lançar resultados
+      ↓
+Finalizar rodada
+      ↓
+Corrigir Placares, se necessário
+      ↓
+Gerar próxima rodada   ← a anterior fica definitivamente fechada
+```
+
+### O que saiu
+
+`gerarRodadaManual`, `lerRodadaManual`, `validarRodadaManual`, `lerPlacaresManual`,
+`aplicarRodadaManual`, `redesenharRodadaManual`, os botões "Gerar 1ª/Próxima Rodada (manual)",
+os `<select>` de montagem de confrontos, o estado `"manual"` de `estadoRodadas`, o campo
+`pares` (e `numLinhas`) do rascunho, e os helpers que só ele usava: `jogadoresAtivos`,
+`jaRecebeuBye` e `registrarConfronto`.
+
+**`acharJogador` foi preservado** — apesar de nascer no fluxo manual, é usado por
+`aplicarEstado()` para religar as referências dos confrontos na recuperação.
+
+**"Corrigir Placares" continua**: atende a um problema operacional normal (erro de digitação)
+e não altera os confrontos.
+
+Um teste automatizado (seção 13 da suíte) verifica que nenhum símbolo, botão, estado ou
+`<select>` do fluxo manual sobrou no código.
 
 ### Sobre conformidade com a Wizards
 
