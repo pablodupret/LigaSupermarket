@@ -424,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 164 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 171 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Rodar o torneio suíço; ao final a ferramenta gera o JSON no formato de uma linha por jogo
 3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
@@ -603,6 +603,13 @@ Outros ajustes: campeão só quando `rodadaAtual === totalRodadas` e a rodada es
 "Corrigir Placares" só aparece depois da finalização; colunas do Appendix C reordenadas para
 a sequência de desempate (`# | Jogador | MP | OMW% | GW% | OGW% | MW%`, com MW% ao final por
 ser informativo); e um indicador **"✅ Rascunho salvo às HH:MM:SS"** na tela.
+
+**Segundo teste no Safari:** a recuperação funcionou em tudo, menos no botão "Corrigir
+Placares", que sumia após o reload. `retomarTorneioSalvo()` não passa por
+`botoesProximaRodada()`, que era o único lugar que criava o botão. A regra virou uma função
+única, `atualizarBotaoCorrigir()`, aplicada nos dois fluxos: o botão existe quando a rodada
+atual está finalizada **e** é a última finalizada (se uma rodada posterior tivesse sido
+gerada, `rodadaAtual` já teria passado de `ultimaRodadaFinalizada`).
 
 ### Lição para os testes
 

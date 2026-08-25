@@ -1342,6 +1342,39 @@ grupo("11. Cenário do Safari: 7 jogadores, R1 em andamento");
     ok(t.campoExiste("btn-reabrir-1"),
        "o botao Corrigir Placares aparece apos a finalizacao");
   })();
+
+  // -- o botao tem de SOBREVIVER ao reload (falha do teste real no Safari)
+  (function () {
+    var t = criar(ELENCO, 4, 4);   // 7 jogadores, como no teste real
+
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    ok(t.campoExiste("btn-reabrir-1"), "R1 finalizada: Corrigir Placares existe");
+
+    // Reload — era aqui que o botao sumia
+    t.recarregarComRender();
+    ok(t.campoExiste("btn-reabrir-1"),
+       "apos o reload, Corrigir Placares da R1 continua existindo");
+
+    // Gerar R2 tira o botao da R1
+    t.gerarAuto();
+    ok(!t.campoExiste("btn-reabrir-1"),
+       "ao gerar R2, o botao da R1 desaparece");
+    ok(!t.campoExiste("btn-reabrir-2"),
+       "R2 em andamento ainda nao tem botao de correcao");
+
+    // Finalizar R2 traz o botao so para a R2
+    t.preencherPlacares(2, function () { return [2, 0]; });
+    t.finalizar(2);
+    ok(t.campoExiste("btn-reabrir-2"), "R2 finalizada: o botao aparece na R2");
+    ok(!t.campoExiste("btn-reabrir-1"), "e continua ausente na R1");
+
+    // E sobrevive ao reload tambem na R2
+    t.recarregarComRender();
+    ok(t.campoExiste("btn-reabrir-2") && !t.campoExiste("btn-reabrir-1"),
+       "apos novo reload, o botao segue apenas na R2");
+  })();
 })();
 
 // ---------------------------------------------------------------- fim

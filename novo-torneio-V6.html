@@ -809,9 +809,14 @@ function rodadaAtualEstaFinalizada() {
 
 function retomarTorneioSalvo(estado) {
   aplicarEstado(estado);
+  instalarAutosave();
+  instalarFlushDeSaida();
   redesenharRodadas();
   mostrarRanking();
   mostrarEstatisticasAppendixC();
+
+  // A última rodada finalizada continua corrigível depois de um reload.
+  atualizarBotaoCorrigir();
 
   const area = document.getElementById("torneio-area");
 
@@ -1614,10 +1619,39 @@ function adicionarBotaoCorrigir(rodada) {
   bloco.appendChild(btn);
 }
 
+// Regra única de onde o botão pode aparecer, aplicada tanto no fluxo normal
+// quanto na retomada de um torneio salvo:
+//
+//   a rodada atual está finalizada  E  é a última finalizada
+//   (se uma rodada posterior tivesse sido gerada, rodadaAtual já teria
+//    avançado além de ultimaRodadaFinalizada)
+//
+// Antes o botão era criado só em botoesProximaRodada(), por onde a retomada
+// não passa — então ele sumia depois de um reload.
+function atualizarBotaoCorrigir() {
+  // Tira o botão de qualquer rodada anterior
+  Object.keys(estadoRodadas).forEach(r => {
+    if (Number(r) === Number(rodadaAtual)) return;
+    const b = document.getElementById("btn-reabrir-" + r);
+    if (b && b.remove) b.remove();
+  });
+
+  const podeCorrigir =
+    estadoRodadas[rodadaAtual] === "finalizada" &&
+    Number(rodadaAtual) === Number(ultimaRodadaFinalizada);
+
+  if (podeCorrigir) {
+    adicionarBotaoCorrigir(rodadaAtual);
+  } else {
+    const b = document.getElementById("btn-reabrir-" + rodadaAtual);
+    if (b && b.remove) b.remove();
+  }
+}
+
 function botoesProximaRodada(rodada) {
   const area = document.getElementById("torneio-area");
   if (!area) return;
-  adicionarBotaoCorrigir(rodada);
+  atualizarBotaoCorrigir();
 
   const oldAuto = document.getElementById("btn-proxima-auto");
   const oldManual = document.getElementById("btn-proxima-manual");

@@ -503,7 +503,26 @@ function criarTorneio(nomes, numRodadas, liga) {
       run(
         "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
         "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
+        "estadoRodadas = {}; rascunhos = {};" +
         "var __e = lerEstadoSalvo(); if (__e) aplicarEstado(__e);"
+      );
+    },
+
+    // Reload COMPLETO: apaga o DOM como o navegador faria e passa pelo
+    // caminho real de retomada, com renderização. É o que expõe problemas de
+    // botões/blocos que só aparecem no fluxo normal.
+    recarregarComRender: function () {
+      Object.keys(elementos).forEach(function (id) {
+        if (id !== "torneio-area") delete elementos[id];
+      });
+      var area = elementos["torneio-area"];
+      if (area) { area.innerHTML = ""; area.children.length = 0; area._filhos.length = 0; }
+
+      run(
+        "jogadores = []; resultadosPorRodada = {}; confrontosAnteriores = new Set();" +
+        "rodadaAtual = 0; ultimaRodadaFinalizada = 0; ligaAtual = null; diaAtual = null;" +
+        "estadoRodadas = {}; rascunhos = {};" +
+        "var __e = lerEstadoSalvo(); if (__e) retomarTorneioSalvo(__e);"
       );
     },
     jogadores: function () { return run("jogadores"); },
