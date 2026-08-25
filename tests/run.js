@@ -1495,6 +1495,16 @@ grupo("16. Importador (importar-resultados.js)");
   var destino = path.join(tmpDir, "jogos.json");
   var seq = 0;
 
+  // Cadastros próprios: a suíte não depende do jogadores.json/ligas.json reais.
+  var JOGADORES = ["A", "B", "C", "D", "Sérgio"];
+  var LIGAS = [{ id: 4 }, { id: 9 }];
+
+  function opts(extra) {
+    var o = { destino: destino, jogadores: JOGADORES, ligas: LIGAS, apply: true };
+    Object.keys(extra || {}).forEach(function (k) { o[k] = extra[k]; });
+    return o;
+  }
+
   // Base pequena e controlada: Liga 4 com os Dias 1 e 2, como no projeto real.
   function baseInicial() {
     return [
@@ -1527,7 +1537,7 @@ grupo("16. Importador (importar-resultados.js)");
   // Roda o importador e confirma que o destino NÃO mudou quando falha.
   function recusa(descricao, jogos, regex) {
     var antes = prepararDestino();
-    var r = Importador.importar({ arquivo: arquivoCom(jogos), destino: destino });
+    var r = Importador.importar(opts({ arquivo: arquivoCom(jogos) }));
     var msg = r.erros.join(" | ");
     ok(!r.ok && (!regex || regex.test(msg)), descricao, msg.slice(0, 120));
     ok(fs.readFileSync(destino, "utf8") === antes,
@@ -1537,7 +1547,7 @@ grupo("16. Importador (importar-resultados.js)");
   // ---- importação válida
   (function () {
     var antesDaImportacao = prepararDestino();
-    var r = Importador.importar({ arquivo: arquivoCom(diaValido()), destino: destino });
+    var r = Importador.importar(opts({ arquivo: arquivoCom(diaValido()) }));
 
     ok(r.ok, "importacao valida e aceita", r.erros.join(" | "));
     ok(r.resumo && r.resumo.liga === 4 && r.resumo.dia === 3 && r.resumo.rodadas === 2,
@@ -1582,12 +1592,12 @@ grupo("16. Importador (importar-resultados.js)");
   // ---- arquivo inexistente e JSON malformado
   (function () {
     prepararDestino();
-    var r = Importador.importar({ arquivo: path.join(tmpDir, "nao-existe.json"), destino: destino });
+    var r = Importador.importar(opts({ arquivo: path.join(tmpDir, "nao-existe.json") }));
     ok(!r.ok && /não encontrado|nao encontrado/i.test(r.erros.join(" ")),
        "arquivo inexistente e recusado", r.erros.join(" | "));
 
     var antes = prepararDestino();
-    var r2 = Importador.importar({ arquivo: arquivoCom("{ isso nao e json"), destino: destino });
+    var r2 = Importador.importar(opts({ arquivo: arquivoCom("{ isso nao e json") }));
     ok(!r2.ok && /JSON válido|JSON valido/i.test(r2.erros.join(" ")),
        "JSON invalido e recusado", r2.erros.join(" | "));
     ok(fs.readFileSync(destino, "utf8") === antes, "  ↳ o jogos.json ficou intacto");
@@ -1639,11 +1649,10 @@ grupo("16. Importador (importar-resultados.js)");
 
   (function () {
     prepararDestino();
-    var r = Importador.importar({
+    var r = Importador.importar(opts({
       arquivo: arquivoCom([{ liga: 4, dia: 5, rodada: 1, jogador1: "A",
-                             resultado: "2 x 0", jogador2: "B" }]),
-      destino: destino
-    });
+                             resultado: "2 x 0", jogador2: "B" }])
+    }));
     ok(/Dia 3/.test(r.erros.join(" ")),
        "a mensagem aponta explicitamente o Dia 3 como esperado", r.erros.join(" | "));
   })();
@@ -1655,11 +1664,10 @@ grupo("16. Importador (importar-resultados.js)");
 
   (function () {
     prepararDestino();
-    var r = Importador.importar({
+    var r = Importador.importar(opts({
       arquivo: arquivoCom([{ liga: 9, dia: 1, rodada: 1, jogador1: "A",
-                             resultado: "2 x 0", jogador2: "B" }]),
-      destino: destino
-    });
+                             resultado: "2 x 0", jogador2: "B" }])
+    }));
     ok(r.ok, "liga nova comecando no Dia 1 e aceita", r.erros.join(" | "));
   })();
 
@@ -1710,28 +1718,145 @@ grupo("16. Importador (importar-resultados.js)");
   // ---- dry-run
   (function () {
     var antes = prepararDestino();
-    var r = Importador.importar({ arquivo: arquivoCom(diaValido()), destino: destino,
-                                  dryRun: true });
-    ok(r.ok && r.dryRun, "dry-run valida e reporta sucesso", r.erros.join(" | "));
-    ok(r.resumo.registros === 4, "dry-run traz o resumo completo", JSON.stringify(r.resumo));
+    var r = Importador.importar(opts({ arquivo: arquivoCom(diaValido()), apply: false }));
+    ok(r.ok && r.simulado, "sem --apply o script apenas valida", r.erros.join(" | "));
+    ok(r.resumo.registros === 4, "a validacao traz o resumo completo", JSON.stringify(r.resumo));
     ok(fs.readFileSync(destino, "utf8") === antes,
-       "dry-run NAO altera o jogos.json (byte a byte)");
-    ok(!r.backup, "dry-run nao cria backup", String(r.backup));
+       "sem --apply o jogos.json fica byte a byte igual");
+    ok(!r.backup, "sem --apply nenhum backup e criado", String(r.backup));
   })();
 
   // ---- importar duas vezes: a segunda e recusada
   (function () {
     prepararDestino();
     var arq = arquivoCom(diaValido());
-    var r1 = Importador.importar({ arquivo: arq, destino: destino });
+    var r1 = Importador.importar(opts({ arquivo: arq }));
     ok(r1.ok, "primeira importacao aceita");
 
     var depoisDaPrimeira = fs.readFileSync(destino, "utf8");
-    var r2 = Importador.importar({ arquivo: arq, destino: destino });
+    var r2 = Importador.importar(opts({ arquivo: arq }));
     ok(!r2.ok && /já existe|ja existe/i.test(r2.erros.join(" ")),
        "a segunda importacao do mesmo arquivo e recusada", r2.erros.join(" | "));
     ok(fs.readFileSync(destino, "utf8") === depoisDaPrimeira,
        "a recusa nao altera o arquivo ja importado");
+  })();
+
+  // ---- seguro por padrão: sem --apply nada é gravado
+  (function () {
+    var antes = prepararDestino();
+    var arq = arquivoCom(diaValido());
+
+    function backups() {
+      return fs.readdirSync(tmpDir).filter(function (f) {
+        return /^jogos\.backup-/.test(f);
+      }).length;
+    }
+    var backupsAntes = backups();
+
+    // chamada SEM apply (o padrão do CLI)
+    var r = Importador.importar({ arquivo: arq, destino: destino,
+                                  jogadores: JOGADORES, ligas: LIGAS });
+    ok(r.ok && r.simulado,
+       "o padrao e apenas validar (apply ausente)", JSON.stringify(r.simulado));
+    ok(fs.readFileSync(destino, "utf8") === antes,
+       "sem apply o destino fica byte a byte igual");
+    ok(backups() === backupsAntes,
+       "sem apply nenhum backup NOVO e criado",
+       backupsAntes + " -> " + backups());
+
+    // agora com apply
+    var r2 = Importador.importar(opts({ arquivo: arq }));
+    ok(r2.ok && !r2.simulado, "com apply a gravacao acontece");
+    ok(fs.readFileSync(destino, "utf8") !== antes, "com apply o destino muda");
+  })();
+
+  // ---- jogadores precisam estar em jogadores.json
+  (function () {
+    prepararDestino();
+    var r = Importador.importar(opts({
+      arquivo: arquivoCom([
+        { liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }
+      ])
+    }));
+    ok(r.ok, "jogadores cadastrados sao aceitos", r.erros.join(" | "));
+  })();
+
+  recusa("jogador desconhecido e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "Fulano" }],
+    /não cadastrados|nao cadastrados/i);
+
+  (function () {
+    prepararDestino();
+    var r = Importador.importar(opts({
+      arquivo: arquivoCom([
+        { liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "Fulano" },
+        { liga: 4, dia: 3, rodada: 2, jogador1: "A", resultado: "2 x 0", jogador2: "Beltrano" }
+      ])
+    }));
+    var msg = r.erros.join(" ");
+    ok(!r.ok && /Fulano/.test(msg) && /Beltrano/.test(msg),
+       "a mensagem lista TODOS os jogadores desconhecidos", msg.slice(0, 120));
+  })();
+
+  // grafia/capitalização diferente é jogador diferente — é a regra crítica
+  recusa("capitalizacao diferente e recusada (a x A)",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "a", resultado: "2 x 0", jogador2: "B" }],
+    /não cadastrados|nao cadastrados/i);
+
+  recusa("acento faltando e recusado (Sergio x Sérgio)",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "Sergio", resultado: "2 x 0", jogador2: "B" }],
+    /Sergio/);
+
+  recusa("espaco extra no nome e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A ", resultado: "2 x 0", jogador2: "B" }],
+    /não cadastrados|nao cadastrados/i);
+
+  (function () {
+    prepararDestino();
+    var r = Importador.importar(opts({
+      arquivo: arquivoCom([
+        { liga: 4, dia: 3, rodada: 1, jogador1: "Sérgio", resultado: "2 x 0", jogador2: "Bye" }
+      ])
+    }));
+    ok(r.ok, "\"Bye\" nao precisa estar cadastrado como jogador", r.erros.join(" | "));
+  })();
+
+  // ---- a liga precisa estar em ligas.json
+  recusa("liga inexistente em ligas.json e recusada",
+    [{ liga: 7, dia: 1, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /não existe em ligas.json|nao existe em ligas.json/i);
+
+  (function () {
+    prepararDestino();
+    var r = Importador.importar(opts({
+      arquivo: arquivoCom([{ liga: 7, dia: 1, rodada: 1, jogador1: "A",
+                             resultado: "2 x 0", jogador2: "B" }])
+    }));
+    ok(/cadastradas: 4, 9/.test(r.erros.join(" ")),
+       "a mensagem informa quais ligas existem", r.erros.join(" | "));
+  })();
+
+  // ---- nome com caractere que precisa de escape sobrevive à gravação
+  (function () {
+    var nomeComAspas = 'Jo"ao \\ Silva';
+    prepararDestino();
+    var r = Importador.importar({
+      arquivo: arquivoCom([
+        { liga: 4, dia: 3, rodada: 1, jogador1: nomeComAspas, resultado: "2 x 0", jogador2: "B" }
+      ]),
+      destino: destino,
+      jogadores: JOGADORES.concat([nomeComAspas]),
+      ligas: LIGAS,
+      apply: true
+    });
+    ok(r.ok, "nome com aspas e barra e aceito", r.erros.join(" | "));
+
+    var texto = fs.readFileSync(destino, "utf8");
+    var lido = JSON.parse(texto);   // lança se o escape estiver errado
+    ok(Array.isArray(lido), "o jogos.json segue sendo JSON valido apos o escape");
+    ok(lido[lido.length - 1].jogador1 === nomeComAspas,
+       "o nome com escape volta identico da gravacao",
+       JSON.stringify(lido[lido.length - 1].jogador1));
   })();
 
   // limpeza

@@ -4,12 +4,15 @@
 // Acrescenta ao jogos.json os registros de um arquivo exportado pela ferramenta
 // de torneio, com validação completa e escrita atômica.
 //
-//   node importar-resultados.js resultados_24-08-2026.json
-//   node importar-resultados.js resultados_24-08-2026.json --dry-run
+//   node importar-resultados.js resultados_25-08-2026.json           # só valida
+//   node importar-resultados.js resultados_25-08-2026.json --apply   # grava
 //
 // Substitui o procedimento manual de abrir o arquivo, remover os colchetes,
 // acertar a vírgula e colar no fim do jogos.json — onde um deslize corrompe
 // 700+ registros.
+//
+// SEGURO POR PADRÃO: sem --apply o script apenas valida. A gravação exige a
+// flag explícita — um comando digitado por engano não altera o histórico.
 //
 // REGRA CENTRAL: ou tudo é válido e o arquivo é gravado, ou nada é tocado.
 
@@ -85,7 +88,11 @@ function carimboDeTempo() {
 // ---------------------------------------------------------------- validação
 
 // Devolve { erros: [...], resumo: {...} }. Nunca escreve nada.
-function validar(novos, existentes) {
+//
+// `cadastros` = { jogadores: [...], ligas: [ {id}, ...] }. Quando ausente, as
+// validações de cadastro são puladas (usado só internamente pelos testes de
+// estrutura).
+function validar(novos, existentes, cadastros) {
   var erros = [];
 
   if (!Array.isArray(novos)) {
@@ -171,6 +178,44 @@ function validar(novos, existentes) {
 
   var liga = ligas[0];
   var dia = dias[0];
+
+  // --- a liga precisa estar cadastrada em ligas.json
+  if (cadastros && cadastros.ligas) {
+    var ids = cadastros.ligas.map(function (l) { return Number(l.id); });
+    if (ids.indexOf(Number(liga)) === -1) {
+      return {
+        erros: ["A Liga " + liga + " não existe em ligas.json (cadastradas: " +
+                ids.sort(function (a, b) { return a - b; }).join(", ") + ").\n" +
+                "   Cadastre a temporada antes de importar os jogos."]
+      };
+    }
+  }
+
+  // --- todo jogador precisa estar em jogadores.json, com o nome EXATO
+  //
+  // Um nome com grafia diferente entra sem erro e quebra ranking, avatar e
+  // histórico em silêncio — é a "regra crítica" do PROJETO.md. Jogador novo se
+  // cadastra primeiro; só depois os jogos dele entram no histórico.
+  if (cadastros && cadastros.jogadores) {
+    var conhecidos = {};
+    cadastros.jogadores.forEach(function (n) { conhecidos[String(n)] = true; });
+
+    var desconhecidos = {};
+    novos.forEach(function (j) {
+      [j.jogador1, j.jogador2].forEach(function (n) {
+        if (MTR.ehBye(n)) return;
+        if (!conhecidos[String(n)]) desconhecidos[String(n)] = true;
+      });
+    });
+
+    var faltando = Object.keys(desconhecidos);
+    if (faltando.length) {
+      return {
+        erros: ["Jogadores não cadastrados em jogadores.json: " + faltando.join(", ") + "\n" +
+                "   Cadastre-os antes de importar."]
+      };
+    }
+  }
 
   // --- duplicidade dentro do próprio arquivo (identidade canônica)
   var vistos = {};
@@ -267,22 +312,48 @@ function validar(novos, existentes) {
 
 // ---------------------------------------------------------------- importação
 
+function lerJSON(caminho) {
+  try { return JSON.parse(fs.readFileSync(caminho, "utf8")); } catch (e) { return null; }
+}
+
 /**
- * @param {string}  arquivo  JSON exportado pela ferramenta
- * @param {string}  destino  caminho do jogos.json
- * @param {boolean} dryRun   valida e resume, sem gravar nada
+ * SEGURO POR PADRÃO: sem `apply: true`, apenas valida — nenhum arquivo e nenhum
+ * backup são criados.
+ *
+ * @param {string}   arquivo    JSON exportado pela ferramenta
+ * @param {string}   destino    caminho do jogos.json
+ * @param {boolean}  apply      grava de verdade (padrão: não)
+ * @param {string[]} jogadores  lista de jogadores (padrão: jogadores.json)
+ * @param {object[]} ligas      lista de ligas (padrão: ligas.json)
  * @returns {{ok:boolean, erros:string[], resumo?:object, backup?:string, total?:number}}
  */
 function importar(opcoes) {
   var arquivo = opcoes.arquivo;
   var destino = opcoes.destino || path.join(__dirname, "jogos.json");
-  var dryRun = !!opcoes.dryRun;
+  var apply = !!opcoes.apply;
 
   if (!fs.existsSync(arquivo)) {
     return { ok: false, erros: ["Arquivo não encontrado: " + arquivo] };
   }
   if (!fs.existsSync(destino)) {
     return { ok: false, erros: ["jogos.json não encontrado: " + destino] };
+  }
+
+  // Cadastros: os testes passam listas próprias; a CLI lê os arquivos do projeto.
+  var cadastros = {
+    jogadores: opcoes.jogadores !== undefined
+      ? opcoes.jogadores
+      : lerJSON(path.join(__dirname, "jogadores.json")),
+    ligas: opcoes.ligas !== undefined
+      ? opcoes.ligas
+      : lerJSON(path.join(__dirname, "ligas.json"))
+  };
+
+  if (cadastros.jogadores !== null && !Array.isArray(cadastros.jogadores)) {
+    return { ok: false, erros: ["jogadores.json não contém um array."] };
+  }
+  if (cadastros.ligas !== null && !Array.isArray(cadastros.ligas)) {
+    return { ok: false, erros: ["ligas.json não contém um array."] };
   }
 
   var novos;
@@ -303,11 +374,12 @@ function importar(opcoes) {
     return { ok: false, erros: ["jogos.json não contém um array."] };
   }
 
-  var v = validar(novos, existentes);
+  var v = validar(novos, existentes, cadastros);
   if (v.erros.length) return { ok: false, erros: v.erros };
 
-  if (dryRun) {
-    return { ok: true, erros: [], resumo: v.resumo, dryRun: true,
+  // Sem --apply, para por aqui: nada gravado, nenhum backup.
+  if (!apply) {
+    return { ok: true, erros: [], resumo: v.resumo, simulado: true,
              total: existentes.length + novos.length };
   }
 
@@ -340,7 +412,8 @@ function importar(opcoes) {
 function imprimirSucesso(r) {
   var s = r.resumo;
   console.log("");
-  console.log(r.dryRun ? "✅ Validação concluída (--dry-run)" : "✅ Importação concluída");
+  console.log(r.simulado ? "✅ Validação concluída — nada foi gravado"
+                         : "✅ Importação concluída");
   console.log("   Liga: " + s.liga);
   console.log("   Dia: " + s.dia);
   console.log("   Rodadas: " + s.rodadas);
@@ -348,10 +421,11 @@ function imprimirSucesso(r) {
   console.log("   BYEs: " + s.byes);
   console.log("   Partidas com games empatados: " + s.comEmpates);
 
-  if (r.dryRun) {
+  if (r.simulado) {
     console.log("");
-    console.log("   Nenhum arquivo foi alterado (--dry-run).");
-    console.log("   Para importar de verdade, rode o mesmo comando sem --dry-run.");
+    console.log("   Nenhum arquivo foi alterado.");
+    console.log("   Para gravar de verdade, repita o comando com --apply:");
+    console.log("     node importar-resultados.js <arquivo> --apply");
   } else {
     console.log("   jogos.json válido (" + r.total + " registros)");
     console.log("   Backup: " + path.basename(r.backup));
@@ -373,17 +447,20 @@ function imprimirErro(erros) {
 
 if (require.main === module) {
   var args = process.argv.slice(2);
-  var dryRun = args.indexOf("--dry-run") !== -1;
+  var apply = args.indexOf("--apply") !== -1;
   var arquivo = args.filter(function (a) { return a.indexOf("--") !== 0; })[0];
 
   if (!arquivo) {
     console.error("");
-    console.error("Uso: node importar-resultados.js <arquivo-exportado.json> [--dry-run]");
+    console.error("Uso: node importar-resultados.js <arquivo-exportado.json> [--apply]");
+    console.error("");
+    console.error("  Sem --apply o script apenas VALIDA; nenhum arquivo é alterado.");
+    console.error("  Use --apply para gravar de verdade no jogos.json.");
     console.error("");
     process.exit(1);
   }
 
-  var r = importar({ arquivo: arquivo, dryRun: dryRun });
+  var r = importar({ arquivo: arquivo, apply: apply });
   if (r.ok) { imprimirSucesso(r); process.exit(0); }
   imprimirErro(r.erros);
   process.exit(1);

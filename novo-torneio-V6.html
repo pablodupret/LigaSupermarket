@@ -1747,7 +1747,9 @@ function exportarResultadosParaJSON() {
     return;
   }
 
-  const numeroDia = parseInt(prompt("Digite o número do dia (ex: 5):", "5"));
+  // Sem valor pré-preenchido: um default induziria uma numeração errada, e o
+  // importador recusa dia fora de sequência.
+  const numeroDia = parseInt(prompt("Digite o número do dia de competição:", ""));
   if (!numeroDia || numeroDia < 1) return;
   diaAtual = numeroDia;
 
@@ -1759,9 +1761,13 @@ function exportarResultadosParaJSON() {
   }
 
   // 🔥 Formato “uma linha por objeto”, igual vocês gostam no jogos.json
+  // Os textos passam por JSON.stringify em vez de irem interpolados entre
+  // aspas: um nome com aspas ou barra invertida geraria um JSON inválido.
   const linhas = jogosExportados.map(o =>
-    `{ "liga": ${o.liga}, "dia": ${o.dia}, "rodada": ${o.rodada}, "jogador1": "${o.jogador1}", ` +
-    `"resultado": "${o.resultado}", "jogador2": "${o.jogador2}"` +
+    `{ "liga": ${o.liga}, "dia": ${o.dia}, "rodada": ${o.rodada}` +
+    `, "jogador1": ${JSON.stringify(o.jogador1)}` +
+    `, "resultado": ${JSON.stringify(o.resultado)}` +
+    `, "jogador2": ${JSON.stringify(o.jogador2)}` +
     (o.gamesEmpatados ? `, "gamesEmpatados": ${o.gamesEmpatados}` : "") +
     ` }`
   );

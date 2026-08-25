@@ -430,11 +430,12 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ## 13. Como lançar um dia de competição
 
 ```
-1. node tests/run.js                          ← 244 passaram, 0 falharam
+1. node tests/run.js                          ← 266 passaram, 0 falharam
 2. Realizar o torneio (rodadas sempre automáticas)
 3. Finalizar a última rodada
 4. Exportar Resultados (JSON)                 ← o botão só aparece agora
-5. node importar-resultados.js <arquivo>      ← use --dry-run antes, se quiser conferir
+5. node importar-resultados.js <arquivo>          ← só valida
+   node importar-resultados.js <arquivo> --apply ← grava
 6. Atualizar infoPorLiga no main.js com a data e o nome do evento
 7. Revisar o diff
 8. Commit e push
@@ -448,10 +449,11 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 4. O botão **"📤 Exportar Resultados (JSON)"** só existe quando a última rodada está
    finalizada — não há como exportar um torneio pela metade. A ferramenta pergunta o número
    do dia.
-5. O importador valida tudo e só então grava; qualquer erro cancela sem tocar no arquivo:
+5. **O importador é seguro por padrão:** sem `--apply` ele apenas valida, e nenhum arquivo
+   nem backup é criado. A gravação exige a flag explícita.
    ```
-   node importar-resultados.js resultados_25-08-2026.json --dry-run   # só valida
-   node importar-resultados.js resultados_25-08-2026.json             # importa
+   node importar-resultados.js resultados_25-08-2026.json            # só valida
+   node importar-resultados.js resultados_25-08-2026.json --apply    # grava
    ```
    As linhas de **Bye já vêm no export** — nada a acrescentar à mão.
 6. `infoPorLiga[liga][dia] = { data: "DD/MM/AAAA", draft: "..." }` no `main.js`. O importador
@@ -464,6 +466,10 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ### O que o importador recusa
 
 - arquivo inexistente, JSON inválido, que não seja array, ou vazio
+- **jogador que não esteja em `jogadores.json`**, com o nome exato — grafia, acento,
+  capitalização e espaços contam. Jogador novo se cadastra primeiro; só depois os jogos dele
+  entram no histórico. `"Bye"` é exceção e não precisa de cadastro
+- **liga que não esteja em `ligas.json`** — para uma futura Liga 5, cadastre a temporada antes
 - campo obrigatório faltando, ou `liga`/`dia`/`rodada` que não sejam inteiros ≥ 1
 - `resultado` fora do formato **`"N x N"` com espaços** (ver abaixo)
 - `gamesEmpatados` que não seja inteiro ≥ 0
@@ -484,6 +490,9 @@ ordem e seriam normalizados, poluindo o diff.
 
 > Um `--allow-gap` pode ser criado no futuro para importar dias históricos fora de sequência.
 > Hoje não existe, de propósito.
+
+O exportador escreve os textos com `JSON.stringify`, então um nome com aspas ou barra
+invertida não quebra o JSON gerado.
 
 ### Por que o `resultado` exige espaços
 
