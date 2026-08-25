@@ -1303,7 +1303,13 @@ grupo("12. Correção de placares com BYE (cenário do Safari)");
 grupo("13. Fluxo único (geração manual removida)");
 
 (function () {
-  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  var htmlBruto = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+
+  // Comentários fora: eles legitimamente citam o fluxo antigo para explicar
+  // por que ele saiu. O que não pode sobrar é código.
+  var html = htmlBruto
+    .replace(/^\s*\/\/.*$/gm, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
 
   // Nenhum símbolo do fluxo manual pode ter sobrado no código ativo.
   var simbolos = [
@@ -1341,6 +1347,79 @@ grupo("13. Fluxo único (geração manual removida)");
   var existe = t.run("typeof gerarRodadaManual");
   ok(existe === "undefined",
      "gerarRodadaManual nao existe no runtime", "typeof = " + existe);
+})();
+
+// ============ 14. Versão do estado salvo: recusar formatos antigos
+grupo("14. Versão do estado persistido");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // -- o estado gravado hoje carrega a versão atual
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 2, 4);
+    t.gerarAuto();
+    var salvo = JSON.parse(t.lerStorageBruto() || "{}");
+    ok(Number(salvo.versao) === 2, "o estado e gravado com versao 2",
+       "versao: " + salvo.versao);
+  })();
+
+  // -- estado versão 1, com uma rodada "manual": recusado, não restaurado
+  (function () {
+    var t = criar(["A", "B", "C", "D", "E"], 3, 4);
+
+    // Formato antigo: versão 1, estadoRodadas com "manual" e rascunho com pares
+    t.injetarEstadoBruto({
+      versao: 1,
+      salvoEm: new Date().toISOString(),
+      ligaAtual: 4,
+      diaAtual: 1,
+      rodadaAtual: 2,
+      totalRodadas: 3,
+      ultimaRodadaFinalizada: 1,
+      jogadores: [
+        { nome: "A", pontos: 3, saldo: 2, historico: [{ contra: "B", placar: "2x0", rodada: 1 }] },
+        { nome: "B", pontos: 0, saldo: -2, historico: [{ contra: "A", placar: "0x2", rodada: 1 }] }
+      ],
+      resultados: { 1: [{ j1: "A", j2: "B", slot: 0 }] },
+      confrontosAnteriores: ["A|B", "B|A"],
+      estadoRodadas: { 1: "finalizada", 2: "manual" },
+      rascunhos: { 2: { numLinhas: 2, pares: { 0: ["A", "B"] }, placares: {} } }
+    });
+
+    t.limparAlertas();
+    var lido = t.estadoSalvo();
+
+    ok(lido === null, "estado de versao antiga NAO e devolvido para restauracao",
+       JSON.stringify(lido && lido.versao));
+    ok(/formato antigo/i.test(t.alertas().join(" ")),
+       "o organizador e avisado de que havia um torneio incompativel",
+       t.alertas().join(" | "));
+    ok(!t.lerStorageBruto(),
+       "o estado incompativel e descartado do storage",
+       String(t.lerStorageBruto()).slice(0, 60));
+
+    // E a recuperação não redesenha nada como rodada finalizada
+    t.recarregarComRender();
+    ok(t.rodadaAtual() === 0 && Object.keys(t.estadoRodadas()).length === 0,
+       "nada foi restaurado a partir do estado antigo",
+       "rodadaAtual=" + t.rodadaAtual() + " estados=" + JSON.stringify(t.estadoRodadas()));
+    ok(t.blocosDaRodada(2).length === 0,
+       "a rodada 'manual' do estado antigo nao virou bloco na tela",
+       t.blocosDaRodada(2).join(", "));
+  })();
+
+  // -- estado de versão FUTURA também é recusado
+  (function () {
+    var t = criar(["A", "B"], 1, 4);
+    t.injetarEstadoBruto({
+      versao: 99, jogadores: [{ nome: "A", pontos: 0, saldo: 0, historico: [] }],
+      resultados: {}, estadoRodadas: {}, rascunhos: {}, confrontosAnteriores: []
+    });
+    t.limparAlertas();
+    ok(t.estadoSalvo() === null, "estado de versao futura tambem e recusado");
+  })();
 })();
 
 // ---------------------------------------------------------------- fim

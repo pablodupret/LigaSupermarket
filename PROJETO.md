@@ -424,7 +424,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 163 passaram, 0 falharam
+0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 170 passaram, 0 falharam
 1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
 2. Gerar as rodadas (sempre automáticas) e lançar os resultados; ao final a ferramenta gera o
    JSON no formato de uma linha por jogo
@@ -435,9 +435,12 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
    Se for jogador eventual que não deve pontuar no ranking, acrescentar em `jogadoresOcultos` no `main.js`
 
 **"Corrigir Placares"** só funciona na rodada atual, e apenas enquanto nenhuma rodada
-posterior tiver sido gerada. Ela corrige **resultados**, nunca refaz um pareamento — erro de
-pareamento deve ser percebido antes de a rodada ser jogada, e o caminho ali é não finalizar
-a rodada.
+posterior tiver sido gerada. Ela corrige **resultados**, nunca refaz um pareamento.
+
+**Não existe regeração da mesma rodada, e isso é deliberado.** Se um pareamento parecer
+errado, a contingência correta é: **não finalizar a rodada**, interromper o uso da ferramenta
+e conferir o pareamento externamente antes de seguir. Finalizar uma rodada com pareamento
+inválido é o que não tem volta — depois de finalizada, só os placares são corrigíveis.
 
 Se a ferramenta exibir o aviso amarelo **"Não existe pareamento sem repetição nesta rodada"**,
 não é bug: os jogadores já se enfrentaram o suficiente para esgotar as combinações. O sistema
@@ -525,10 +528,10 @@ Fechamento dos pontos que restaram da primeira auditoria.
    `compararCriterios` e `estaoEmpatadosNosCriterios`; não há mais comparador fora do `mtr.js`.
 2. **Detecção de empate do campeão** passou a usar `estaoEmpatadosNosCriterios` em vez de
    comparar campo a campo (que não reconhecia 25% × 30% como empate no piso).
-3. **Finalização totalmente transacional:** agora é
-   *ler pares → validar → ler placares → validar → aplicar*. Antes o pareamento era aplicado
-   antes da leitura dos placares, então um placar faltando na última linha já deixava BYE,
-   pontos, histórico e `confrontosAnteriores` gravados.
+3. **Finalização totalmente transacional:**
+   *ler todos os placares → validar todos → aplicar a rodada inteira de uma vez*.
+   Nenhuma mutação acontece antes de a rodada estar inteira válida — um placar faltando na
+   última linha não deixa BYE, pontos nem histórico gravados pela metade.
 4. **Reabertura com guarda de domínio:** exige `rodada === ultimaRodadaFinalizada` **e**
    `rodada === rodadaAtual`. Antes a regra valia só na interface (o botão sumia), mas a função
    aceitaria a chamada direta.
@@ -682,6 +685,17 @@ e não altera os confrontos.
 
 Um teste automatizado (seção 13 da suíte) verifica que nenhum símbolo, botão, estado ou
 `<select>` do fluxo manual sobrou no código.
+
+### Versão do estado salvo
+
+O estado no `localStorage` carrega `versao` (hoje `VERSAO_ESTADO = 2`) e a leitura **recusa
+qualquer versão diferente**, avisa o organizador e descarta o registro. Restaurar pela metade
+é pior do que começar de novo: um torneio salvo na versão 1 podia ter
+`estadoRodadas[n] === "manual"`, que hoje cairia no ramo padrão da renderização e apareceria
+como rodada finalizada.
+
+**Ao mudar o formato do estado, incremente `VERSAO_ESTADO`.** É o que impede um torneio antigo
+de ser recuperado silenciosamente com semântica errada.
 
 ### Sobre conformidade com a Wizards
 

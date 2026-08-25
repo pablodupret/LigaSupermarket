@@ -452,6 +452,17 @@ function criarTorneio(nomes, numRodadas, liga) {
       sandbox.localStorage.setItem = function () { throw new Error("QuotaExceededError"); };
     },
 
+    // Injeta um estado bruto no storage, para simular um torneio salvo por uma
+    // versão anterior da ferramenta.
+    injetarEstadoBruto: function (obj) {
+      sandbox.localStorage.setItem(
+        "ligaSupermarket:torneioEmAndamento", JSON.stringify(obj)
+      );
+    },
+    lerStorageBruto: function () {
+      return sandbox.localStorage.getItem("ligaSupermarket:torneioEmAndamento");
+    },
+
     // Injeta um histórico pronto, para montar cenários de desempate exatos.
     definirHistorico: function (porJogador) {
       run("jogadores.forEach(function(j){ j.historico = " +

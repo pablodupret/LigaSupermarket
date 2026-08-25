@@ -494,6 +494,16 @@ function acharJogador(nome) {
 
 const CHAVE_ESTADO = "ligaSupermarket:torneioEmAndamento";
 
+// Versão do FORMATO do estado salvo.
+//   1 — formato antigo, com o fluxo manual (estadoRodadas podia ser "manual",
+//       e o rascunho tinha `pares`/`numLinhas`)
+//   2 — formato atual, só geração automática
+//
+// Um estado de versão diferente é recusado em vez de restaurado pela metade:
+// um torneio salvo na versão 1 com uma rodada "manual" cairia no ramo padrão
+// da renderização e seria redesenhado como se estivesse finalizada.
+const VERSAO_ESTADO = 2;
+
 function temStorage() {
   try { return typeof localStorage !== "undefined"; } catch (e) { return false; }
 }
@@ -513,7 +523,7 @@ function serializarEstado() {
   });
 
   return {
-    versao: 1,
+    versao: VERSAO_ESTADO,
     salvoEm: new Date().toISOString(),
     ligaAtual: ligaAtual,
     diaAtual: diaAtual,
@@ -602,17 +612,37 @@ function salvarEstado() {
   }
 }
 
+// Devolve o estado salvo apenas se ele for do formato ATUAL. Um estado de
+// outra versão não é restaurado pela metade — é recusado e descartado, com
+// aviso, porque restaurar parcialmente é pior do que começar de novo.
 function lerEstadoSalvo() {
   if (!temStorage()) return null;
   try {
     const bruto = localStorage.getItem(CHAVE_ESTADO);
     if (!bruto) return null;
+
     const estado = JSON.parse(bruto);
     if (!estado || !estado.jogadores || !estado.jogadores.length) return null;
+
+    if (Number(estado.versao) !== VERSAO_ESTADO) {
+      avisarEstadoIncompativel(estado.versao);
+      apagarEstadoSalvo();
+      return null;
+    }
+
     return estado;
   } catch (e) {
     return null;
   }
+}
+
+function avisarEstadoIncompativel(versao) {
+  alert(
+    "Havia um torneio salvo em um formato antigo (versão " + (versao || "?") + "), " +
+    "de uma versão anterior desta ferramenta.\n\n" +
+    "Ele não pode ser recuperado com segurança e foi descartado. " +
+    "Comece um novo torneio."
+  );
 }
 
 function apagarEstadoSalvo() {
