@@ -430,7 +430,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ## 13. Como lançar um dia de competição
 
 ```
-1. node tests/run.js                          ← 281 passaram, 0 falharam
+1. node tests/run.js                          ← 307 passaram, 0 falharam
 2. Realizar o torneio (rodadas sempre automáticas)
 3. Finalizar a última rodada
 4. Exportar Resultados (JSON)                 ← o botão só aparece agora
@@ -447,8 +447,20 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 2. Abrir `novo-torneio-V6.html`, preencher o campo **"liga"** com o número da liga ativa e
    gerar as rodadas. Não existe pareamento manual (ver seção 19).
 4. O botão **"📤 Exportar Resultados (JSON)"** só existe quando a última rodada está
-   finalizada — não há como exportar um torneio pela metade. A ferramenta pergunta o número
-   do dia.
+   finalizada — não há como exportar um torneio pela metade.
+
+   Ao clicar, a ferramenta consulta o `jogos.json` e **sugere o próximo dia da liga**, já
+   preenchido no campo:
+   ```
+   Liga 4
+   Último dia publicado: Dia 2
+   Próximo dia sugerido: Dia 3
+
+   Informe o número do dia:  [ 3 ]
+   ```
+   O valor continua editável — o importador é a segunda barreira e recusa dia fora de
+   sequência. Se a consulta falhar (página aberta via `file://`, rede, JSON inválido), o
+   campo vem **vazio** e a ferramenta avisa: nunca chuta um número.
 5. **O importador é seguro por padrão:** sem `--apply` ele apenas valida, e nenhum arquivo
    nem backup é criado. A gravação exige a flag explícita.
    ```
@@ -496,6 +508,21 @@ ordem e seriam normalizados, poluindo o diff.
 
 O exportador escreve os textos com `JSON.stringify`, então um nome com aspas ou barra
 invertida não quebra o JSON gerado.
+
+### As duas barreiras contra o dia errado
+
+```
+1. Exportador consulta o histórico e sugere o Dia correto
+2. Usuário confirma (ou corrige)
+3. JSON é exportado
+4. Importador valida a continuidade de novo
+5. --apply publica
+```
+
+A sugestão vem de `calcularProximoDia(jogos, liga)`, função pura e testável sem rede;
+`consultarProximoDia()` só faz o `fetch` (com `cache: "no-store"`) e valida a resposta.
+A filtragem usa `Number(jogo.liga || 1)`, a mesma convenção do site: registros históricos sem
+o campo `liga` pertencem à Liga 1.
 
 ### Por que o `resultado` exige espaços
 

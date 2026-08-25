@@ -12,6 +12,8 @@ var path = require("path");
 var RAIZ = path.join(__dirname, "..");
 
 // --------------------------------------------------------------- DOM falso
+var sandboxAtual = null;   // para o stub registrar downloads
+
 function criarDOM() {
   var elementos = {};
 
@@ -29,6 +31,8 @@ function criarDOM() {
       classList: { add: function () {}, remove: function () {}, contains: function () { return false; } },
       appendChild: function (f) { this.children.push(f); f._parent = el; return f; },
       remove: function () { if (el.id) delete elementos[el.id]; el._removido = true; },
+      // O <a> do download recebe .click(); guardamos o que seria baixado.
+      click: function () { sandboxAtual && sandboxAtual.__downloads.push(el.download || ""); },
       // Listeners de verdade: é assim que o teste exercita o autosave pelo
       // mesmo caminho do navegador, em vez de chamar capturarRascunho() na mão.
       addEventListener: function (tipo, fn) {
@@ -155,7 +159,16 @@ function carregarFerramenta(nomes, numRodadas, liga) {
   var sandbox = {
     document: dom.doc,
     alert: function (msg) { sandbox.__alertas.push(msg); },
-    prompt: function () { return "1"; },
+    // Registra o que foi perguntado, para os testes conferirem a mensagem e o
+    // valor sugerido no campo.
+    prompt: function (mensagem, valorPadrao) {
+      sandbox.__prompts.push({ mensagem: mensagem, padrao: valorPadrao });
+      return sandbox.__respostaPrompt !== undefined ? sandbox.__respostaPrompt : "1";
+    },
+    __prompts: [],
+    __respostaPrompt: undefined,
+    // fetch controlável: por padrão falha, como numa página aberta via file://
+    fetch: function () { return Promise.reject(new Error("fetch indisponivel")); },
     // warn silenciado: o aviso de "repetição inevitável" é comportamento
     // esperado em cenários curtos (ex.: 5 jogadores em 4 rodadas) e poluiria
     // a saída da suíte. A seção 2 já prova, por busca exaustiva, que nenhuma
@@ -174,6 +187,7 @@ function carregarFerramenta(nomes, numRodadas, liga) {
     Date: Date,
     Set: Set,
     JSON: JSON,
+    Promise: Promise,
     __alertas: [],
     // localStorage simulado, para exercitar o autosave/recuperação
     localStorage: (function () {
@@ -193,6 +207,9 @@ function carregarFerramenta(nomes, numRodadas, liga) {
 
   sandbox.MTR = require(path.join(RAIZ, "mtr.js"));
   sandbox.Pareamento = require(path.join(RAIZ, "pareamento.js"));
+
+  sandbox.__downloads = [];
+  sandboxAtual = sandbox;
 
   var vm = require("vm");
   vm.createContext(sandbox);
@@ -363,8 +380,37 @@ function criarTorneio(nomes, numRodadas, liga) {
     elementos: elementos,
     run: run,
 
+    // Executa código no sandbox e devolve a Promise resultante, para os testes
+    // esperarem por funções assíncronas (como a exportação, que consulta o
+    // histórico antes de perguntar o dia).
+    runAsync: function (codigo) { return Promise.resolve(run(codigo)); },
+
     alertas: function () { return sandbox.__alertas.slice(); },
     limparAlertas: function () { sandbox.__alertas.length = 0; },
+
+    downloads: function () { return sandbox.__downloads.slice(); },
+    prompts: function () { return sandbox.__prompts.slice(); },
+    limparPrompts: function () { sandbox.__prompts.length = 0; },
+    responderPrompt: function (v) { sandbox.__respostaPrompt = v; },
+
+    // Substitui o fetch do sandbox. `resposta` pode ser:
+    //   { ok, status, json }  -> vira uma Response simulada
+    //   Error                 -> o fetch rejeita
+    definirFetch: function (resposta) {
+      sandbox.fetch = function () {
+        if (resposta instanceof Error) return Promise.reject(resposta);
+        return Promise.resolve({
+          ok: resposta.ok !== false,
+          status: resposta.status || 200,
+          json: function () {
+            if (resposta.jsonInvalido) {
+              return Promise.reject(new SyntaxError("Unexpected token"));
+            }
+            return Promise.resolve(resposta.json);
+          }
+        });
+      };
+    },
 
     gerarAuto: function () { run("gerarRodada();"); },
 

@@ -19,6 +19,11 @@ var Pareamento = require(path.join(RAIZ, "pareamento.js"));
 var passou = 0, falhou = 0, grupoAtual = "";
 var falhas = [];
 
+// Testes que dependem de código assíncrono (a exportação consulta o histórico
+// antes de perguntar o dia). Rodam em sequência no fim, antes do resumo.
+var assincronos = [];
+function testeAsync(fn) { assincronos.push(fn); }
+
 function grupo(nome) {
   grupoAtual = nome;
   console.log("\n" + nome);
@@ -1924,7 +1929,149 @@ grupo("16. Importador (importar-resultados.js)");
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
 })();
 
+// ============ 17. Exportador sugere o próximo Dia da liga
+grupo("17. Sugestão automática do próximo Dia");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  // Torneio de 1 rodada já encerrado, pronto para exportar.
+  function torneioEncerrado(liga) {
+    var t = criar(["A", "B"], 1, liga || 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    return t;
+  }
+
+  // ---- a regra pura, sem rede
+  (function () {
+    var t = torneioEncerrado();
+    function calc(jogos, liga) {
+      return t.run("calcularProximoDia(" + JSON.stringify(jogos) + ", " + liga + ")");
+    }
+
+    var liga4 = [
+      { liga: 4, dia: 1 }, { liga: 4, dia: 1 }, { liga: 4, dia: 2 }
+    ];
+    var r = calc(liga4, 4);
+    ok(r.ultimoDia === 2 && r.proximoDia === 3,
+       "Liga 4 com Dias 1 e 2 -> ultimo 2, proximo 3", JSON.stringify(r));
+
+    var r2 = calc([{ liga: 4, dia: 1 }], 4);
+    ok(r2.ultimoDia === 1 && r2.proximoDia === 2,
+       "liga com apenas o Dia 1 sugere o Dia 2", JSON.stringify(r2));
+
+    var r3 = calc([{ liga: 4, dia: 1 }], 5);
+    ok(r3.ultimoDia === 0 && r3.proximoDia === 1,
+       "liga sem jogos sugere o Dia 1", JSON.stringify(r3));
+
+    // jogos de outras ligas não podem interferir
+    var r4 = calc([
+      { liga: 1, dia: 12 }, { liga: 2, dia: 7 }, { liga: 3, dia: 6 }, { liga: 4, dia: 2 }
+    ], 4);
+    ok(r4.ultimoDia === 2 && r4.proximoDia === 3,
+       "jogos de outras ligas nao interferem", JSON.stringify(r4));
+
+    // registros sem o campo `liga` são da Liga 1 (convenção do site)
+    var semLiga = [{ dia: 3 }, { dia: 5 }, { liga: 4, dia: 1 }];
+    var r5 = calc(semLiga, 1);
+    ok(r5.ultimoDia === 5 && r5.proximoDia === 6,
+       "registros sem campo liga contam como Liga 1", JSON.stringify(r5));
+    var r6 = calc(semLiga, 4);
+    ok(r6.ultimoDia === 1 && r6.proximoDia === 2,
+       "e nao vazam para outra liga", JSON.stringify(r6));
+
+    // dias fora de ordem no arquivo
+    var r7 = calc([{ liga: 4, dia: 3 }, { liga: 4, dia: 1 }, { liga: 4, dia: 2 }], 4);
+    ok(r7.ultimoDia === 3 && r7.proximoDia === 4,
+       "dias fora de ordem ainda resultam no maior + 1", JSON.stringify(r7));
+
+    // e o cenário real do projeto
+    var reais = JSON.parse(fs.readFileSync(path.join(RAIZ, "jogos.json"), "utf8"));
+    var r8 = t.run("calcularProximoDia(" + JSON.stringify(reais) + ", 4)");
+    ok(r8.ultimoDia === 2 && r8.proximoDia === 3,
+       "no jogos.json real, a Liga 4 sugere o Dia 3", JSON.stringify(r8));
+  })();
+
+  // ---- o valor sugerido chega ao prompt, e continua editável
+  testeAsync(function () {
+    var t = torneioEncerrado(4);
+    t.definirFetch({ json: [{ liga: 4, dia: 1 }, { liga: 4, dia: 2 }] });
+    t.limparPrompts();
+    t.responderPrompt("3");
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      var p = t.prompts()[0];
+      ok(!!p, "o prompt do dia foi aberto");
+      ok(p && p.padrao === "3", "o campo vem preenchido com o proximo dia (3)",
+         p ? JSON.stringify(p.padrao) : "-");
+      ok(p && /Liga 4/.test(p.mensagem) && /Último dia publicado: Dia 2/.test(p.mensagem) &&
+         /Próximo dia sugerido: Dia 3/.test(p.mensagem),
+         "a mensagem mostra liga, ultimo dia e sugestao",
+         p ? JSON.stringify(p.mensagem) : "-");
+
+      // o usuário pode mudar: respondeu 7 e é isso que vale
+      t.limparPrompts();
+      t.responderPrompt("7");
+      return t.runAsync("exportarResultadosParaJSON()").then(function () {
+        ok(t.run("diaAtual") === 7,
+           "o usuario pode alterar o valor sugerido", "diaAtual: " + t.run("diaAtual"));
+      });
+    });
+  });
+
+  // ---- liga sem jogos publicados
+  testeAsync(function () {
+    var t = torneioEncerrado(9);
+    t.definirFetch({ json: [{ liga: 4, dia: 2 }] });
+    t.limparPrompts();
+    t.responderPrompt("1");
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      var p = t.prompts()[0];
+      ok(p && p.padrao === "1", "liga sem jogos vem com o campo preenchido com 1",
+         p ? JSON.stringify(p.padrao) : "-");
+      ok(p && /Nenhum dia publicado ainda/.test(p.mensagem),
+         "a mensagem informa que nao ha dia publicado",
+         p ? JSON.stringify(p.mensagem) : "-");
+    });
+  });
+
+  // ---- falhas de consulta: nunca sugerir um numero
+  testeAsync(function () {
+    var cenarios = [
+      ["fetch rejeitado (ex.: pagina aberta via file://)", new Error("Failed to fetch")],
+      ["resposta HTTP nao ok", { ok: false, status: 404 }],
+      ["JSON invalido", { jsonInvalido: true }],
+      ["resposta que nao e array", { json: { jogos: [] } }]
+    ];
+
+    return cenarios.reduce(function (cadeia, c) {
+      return cadeia.then(function () {
+        var t = torneioEncerrado(4);
+        t.definirFetch(c[1]);
+        t.limparPrompts();
+        t.responderPrompt("3");
+
+        return t.runAsync("exportarResultadosParaJSON()").then(function () {
+          var p = t.prompts()[0];
+          ok(p && p.padrao === "",
+             c[0] + ": o campo vem VAZIO", p ? JSON.stringify(p.padrao) : "-");
+          ok(p && /Não foi possível consultar o histórico/.test(p.mensagem),
+             c[0] + ": avisa que nao deu para consultar",
+             p ? JSON.stringify(p.mensagem).slice(0, 80) : "-");
+          ok(p && !/sugerido/.test(p.mensagem),
+             c[0] + ": nao sugere numero nenhum");
+        });
+      });
+    }, Promise.resolve());
+  });
+})();
+
 // ---------------------------------------------------------------- fim
+function imprimirResumo() {
 console.log("\n" + "=".repeat(60));
 console.log("  " + passou + " passaram, " + falhou + " falharam");
 if (falhas.length) {
@@ -1933,3 +2080,13 @@ if (falhas.length) {
 }
 console.log("=".repeat(60) + "\n");
 process.exit(falhou ? 1 : 0);
+}
+
+// Roda a fila assíncrona em sequência e só então imprime o resumo.
+assincronos
+  .reduce(function (cadeia, fn) { return cadeia.then(fn); }, Promise.resolve())
+  .catch(function (e) {
+    falhou++;
+    falhas.push("teste assincrono lancou: " + (e && e.stack ? e.stack.split("\n")[0] : e));
+  })
+  .then(imprimirResumo);

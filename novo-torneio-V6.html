@@ -1729,7 +1729,43 @@ function atualizarBotaoExportar() {
   area.appendChild(btn);
 }
 
-function exportarResultadosParaJSON() {
+// Regra pura: dado o jogos.json e uma liga, qual é o próximo dia.
+//
+// A convenção `jogo.liga || 1` é a mesma do site: registros históricos sem o
+// campo `liga` pertencem à Liga 1.
+function calcularProximoDia(jogos, liga) {
+  const dias = (jogos || [])
+    .filter(j => j && Number(j.liga || 1) === Number(liga))
+    .map(j => Number(j.dia))
+    .filter(d => isFinite(d) && d >= 1);
+
+  const ultimoDia = dias.length ? Math.max.apply(null, dias) : 0;
+  return { ultimoDia: ultimoDia, proximoDia: ultimoDia + 1 };
+}
+
+// Consulta o histórico publicado. Só faz o fetch e valida a resposta — a regra
+// fica em calcularProximoDia(), que é testável sem rede.
+async function consultarProximoDia(liga) {
+  try {
+    // `no-store` para não sugerir um dia com base numa cópia velha em cache.
+    const resp = await fetch("jogos.json", { cache: "no-store" });
+    if (!resp || !resp.ok) {
+      return { ok: false, erro: "HTTP " + (resp ? resp.status : "?") };
+    }
+
+    const dados = await resp.json();
+    if (!Array.isArray(dados)) {
+      return { ok: false, erro: "jogos.json não contém um array" };
+    }
+
+    const r = calcularProximoDia(dados, liga);
+    return { ok: true, ultimoDia: r.ultimoDia, proximoDia: r.proximoDia };
+  } catch (e) {
+    return { ok: false, erro: e && e.message ? e.message : String(e) };
+  }
+}
+
+async function exportarResultadosParaJSON() {
   // Vale no domínio, não só na interface: a função recusa mesmo se for chamada
   // direto pelo console.
   if (!torneioEncerrado()) {
@@ -1747,9 +1783,31 @@ function exportarResultadosParaJSON() {
     return;
   }
 
-  // Sem valor pré-preenchido: um default induziria uma numeração errada, e o
-  // importador recusa dia fora de sequência.
-  const numeroDia = parseInt(prompt("Digite o número do dia de competição:", ""));
+  // Sugere o próximo dia a partir do histórico. Continua editável: o importador
+  // é a segunda barreira e recusa dia fora de sequência.
+  const consulta = await consultarProximoDia(ligaAtual);
+
+  let mensagem;
+  let sugestao;
+
+  if (consulta.ok) {
+    mensagem =
+      `Liga ${ligaAtual}\n` +
+      (consulta.ultimoDia
+        ? `Último dia publicado: Dia ${consulta.ultimoDia}\n`
+        : "Nenhum dia publicado ainda.\n") +
+      `Próximo dia sugerido: Dia ${consulta.proximoDia}\n\n` +
+      "Informe o número do dia:";
+    sugestao = String(consulta.proximoDia);
+  } else {
+    // Nunca chutar um número quando a consulta falha.
+    mensagem =
+      "⚠️ Não foi possível consultar o histórico de jogos.\n" +
+      "Informe manualmente o número do Dia:";
+    sugestao = "";
+  }
+
+  const numeroDia = parseInt(prompt(mensagem, sugestao));
   if (!numeroDia || numeroDia < 1) return;
   diaAtual = numeroDia;
 
