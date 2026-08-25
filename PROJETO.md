@@ -37,6 +37,8 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 ├── appendix_c-encerradas.js→ Snapshot congelado usado por liga1/2/3 (NÃO EDITAR)
 ├── carta-do-dia.js         → Integração com API Scryfall
 │
+├── importar-resultados.js  → Importa um dia exportado para dentro do jogos.json
+│
 ├── tests/run.js            → Suíte de validação (node tests/run.js)
 ├── tests/integracao-torneio.js → Roda a ferramenta de torneio ponta a ponta
 │
@@ -311,6 +313,9 @@ Projeto sólido e bem acima da média para uma stack sem framework. Funciona cor
 - [ ] Adicionar validação defensiva no `split(" x ")` de `calcularRankingArray()` (igual ao `parseResultado()` do appendix_c.js)
 
 ### Futuro / qualidade de vida
+- [ ] Trocar os dois `resultado.split(" x ")` do `main.js` por `MTR.parsePlacar()`. Hoje a
+      divergência de parsing é compensada por validação estrita no importador; o certo é
+      eliminá-la na origem
 - [ ] Extrair o HTML repetido (header, tabela, filtro) para um componente ou template compartilhado
 - [x] ~~Quando a Liga 3 encerrar: criar snapshot da Liga 3 e apontar o `main.js` para a Liga 4~~
       — feito em 23/08/2026 (ver seção 12)
@@ -424,15 +429,68 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 
 ## 13. Como lançar um dia de competição
 
-0. **Antes de um dia oficial, rodar `node tests/run.js`** — tem de dar 170 passaram, 0 falharam
-1. Abrir `novo-torneio-V6.html` e preencher o campo **"liga"** com o número da liga ativa
-2. Gerar as rodadas (sempre automáticas) e lançar os resultados; ao final a ferramenta gera o
-   JSON no formato de uma linha por jogo
-3. Colar as linhas **no fim** do `jogos.json`, antes do `]`, sem tocar nas linhas das ligas encerradas
-   (as linhas de Bye **já vêm no export** — não precisa mais acrescentar na mão)
-4. Adicionar o dia em `infoPorLiga[liga ativa]` no `main.js`: `N: { data: "DD/MM/AAAA", draft: "..." }`
-5. Jogador novo: acrescentar em `jogadores.json` com o nome **exatamente** igual ao do `jogos.json`.
-   Se for jogador eventual que não deve pontuar no ranking, acrescentar em `jogadoresOcultos` no `main.js`
+```
+1. node tests/run.js                          ← 244 passaram, 0 falharam
+2. Realizar o torneio (rodadas sempre automáticas)
+3. Finalizar a última rodada
+4. Exportar Resultados (JSON)                 ← o botão só aparece agora
+5. node importar-resultados.js <arquivo>      ← use --dry-run antes, se quiser conferir
+6. Atualizar infoPorLiga no main.js com a data e o nome do evento
+7. Revisar o diff
+8. Commit e push
+```
+
+**Detalhes de cada passo**
+
+1. A suíte precisa passar inteira antes de um dia oficial.
+2. Abrir `novo-torneio-V6.html`, preencher o campo **"liga"** com o número da liga ativa e
+   gerar as rodadas. Não existe pareamento manual (ver seção 19).
+4. O botão **"📤 Exportar Resultados (JSON)"** só existe quando a última rodada está
+   finalizada — não há como exportar um torneio pela metade. A ferramenta pergunta o número
+   do dia.
+5. O importador valida tudo e só então grava; qualquer erro cancela sem tocar no arquivo:
+   ```
+   node importar-resultados.js resultados_25-08-2026.json --dry-run   # só valida
+   node importar-resultados.js resultados_25-08-2026.json             # importa
+   ```
+   As linhas de **Bye já vêm no export** — nada a acrescentar à mão.
+6. `infoPorLiga[liga][dia] = { data: "DD/MM/AAAA", draft: "..." }` no `main.js`. O importador
+   lembra disso ao final, mas **não** tenta adivinhar data nem nome do evento.
+7. O diff deve ser puramente aditivo: as linhas novas, mais a vírgula na última linha antiga.
+8. Jogador novo: acrescentar em `jogadores.json` com o nome **exatamente** igual ao do
+   `jogos.json`. Se for jogador eventual que não deve pontuar, acrescentar em
+   `jogadoresOcultos` no `main.js`.
+
+### O que o importador recusa
+
+- arquivo inexistente, JSON inválido, que não seja array, ou vazio
+- campo obrigatório faltando, ou `liga`/`dia`/`rodada` que não sejam inteiros ≥ 1
+- `resultado` fora do formato **`"N x N"` com espaços** (ver abaixo)
+- `gamesEmpatados` que não seja inteiro ≥ 0
+- mais de uma liga ou mais de um dia no mesmo arquivo
+- **liga + dia já publicado** no `jogos.json`
+- **dia fora de sequência**: exige `maiorDiaDaLiga + 1`, e Dia 1 para uma liga nova
+- **mesma partida repetida** — a identidade é `liga + dia + rodada + par canônico`, então
+  `A × B` e `B × A` são a mesma partida, e placares divergentes são conflito, não dois jogos
+- **invariantes da rodada**: jogador duas vezes na mesma rodada; mais de um Bye; Bye fora de
+  `jogador2`; Bye com resultado diferente de `2 x 0`; Bye com `gamesEmpatados`; rodadas que
+  não vão de 1 a N sem lacunas
+
+A escrita é **atômica** (arquivo temporário, validação, `rename`) e um backup
+`jogos.backup-AAAAMMDD-HHMMSS.json` é criado antes de substituir — ignorado pelo Git, que é a
+proteção real. Os registros existentes são preservados **byte a byte**: o importador acrescenta
+ao texto em vez de reserializar o arquivo, porque 39 registros antigos têm as chaves em outra
+ordem e seriam normalizados, poluindo o diff.
+
+> Um `--allow-gap` pode ser criado no futuro para importar dias históricos fora de sequência.
+> Hoje não existe, de propósito.
+
+### Por que o `resultado` exige espaços
+
+O `main.js` lê os jogos com `resultado.split(" x ")`. Um registro como `"2x0"` passaria no
+`MTR.parsePlacar` (que é tolerante), mas faria o split devolver `NaN` e o ranking do site
+quebrar **em silêncio**. Por isso o importador valida `/^\d+ x \d+$/`, mais estrito que o
+parser do MTR.
 
 **"Corrigir Placares"** só funciona na rodada atual, e apenas enquanto nenhuma rodada
 posterior tiver sido gerada. Ela corrige **resultados**, nunca refaz um pareamento.

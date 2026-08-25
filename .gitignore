@@ -1,2 +1,5 @@
 .DS_Store
 **/.DS_Store
+
+# Backups criados pelo importar-resultados.js (o Git ja e a protecao real)
+jogos.backup-*.json

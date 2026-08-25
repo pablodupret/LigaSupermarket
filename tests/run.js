@@ -1422,6 +1422,322 @@ grupo("14. Versão do estado persistido");
   })();
 })();
 
+// ============ 15. Exportação só com o torneio encerrado
+grupo("15. Exportação travada até o fim do torneio");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  function jogarRodada(t, n) {
+    t.gerarAuto();
+    t.preencherPlacares(n, function () { return [2, 0]; });
+    t.finalizar(n);
+  }
+
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 4, 4);
+
+    ok(!t.campoExiste("btn-exportar"), "nao existe exportacao antes de iniciar");
+
+    jogarRodada(t, 1);
+    ok(!t.campoExiste("btn-exportar"), "nao existe exportacao apos R1 de 4");
+    jogarRodada(t, 2);
+    ok(!t.campoExiste("btn-exportar"), "nao existe exportacao apos R2 de 4");
+    jogarRodada(t, 3);
+    ok(!t.campoExiste("btn-exportar"), "nao existe exportacao apos R3 de 4");
+
+    // Última rodada apenas GERADA: ainda não
+    t.gerarAuto();
+    ok(!t.campoExiste("btn-exportar"),
+       "nao existe exportacao com a ultima rodada apenas gerada");
+
+    t.preencherPlacares(4, function () { return [2, 0]; });
+    t.finalizar(4);
+    ok(t.campoExiste("btn-exportar"),
+       "a exportacao aparece ao finalizar a ultima rodada");
+
+    // Durante a correção some
+    t.reabrir(4);
+    ok(!t.campoExiste("btn-exportar"),
+       "a exportacao some durante a correcao de placares");
+
+    t.finalizarCorrecao(4);
+    ok(t.campoExiste("btn-exportar"), "volta ao salvar a correcao");
+
+    // E sobrevive ao reload de um torneio encerrado
+    t.recarregarComRender();
+    ok(t.campoExiste("btn-exportar"),
+       "a exportacao continua disponivel apos reload do torneio encerrado");
+  })();
+
+  // -- guarda de dominio: chamada direta e recusada antes do fim
+  (function () {
+    var t = criar(["A", "B", "C", "D"], 3, 4);
+    jogarRodada(t, 1);
+
+    t.limparAlertas();
+    t.run("exportarResultadosParaJSON();");
+    ok(/ainda não terminou|ainda nao terminou/i.test(t.alertas().join(" ")),
+       "exportarResultadosParaJSON() e recusada com o torneio em andamento",
+       t.alertas().join(" | "));
+  })();
+})();
+
+// ============ 16. Importador de resultados para o jogos.json
+grupo("16. Importador (importar-resultados.js)");
+
+(function () {
+  var os = require("os");
+  var Importador = require(path.join(RAIZ, "importar-resultados.js"));
+
+  var tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "liga-import-"));
+  var destino = path.join(tmpDir, "jogos.json");
+  var seq = 0;
+
+  // Base pequena e controlada: Liga 4 com os Dias 1 e 2, como no projeto real.
+  function baseInicial() {
+    return [
+      { liga: 4, dia: 1, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+      { liga: 4, dia: 2, rodada: 1, jogador1: "A", resultado: "2 x 1", jogador2: "C" }
+    ];
+  }
+
+  function prepararDestino() {
+    fs.writeFileSync(destino, Importador.serializarJogos(baseInicial()), "utf8");
+    return fs.readFileSync(destino, "utf8");
+  }
+
+  function arquivoCom(conteudo) {
+    var p = path.join(tmpDir, "entrada-" + (++seq) + ".json");
+    fs.writeFileSync(p, typeof conteudo === "string" ? conteudo : JSON.stringify(conteudo), "utf8");
+    return p;
+  }
+
+  // Dia 3 válido: 2 rodadas, com BYE e um game empatado.
+  function diaValido() {
+    return [
+      { liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+      { liga: 4, dia: 3, rodada: 1, jogador1: "C", resultado: "2 x 0", jogador2: "Bye" },
+      { liga: 4, dia: 3, rodada: 2, jogador1: "A", resultado: "2 x 0", jogador2: "C", gamesEmpatados: 1 },
+      { liga: 4, dia: 3, rodada: 2, jogador1: "B", resultado: "2 x 0", jogador2: "Bye" }
+    ];
+  }
+
+  // Roda o importador e confirma que o destino NÃO mudou quando falha.
+  function recusa(descricao, jogos, regex) {
+    var antes = prepararDestino();
+    var r = Importador.importar({ arquivo: arquivoCom(jogos), destino: destino });
+    var msg = r.erros.join(" | ");
+    ok(!r.ok && (!regex || regex.test(msg)), descricao, msg.slice(0, 120));
+    ok(fs.readFileSync(destino, "utf8") === antes,
+       "  ↳ o jogos.json ficou intacto", "arquivo foi alterado!");
+  }
+
+  // ---- importação válida
+  (function () {
+    var antesDaImportacao = prepararDestino();
+    var r = Importador.importar({ arquivo: arquivoCom(diaValido()), destino: destino });
+
+    ok(r.ok, "importacao valida e aceita", r.erros.join(" | "));
+    ok(r.resumo && r.resumo.liga === 4 && r.resumo.dia === 3 && r.resumo.rodadas === 2,
+       "o resumo traz liga, dia e rodadas", JSON.stringify(r.resumo));
+    ok(r.resumo.registros === 4 && r.resumo.byes === 2 && r.resumo.comEmpates === 1,
+       "o resumo conta registros, BYEs e games empatados", JSON.stringify(r.resumo));
+
+    var final = JSON.parse(fs.readFileSync(destino, "utf8"));
+    ok(final.length === 6, "os 2 registros antigos foram preservados e 4 acrescentados",
+       "total: " + final.length);
+    ok(final[0].dia === 1 && final[1].dia === 2,
+       "os registros antigos seguem intactos e na ordem");
+
+    // O importador acrescenta por TEXTO: as linhas antigas não podem ser
+    // reescritas, senão o diff a revisar vira ruído. A ÚNICA exceção legítima é
+    // a última linha de dados, que ganha a vírgula exigida pelo JSON.
+    var linhasDepois = fs.readFileSync(destino, "utf8").split("\n");
+    var linhasAntes = antesDaImportacao.split("\n");
+    var ultimaDado = linhasAntes.length - 3;   // antes de "]" e da linha vazia final
+
+    var alteradas = 0;
+    for (var i = 0; i < ultimaDado; i++) {
+      if (linhasAntes[i] !== linhasDepois[i]) alteradas++;
+    }
+    ok(alteradas === 0,
+       "nenhuma linha antiga foi reescrita (diff puramente aditivo)",
+       "alteradas: " + alteradas);
+    ok(linhasDepois[ultimaDado] === linhasAntes[ultimaDado] + ",",
+       "a ultima linha antiga so ganhou a virgula",
+       JSON.stringify(linhasDepois[ultimaDado]).slice(0, 90));
+    ok(final.filter(function (j) { return j.gamesEmpatados; }).length === 1,
+       "gamesEmpatados sobreviveu a gravacao");
+
+    // formatação: um objeto por linha
+    var linhas = fs.readFileSync(destino, "utf8").trim().split("\n");
+    ok(linhas.length === 8 && linhas[0] === "[" && linhas[linhas.length - 1] === "]",
+       "o arquivo mantem um objeto por linha", "linhas: " + linhas.length);
+
+    ok(!!r.backup && fs.existsSync(r.backup), "um backup foi criado", String(r.backup));
+  })();
+
+  // ---- arquivo inexistente e JSON malformado
+  (function () {
+    prepararDestino();
+    var r = Importador.importar({ arquivo: path.join(tmpDir, "nao-existe.json"), destino: destino });
+    ok(!r.ok && /não encontrado|nao encontrado/i.test(r.erros.join(" ")),
+       "arquivo inexistente e recusado", r.erros.join(" | "));
+
+    var antes = prepararDestino();
+    var r2 = Importador.importar({ arquivo: arquivoCom("{ isso nao e json"), destino: destino });
+    ok(!r2.ok && /JSON válido|JSON valido/i.test(r2.erros.join(" ")),
+       "JSON invalido e recusado", r2.erros.join(" | "));
+    ok(fs.readFileSync(destino, "utf8") === antes, "  ↳ o jogos.json ficou intacto");
+  })();
+
+  // ---- estrutura
+  recusa("JSON que nao e array e recusado", { liga: 4 }, /array/i);
+  recusa("arquivo vazio e recusado", [], /vazio/i);
+
+  recusa("campo obrigatorio ausente e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", jogador2: "B" }], /resultado/i);
+
+  recusa("liga/dia/rodada nao inteiros sao recusados",
+    [{ liga: 4, dia: "3", rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /inteiro/i);
+
+  // "2x0" passaria no MTR.parsePlacar, mas quebraria o split(" x ") do main.js
+  recusa('resultado "2x0" (sem espacos) e recusado',
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2x0", jogador2: "B" }],
+    /formato/i);
+
+  recusa("gamesEmpatados negativo e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B",
+       gamesEmpatados: -1 }], /gamesEmpatados/i);
+
+  recusa("jogador vazio e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "", resultado: "2 x 0", jogador2: "B" }],
+    /vazio/i);
+
+  recusa("duas ligas no mesmo arquivo e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 5, dia: 3, rodada: 1, jogador1: "C", resultado: "2 x 0", jogador2: "D" }],
+    /mais de uma liga/i);
+
+  recusa("dois dias no mesmo arquivo e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 4, dia: 4, rodada: 1, jogador1: "C", resultado: "2 x 0", jogador2: "D" }],
+    /mais de um dia/i);
+
+  // ---- liga + dia já existente
+  recusa("liga + dia ja existente e recusado",
+    [{ liga: 4, dia: 2, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /já existe|ja existe/i);
+
+  // ---- continuidade do dia
+  recusa("dia a frente e recusado (caso real: Dia 5 com 1 e 2 publicados)",
+    [{ liga: 4, dia: 5, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /próximo dia esperado é o Dia 3|proximo dia esperado/i);
+
+  (function () {
+    prepararDestino();
+    var r = Importador.importar({
+      arquivo: arquivoCom([{ liga: 4, dia: 5, rodada: 1, jogador1: "A",
+                             resultado: "2 x 0", jogador2: "B" }]),
+      destino: destino
+    });
+    ok(/Dia 3/.test(r.erros.join(" ")),
+       "a mensagem aponta explicitamente o Dia 3 como esperado", r.erros.join(" | "));
+  })();
+
+  // liga nova precisa começar no Dia 1
+  recusa("liga nova comecando fora do Dia 1 e recusada",
+    [{ liga: 9, dia: 2, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /Dia 1/);
+
+  (function () {
+    prepararDestino();
+    var r = Importador.importar({
+      arquivo: arquivoCom([{ liga: 9, dia: 1, rodada: 1, jogador1: "A",
+                             resultado: "2 x 0", jogador2: "B" }]),
+      destino: destino
+    });
+    ok(r.ok, "liga nova comecando no Dia 1 e aceita", r.erros.join(" | "));
+  })();
+
+  // ---- duplicidade canônica
+  recusa("mesma partida repetida e recusada",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /duas vezes/i);
+
+  recusa("A x B e B x A na mesma rodada sao a MESMA partida",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 4, dia: 3, rodada: 1, jogador1: "B", resultado: "1 x 2", jogador2: "A" }],
+    /duas vezes/i);
+
+  // ---- invariantes da rodada
+  recusa("jogador repetido na mesma rodada e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "C" }],
+    /aparece em 2 jogos/i);
+
+  recusa("dois BYEs na mesma rodada e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "Bye" },
+     { liga: 4, dia: 3, rodada: 1, jogador1: "B", resultado: "2 x 0", jogador2: "Bye" }],
+    /Byes/i);
+
+  recusa("BYE em jogador1 e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "Bye", resultado: "2 x 0", jogador2: "A" }],
+    /jogador2/i);
+
+  recusa("BYE com resultado diferente de 2 x 0 e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 1", jogador2: "Bye" }],
+    /Bye.*2 x 0/i);
+
+  recusa("BYE com gamesEmpatados e recusado",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "Bye",
+       gamesEmpatados: 1 }], /Bye.*gamesEmpatados/i);
+
+  recusa("rodadas com lacuna (1, 2, 4) sao recusadas",
+    [{ liga: 4, dia: 3, rodada: 1, jogador1: "A", resultado: "2 x 0", jogador2: "B" },
+     { liga: 4, dia: 3, rodada: 2, jogador1: "A", resultado: "2 x 0", jogador2: "C" },
+     { liga: 4, dia: 3, rodada: 4, jogador1: "A", resultado: "2 x 0", jogador2: "D" }],
+    /sem lacunas/i);
+
+  recusa("rodadas que nao comecam em 1 sao recusadas",
+    [{ liga: 4, dia: 3, rodada: 2, jogador1: "A", resultado: "2 x 0", jogador2: "B" }],
+    /sem lacunas/i);
+
+  // ---- dry-run
+  (function () {
+    var antes = prepararDestino();
+    var r = Importador.importar({ arquivo: arquivoCom(diaValido()), destino: destino,
+                                  dryRun: true });
+    ok(r.ok && r.dryRun, "dry-run valida e reporta sucesso", r.erros.join(" | "));
+    ok(r.resumo.registros === 4, "dry-run traz o resumo completo", JSON.stringify(r.resumo));
+    ok(fs.readFileSync(destino, "utf8") === antes,
+       "dry-run NAO altera o jogos.json (byte a byte)");
+    ok(!r.backup, "dry-run nao cria backup", String(r.backup));
+  })();
+
+  // ---- importar duas vezes: a segunda e recusada
+  (function () {
+    prepararDestino();
+    var arq = arquivoCom(diaValido());
+    var r1 = Importador.importar({ arquivo: arq, destino: destino });
+    ok(r1.ok, "primeira importacao aceita");
+
+    var depoisDaPrimeira = fs.readFileSync(destino, "utf8");
+    var r2 = Importador.importar({ arquivo: arq, destino: destino });
+    ok(!r2.ok && /já existe|ja existe/i.test(r2.erros.join(" ")),
+       "a segunda importacao do mesmo arquivo e recusada", r2.erros.join(" | "));
+    ok(fs.readFileSync(destino, "utf8") === depoisDaPrimeira,
+       "a recusa nao altera o arquivo ja importado");
+  })();
+
+  // limpeza
+  try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
+})();
+
 // ---------------------------------------------------------------- fim
 console.log("\n" + "=".repeat(60));
 console.log("  " + passou + " passaram, " + falhou + " falharam");
