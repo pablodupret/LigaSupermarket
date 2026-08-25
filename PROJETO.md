@@ -430,7 +430,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ## 13. Como lançar um dia de competição
 
 ```
-1. node tests/run.js                          ← 307 passaram, 0 falharam
+1. node tests/run.js                          ← 331 passaram, 0 falharam
 2. Realizar o torneio (rodadas sempre automáticas)
 3. Finalizar a última rodada
 4. Exportar Resultados (JSON)                 ← o botão só aparece agora
@@ -461,6 +461,11 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
    O valor continua editável — o importador é a segunda barreira e recusa dia fora de
    sequência. Se a consulta falhar (página aberta via `file://`, rede, JSON inválido), o
    campo vem **vazio** e a ferramenta avisa: nunca chuta um número.
+
+   Depois de gerar o arquivo, a página mostra um bloco **"Próximo passo"** com o nome exato
+   do arquivo baixado e os dois comandos prontos, com botões de copiar. O comando de publicar
+   fica destacado, com o aviso de usar `--apply` só após a validação passar. Se a área de
+   transferência não estiver disponível, os comandos continuam visíveis para cópia manual.
 5. **O importador é seguro por padrão:** sem `--apply` ele apenas valida, e nenhum arquivo
    nem backup é criado. A gravação exige a flag explícita.
    ```

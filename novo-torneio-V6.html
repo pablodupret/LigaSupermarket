@@ -1844,6 +1844,78 @@ async function exportarResultadosParaJSON() {
 
   link.download = `resultados_${dd}-${mm}-${yyyy}.json`;
   link.click();
+
+  // O nome vem do PRÓPRIO link.download, para o comando mostrado nunca divergir
+  // do arquivo que acabou de ser baixado.
+  mostrarProximoPasso(link.download);
+}
+
+// Comandos do importador para um arquivo. Função pura — os testes conferem os
+// dois textos sem depender de DOM.
+function comandosDeImportacao(nomeArquivo) {
+  var base = "node importar-resultados.js " + nomeArquivo;
+  return { validar: base, publicar: base + " --apply" };
+}
+
+// Copia para a área de transferência quando a API existe. Uma falha aqui nunca
+// pode atrapalhar a exportação, que já aconteceu — o comando continua visível
+// na tela para seleção manual.
+function copiarTexto(texto, botao) {
+  const aviso = (msg) => { if (botao) botao.textContent = msg; };
+
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard &&
+        navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(texto).then(
+        () => aviso("✅ Copiado!"),
+        () => aviso("Copie manualmente abaixo")
+      );
+      return;
+    }
+  } catch (e) { /* segue para o aviso manual */ }
+
+  aviso("Copie manualmente abaixo");
+}
+
+// Lembrete operacional depois da exportação: o que fazer com o arquivo.
+// Não executa nada — só mostra os comandos prontos.
+function mostrarProximoPasso(nomeArquivo) {
+  const area = document.getElementById("torneio-area");
+  if (!area || !document.createElement) return;
+
+  const anterior = document.getElementById("proximo-passo");
+  if (anterior && anterior.remove) anterior.remove();
+
+  const cmd = comandosDeImportacao(nomeArquivo);
+
+  const bloco = document.createElement("div");
+  bloco.id = "proximo-passo";
+  bloco.className = "ranking";
+  bloco.innerHTML = `
+    <h3>✅ Resultados exportados</h3>
+    <p>Arquivo: <code id="pp-arquivo">${nomeArquivo}</code></p>
+
+    <p><b>Próximo passo:</b> coloque o arquivo na pasta <code>LigaSupermarket</code>.</p>
+
+    <p><b>1. Validar:</b></p>
+    <pre id="pp-cmd-validar" style="white-space:pre-wrap;word-break:break-all">${cmd.validar}</pre>
+    <button id="pp-copiar-validar">📋 Copiar comando de validação</button>
+
+    <p style="margin-top:18px"><b>2. Se a validação passar, publicar:</b></p>
+    <pre id="pp-cmd-publicar" style="white-space:pre-wrap;word-break:break-all">${cmd.publicar}</pre>
+    <button id="pp-copiar-publicar"
+            style="background:#ffcc66;border:2px solid #b8860b">📋 Copiar comando para PUBLICAR</button>
+    <p style="color:#ffcc66;margin-top:8px">
+      ⚠️ Use <code>--apply</code> somente depois que a validação tiver passado.
+    </p>
+  `;
+
+  area.appendChild(bloco);
+
+  const btnValidar = document.getElementById("pp-copiar-validar");
+  const btnPublicar = document.getElementById("pp-copiar-publicar");
+  if (btnValidar) btnValidar.onclick = () => copiarTexto(cmd.validar, btnValidar);
+  if (btnPublicar) btnPublicar.onclick = () => copiarTexto(cmd.publicar, btnPublicar);
 }
 
 

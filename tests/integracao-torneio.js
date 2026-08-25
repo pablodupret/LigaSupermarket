@@ -103,6 +103,20 @@ function criarDOM() {
           el._filhos.push(inp);
         }
 
+        // Elementos do bloco "Próximo passo" (ids fixos, não numerados).
+        var rp = /id="(pp-[a-z-]+)"/g, mp;
+        while ((mp = rp.exec(el._html))) {
+          if (elementos[mp[1]]) continue;
+          var ep = novoEl(mp[1].indexOf("copiar") >= 0 ? "button" : "pre");
+          ep.id = mp[1];
+          ep._parent = el;
+          // conteúdo textual do elemento, para os testes conferirem o comando
+          var mt = new RegExp('id="' + mp[1] + '"[^>]*>([^<]*)<').exec(el._html);
+          ep.textContent = mt ? mt[1] : "";
+          elementos[mp[1]] = ep;
+          el._filhos.push(ep);
+        }
+
         // Campos de empate de game e os <select> das rodadas manuais.
         [/id="(r\d+_e\d+(_r)?)"/g].forEach(function (rx) {
           var mm;
@@ -169,6 +183,19 @@ function carregarFerramenta(nomes, numRodadas, liga) {
     __respostaPrompt: undefined,
     // fetch controlável: por padrão falha, como numa página aberta via file://
     fetch: function () { return Promise.reject(new Error("fetch indisponivel")); },
+    // Área de transferência simulada: os testes leem o que foi copiado e podem
+    // forçar falha ou ausência total da API.
+    navigator: {
+      clipboard: {
+        writeText: function (t) {
+          if (sandbox.__clipboardFalha) return Promise.reject(new Error("negado"));
+          sandbox.__copiados.push(t);
+          return Promise.resolve();
+        }
+      }
+    },
+    __copiados: [],
+    __clipboardFalha: false,
     // warn silenciado: o aviso de "repetição inevitável" é comportamento
     // esperado em cenários curtos (ex.: 5 jogadores em 4 rodadas) e poluiria
     // a saída da suíte. A seção 2 já prova, por busca exaustiva, que nenhuma
@@ -389,6 +416,20 @@ function criarTorneio(nomes, numRodadas, liga) {
     limparAlertas: function () { sandbox.__alertas.length = 0; },
 
     downloads: function () { return sandbox.__downloads.slice(); },
+    copiados: function () { return sandbox.__copiados.slice(); },
+    quebrarClipboard: function () { sandbox.__clipboardFalha = true; },
+    removerClipboard: function () { sandbox.navigator = {}; },
+    // Remove `navigator` por completo: acessá-lo passa a lançar ReferenceError,
+    // que é o caso em que o try/catch de copiarTexto() importa.
+    removerNavigator: function () { delete sandbox.navigator; },
+    textoDoCampo: function (id) {
+      return elementos[id] ? elementos[id].textContent : null;
+    },
+    clicar: function (id) {
+      var el = elementos[id];
+      if (el && el.onclick) el.onclick();
+      return !!(el && el.onclick);
+    },
     prompts: function () { return sandbox.__prompts.slice(); },
     limparPrompts: function () { sandbox.__prompts.length = 0; },
     responderPrompt: function (v) { sandbox.__respostaPrompt = v; },

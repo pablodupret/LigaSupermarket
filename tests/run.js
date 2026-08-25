@@ -2070,6 +2070,128 @@ grupo("17. Sugestão automática do próximo Dia");
   });
 })();
 
+// ============ 18. Bloco "Próximo passo" depois da exportação
+grupo("18. Lembrete operacional após exportar");
+
+(function () {
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var criar = integracao.criarTorneio;
+
+  function pronto(liga) {
+    var t = criar(["A", "B"], 1, liga || 4);
+    t.gerarAuto();
+    t.preencherPlacares(1, function () { return [2, 0]; });
+    t.finalizar(1);
+    t.definirFetch({ json: [{ liga: 4, dia: 1 }, { liga: 4, dia: 2 }] });
+    t.responderPrompt("3");
+    return t;
+  }
+
+  // ---- a regra pura dos comandos
+  (function () {
+    var t = pronto();
+    var c = t.run('comandosDeImportacao("resultados_25-08-2026.json")');
+    ok(c.validar === "node importar-resultados.js resultados_25-08-2026.json",
+       "o comando de validacao sai completo", c.validar);
+    ok(c.validar.indexOf("--apply") === -1,
+       "o comando de validacao NAO contem --apply", c.validar);
+    ok(c.publicar === c.validar + " --apply",
+       "o comando de publicacao e o mesmo + --apply", c.publicar);
+  })();
+
+  // ---- o bloco só existe DEPOIS de uma exportação
+  testeAsync(function () {
+    var t = pronto();
+    ok(!t.campoExiste("proximo-passo"),
+       "o bloco nao existe antes de exportar");
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      ok(t.campoExiste("proximo-passo"),
+         "o bloco aparece depois da exportacao");
+
+      // o nome tem de ser EXATAMENTE o do link.download
+      var baixado = t.downloads()[0];
+      ok(!!baixado && /^resultados_\d{2}-\d{2}-\d{4}\.json$/.test(baixado),
+         "o arquivo foi baixado com o nome esperado", String(baixado));
+      ok(t.textoDoCampo("pp-arquivo") === baixado,
+         "o bloco mostra o nome EXATO do arquivo baixado",
+         t.textoDoCampo("pp-arquivo") + " vs " + baixado);
+
+      var cmdV = t.textoDoCampo("pp-cmd-validar");
+      var cmdP = t.textoDoCampo("pp-cmd-publicar");
+      ok(cmdV.indexOf(baixado) !== -1 && cmdV.indexOf("--apply") === -1,
+         "o comando de validacao usa o arquivo e nao tem --apply", cmdV);
+      ok(cmdP.indexOf(baixado) !== -1 && cmdP.indexOf("--apply") !== -1,
+         "o comando de publicacao usa o arquivo e tem --apply", cmdP);
+    });
+  });
+
+  // ---- os botões copiam os comandos certos
+  testeAsync(function () {
+    var t = pronto();
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      var baixado = t.downloads()[0];
+
+      ok(t.clicar("pp-copiar-validar"), "o botao de validacao tem acao");
+      ok(t.copiados()[0] === "node importar-resultados.js " + baixado,
+         "o botao copia o comando de VALIDACAO", String(t.copiados()[0]));
+      ok(t.copiados()[0].indexOf("--apply") === -1,
+         "o comando copiado para validar nao tem --apply");
+
+      ok(t.clicar("pp-copiar-publicar"), "o botao de publicacao tem acao");
+      ok(t.copiados()[1] === "node importar-resultados.js " + baixado + " --apply",
+         "o botao copia o comando para PUBLICAR", String(t.copiados()[1]));
+    });
+  });
+
+  // ---- clipboard indisponível ou com falha não atrapalha a exportação
+  testeAsync(function () {
+    var t = pronto();
+    t.removerClipboard();
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      ok(t.downloads().length === 1,
+         "sem clipboard, a exportacao acontece normalmente");
+      ok(t.campoExiste("proximo-passo"),
+         "sem clipboard, o bloco continua aparecendo");
+      ok(t.textoDoCampo("pp-cmd-validar").indexOf("node importar-resultados.js") === 0,
+         "sem clipboard, os comandos seguem visiveis para copia manual",
+         t.textoDoCampo("pp-cmd-validar"));
+      ok(t.clicar("pp-copiar-validar"),
+         "clicar no botao sem clipboard nao lanca excecao");
+    });
+  });
+
+  // `navigator` inexistente: acessá-lo lança, e mesmo assim nada pode quebrar.
+  testeAsync(function () {
+    var t = pronto();
+    t.removerNavigator();
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      ok(t.downloads().length === 1,
+         "sem navigator, a exportacao acontece normalmente");
+      ok(t.campoExiste("proximo-passo"),
+         "sem navigator, o bloco continua aparecendo");
+      ok(t.clicar("pp-copiar-validar"),
+         "clicar sem navigator nao lanca excecao");
+    });
+  });
+
+  testeAsync(function () {
+    var t = pronto();
+    t.quebrarClipboard();
+
+    return t.runAsync("exportarResultadosParaJSON()").then(function () {
+      ok(t.downloads().length === 1,
+         "com clipboard falhando, a exportacao acontece normalmente");
+      ok(t.clicar("pp-copiar-publicar"),
+         "clicar com clipboard falhando nao lanca excecao");
+      ok(t.copiados().length === 0,
+         "nada foi copiado, mas o fluxo seguiu", JSON.stringify(t.copiados()));
+    });
+  });
+})();
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));
