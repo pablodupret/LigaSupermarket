@@ -312,8 +312,34 @@ function validar(novos, existentes, cadastros) {
 
 // ---------------------------------------------------------------- importação
 
-function lerJSON(caminho) {
-  try { return JSON.parse(fs.readFileSync(caminho, "utf8")); } catch (e) { return null; }
+// Leitura de cadastro FAIL CLOSED: qualquer problema vira erro, nunca um
+// "seguiu sem validar". Antes esta função devolvia null em qualquer falha, e um
+// jogadores.json ausente ou corrompido fazia o importador PULAR a validação de
+// jogadores em silêncio — exatamente o oposto do que ela existe para fazer.
+function lerCadastro(caminho, nome) {
+  if (!fs.existsSync(caminho)) {
+    return { erro: "Não foi possível ler " + nome + ": arquivo não encontrado (" + caminho + ")." };
+  }
+
+  var texto;
+  try {
+    texto = fs.readFileSync(caminho, "utf8");
+  } catch (e) {
+    return { erro: "Não foi possível ler " + nome + ": " + e.message };
+  }
+
+  var valor;
+  try {
+    valor = JSON.parse(texto);
+  } catch (e) {
+    return { erro: nome + " não é um JSON válido: " + e.message };
+  }
+
+  if (!Array.isArray(valor)) {
+    return { erro: nome + " não contém um array." };
+  }
+
+  return { valor: valor };
 }
 
 /**
@@ -323,8 +349,10 @@ function lerJSON(caminho) {
  * @param {string}   arquivo    JSON exportado pela ferramenta
  * @param {string}   destino    caminho do jogos.json
  * @param {boolean}  apply      grava de verdade (padrão: não)
- * @param {string[]} jogadores  lista de jogadores (padrão: jogadores.json)
- * @param {object[]} ligas      lista de ligas (padrão: ligas.json)
+ * @param {string[]} jogadores  lista pronta (padrão: lê jogadores.json)
+ * @param {object[]} ligas      lista pronta (padrão: lê ligas.json)
+ * @param {string} jogadoresPath  caminho alternativo do cadastro (testes)
+ * @param {string} ligasPath      caminho alternativo do cadastro (testes)
  * @returns {{ok:boolean, erros:string[], resumo?:object, backup?:string, total?:number}}
  */
 function importar(opcoes) {
@@ -339,21 +367,32 @@ function importar(opcoes) {
     return { ok: false, erros: ["jogos.json não encontrado: " + destino] };
   }
 
-  // Cadastros: os testes passam listas próprias; a CLI lê os arquivos do projeto.
-  var cadastros = {
-    jogadores: opcoes.jogadores !== undefined
-      ? opcoes.jogadores
-      : lerJSON(path.join(__dirname, "jogadores.json")),
-    ligas: opcoes.ligas !== undefined
-      ? opcoes.ligas
-      : lerJSON(path.join(__dirname, "ligas.json"))
-  };
+  // Cadastros: os testes passam listas prontas; a CLI lê os arquivos do projeto.
+  // Sem conseguir carregar os dois, a importação é cancelada — nunca se importa
+  // sem poder validar jogadores e liga.
+  var cadastros = {};
 
-  if (cadastros.jogadores !== null && !Array.isArray(cadastros.jogadores)) {
-    return { ok: false, erros: ["jogadores.json não contém um array."] };
+  if (opcoes.jogadores !== undefined) {
+    if (!Array.isArray(opcoes.jogadores)) {
+      return { ok: false, erros: ["jogadores.json não contém um array."] };
+    }
+    cadastros.jogadores = opcoes.jogadores;
+  } else {
+    var cj = lerCadastro(opcoes.jogadoresPath || path.join(__dirname, "jogadores.json"),
+                         "jogadores.json");
+    if (cj.erro) return { ok: false, erros: [cj.erro] };
+    cadastros.jogadores = cj.valor;
   }
-  if (cadastros.ligas !== null && !Array.isArray(cadastros.ligas)) {
-    return { ok: false, erros: ["ligas.json não contém um array."] };
+
+  if (opcoes.ligas !== undefined) {
+    if (!Array.isArray(opcoes.ligas)) {
+      return { ok: false, erros: ["ligas.json não contém um array."] };
+    }
+    cadastros.ligas = opcoes.ligas;
+  } else {
+    var cl = lerCadastro(opcoes.ligasPath || path.join(__dirname, "ligas.json"), "ligas.json");
+    if (cl.erro) return { ok: false, erros: [cl.erro] };
+    cadastros.ligas = cl.valor;
   }
 
   var novos;
@@ -471,5 +510,6 @@ module.exports = {
   validar: validar,
   serializarJogo: serializarJogo,
   serializarJogos: serializarJogos,
-  acrescentarAoTexto: acrescentarAoTexto
+  acrescentarAoTexto: acrescentarAoTexto,
+  lerCadastro: lerCadastro
 };

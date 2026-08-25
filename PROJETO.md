@@ -430,7 +430,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ## 13. Como lançar um dia de competição
 
 ```
-1. node tests/run.js                          ← 266 passaram, 0 falharam
+1. node tests/run.js                          ← 281 passaram, 0 falharam
 2. Realizar o torneio (rodadas sempre automáticas)
 3. Finalizar a última rodada
 4. Exportar Resultados (JSON)                 ← o botão só aparece agora
@@ -470,6 +470,9 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
   capitalização e espaços contam. Jogador novo se cadastra primeiro; só depois os jogos dele
   entram no histórico. `"Bye"` é exceção e não precisa de cadastro
 - **liga que não esteja em `ligas.json`** — para uma futura Liga 5, cadastre a temporada antes
+- **cadastro ilegível**: se `jogadores.json` ou `ligas.json` estiver ausente, corrompido ou
+  não for um array, a importação é cancelada. O importador é *fail closed* — nunca importa
+  sem conseguir validar os cadastros
 - campo obrigatório faltando, ou `liga`/`dia`/`rodada` que não sejam inteiros ≥ 1
 - `resultado` fora do formato **`"N x N"` com espaços** (ver abaixo)
 - `gamesEmpatados` que não seja inteiro ≥ 0

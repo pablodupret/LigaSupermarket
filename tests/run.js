@@ -1859,6 +1859,67 @@ grupo("16. Importador (importar-resultados.js)");
        JSON.stringify(lido[lido.length - 1].jogador1));
   })();
 
+  // ---- cadastros ilegíveis: FAIL CLOSED, nunca "seguir sem validar"
+  (function () {
+    var jogadoresOk = path.join(tmpDir, "jogadores-ok.json");
+    var ligasOk = path.join(tmpDir, "ligas-ok.json");
+    fs.writeFileSync(jogadoresOk, JSON.stringify(JOGADORES), "utf8");
+    fs.writeFileSync(ligasOk, JSON.stringify(LIGAS), "utf8");
+
+    var ausente = path.join(tmpDir, "nao-existe-cadastro.json");
+    var invalido = path.join(tmpDir, "cadastro-invalido.json");
+    var naoArray = path.join(tmpDir, "cadastro-nao-array.json");
+    fs.writeFileSync(invalido, "{ isso nao e json", "utf8");
+    fs.writeFileSync(naoArray, JSON.stringify({ jogadores: ["A"] }), "utf8");
+
+    // Roda pelo caminho REAL de leitura de cadastro (sem passar as listas prontas)
+    function comCadastros(jogadoresPath, ligasPath) {
+      var antes = prepararDestino();
+      var r = Importador.importar({
+        arquivo: arquivoCom(diaValido()),
+        destino: destino,
+        jogadoresPath: jogadoresPath,
+        ligasPath: ligasPath,
+        apply: true
+      });
+      return { r: r, intacto: fs.readFileSync(destino, "utf8") === antes };
+    }
+
+    // sanidade: com os dois cadastros válidos, importa normalmente
+    var bom = comCadastros(jogadoresOk, ligasOk);
+    ok(bom.r.ok, "cadastros lidos do disco funcionam", bom.r.erros.join(" | "));
+
+    [
+      ["jogadores.json inexistente", ausente, ligasOk, /Não foi possível ler jogadores\.json|Nao foi possivel ler jogadores/i],
+      ["jogadores.json com JSON invalido", invalido, ligasOk, /jogadores\.json não é um JSON válido|nao e um JSON valido/i],
+      ["jogadores.json que nao e array", naoArray, ligasOk, /jogadores\.json não contém um array|nao contem um array/i],
+      ["ligas.json inexistente", jogadoresOk, ausente, /Não foi possível ler ligas\.json|Nao foi possivel ler ligas/i],
+      ["ligas.json com JSON invalido", jogadoresOk, invalido, /ligas\.json não é um JSON válido|nao e um JSON valido/i],
+      ["ligas.json que nao e array", jogadoresOk, naoArray, /ligas\.json não contém um array|nao contem um array/i]
+    ].forEach(function (caso) {
+      var res = comCadastros(caso[1], caso[2]);
+      ok(!res.r.ok && caso[3].test(res.r.erros.join(" ")),
+         caso[0] + " cancela a importacao", res.r.erros.join(" | ").slice(0, 110));
+      ok(res.intacto, "  ↳ o jogos.json ficou intacto", "arquivo foi alterado!");
+    });
+
+    // O ponto central: cadastro quebrado NÃO pode deixar passar um jogador
+    // desconhecido. Antes, lerJSON devolvia null e a validação era pulada.
+    var antes = prepararDestino();
+    var r = Importador.importar({
+      arquivo: arquivoCom([
+        { liga: 4, dia: 3, rodada: 1, jogador1: "Fulano", resultado: "2 x 0", jogador2: "B" }
+      ]),
+      destino: destino,
+      jogadoresPath: invalido,
+      ligasPath: ligasOk,
+      apply: true
+    });
+    ok(!r.ok, "com o cadastro quebrado, um jogador desconhecido NAO passa",
+       r.erros.join(" | "));
+    ok(fs.readFileSync(destino, "utf8") === antes, "  ↳ o jogos.json ficou intacto");
+  })();
+
   // limpeza
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
 })();
