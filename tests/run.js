@@ -2607,6 +2607,124 @@ testeAsync(function () {
   return Promise.resolve();
 });
 
+// ============ 23. Seletor de rodadas (círculos 2..6)
+testeAsync(function () {
+  grupo("23. Seletor do número de rodadas");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+
+  // ---- estrutura do grupo, lida do HTML real da página
+  var t = integracao.criarSelecao(["Alex", "Caio"]);
+
+  return t.pronto().then(function () {
+    ok(t.opcoesDeRodadas().join(",") === "2,3,4,5,6",
+       "as opcoes oferecidas sao 2, 3, 4, 5 e 6",
+       t.opcoesDeRodadas().join(","));
+
+    var nomes = t.nomesDoGrupoDeRodadas();
+    ok(nomes.length === 5 && nomes.every(function (n) { return n && n === nomes[0]; }),
+       "os cinco radios compartilham o mesmo name (exclusividade nativa)",
+       nomes.join(","));
+
+    // ---- nada selecionado no inicio
+    ok(t.rodadasMarcadas().length === 0,
+       "nenhuma opcao vem marcada por padrao",
+       t.rodadasMarcadas().join(","));
+    ok(t.valorDoCampo("numRodadas") === "",
+       "e o #numRodadas comeca VAZIO",
+       JSON.stringify(t.valorDoCampo("numRodadas")));
+
+    // ---- escolher alimenta o #numRodadas
+    t.escolherRodadas(2);
+    ok(t.valorDoCampo("numRodadas") === "2",
+       "escolher 2 poe 2 no #numRodadas", String(t.valorDoCampo("numRodadas")));
+
+    t.escolherRodadas(4);
+    ok(t.valorDoCampo("numRodadas") === "4",
+       "escolher 4 poe 4 no #numRodadas", String(t.valorDoCampo("numRodadas")));
+
+    // ---- selecao unica
+    ok(t.rodadasMarcadas().join(",") === "4",
+       "a escolha anterior e substituida: so uma opcao fica marcada",
+       t.rodadasMarcadas().join(","));
+
+    t.escolherRodadas(6);
+    ok(t.rodadasMarcadas().join(",") === "6" && t.valorDoCampo("numRodadas") === "6",
+       "trocar de novo mantem uma unica marcada e o campo em dia",
+       t.rodadasMarcadas().join(",") + " / " + t.valorDoCampo("numRodadas"));
+  });
+});
+
+// ---- a validacao existente continua barrando sem escolha de rodadas
+testeAsync(function () {
+  grupo("24. Rodadas: contrato com iniciarTorneio()");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+
+  function pronto() {
+    var t = integracao.criarSelecao(["Alex", "Caio"]);
+    return t.pronto().then(function () {
+      t.definirCampo("liga", "4");
+      t.definirCampo("data", "2026-08-25");
+      t.definirCampo("colecao", "Chaos Draft");
+      t.marcar("Alex");
+      t.marcar("Caio");
+      t.abrirConfirmacao();
+      t.confirmar();
+      t.limparAlertas();
+      return t;
+    });
+  }
+
+  return pronto().then(function (t) {
+    // Sem escolher rodadas: a mesma validacao de sempre recusa.
+    t.iniciarTorneio();
+    ok(/Preencha todos os campos/.test(t.alertas().join(" ")),
+       "sem escolha de rodadas, iniciar o torneio continua sendo recusado",
+       t.alertas().join(" | "));
+    ok(!t.totalRodadas(),
+       "e totalRodadas nao foi definido", String(t.totalRodadas()));
+
+    return pronto();
+  }).then(function (t) {
+    // Com a opcao escolhida, o fluxo atual le o #numRodadas normalmente.
+    t.escolherRodadas(4);
+    t.iniciarTorneio();
+    ok(t.alertas().length === 0,
+       "com 4 rodadas escolhidas, o torneio inicia sem reclamacao",
+       t.alertas().join(" | "));
+    ok(t.totalRodadas() === 4,
+       "e totalRodadas sai 4, lido do #numRodadas de sempre",
+       String(t.totalRodadas()));
+  });
+});
+
+// ---- o contrato do #numRodadas nao pode sair do HTML
+testeAsync(function () {
+  grupo("25. #numRodadas segue sendo a fonte do valor");
+
+  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+
+  ok(/id="numRodadas"/.test(html),
+     "o elemento #numRodadas continua existindo");
+  ok(/getElementById\("numRodadas"\)\.value/.test(html),
+     "e iniciarTorneio() continua lendo o mesmo .value");
+
+  // Nenhuma opcao pode nascer marcada no markup. A busca e escopada ao grupo:
+  // no arquivo inteiro ela pegaria tambem os comentarios do codigo.
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var radios = integracao.radiosNoHtml(html);
+  ok(radios.length === 5, "ha exatamente 5 opcoes no HTML", String(radios.length));
+  ok(radios.every(function (r) { return r.indexOf("checked") === -1; }),
+     "e nenhuma delas vem com checked no markup");
+  ok(radios.every(function (r) { return /aria-label="/.test(r); }),
+     "cada opcao tem aria-label");
+  ok(/role="radiogroup"/.test(html) && /aria-labelledby="rodadas-legenda"/.test(html),
+     "o grupo tem role e rotulo acessivel");
+
+  return Promise.resolve();
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));

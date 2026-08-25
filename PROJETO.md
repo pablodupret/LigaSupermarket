@@ -917,6 +917,23 @@ quem registra primeiro roda primeiro, então o rascunho já é gravado com o val
 Limitação conhecida: colar `1` num campo vazio pelo **menu de contexto** (sem `keydown`) seria
 tratado como passo e viraria `0`. Colar com ⌘V dispara `keydown` e é seguro.
 
+### Seletor do número de rodadas (25/08/2026)
+
+O campo numérico virou um grupo de cinco círculos (2 · 3 · 4 · 5 · 6). São
+`<input type="radio">` de verdade, com `name` compartilhado — a exclusividade, a navegação por
+setas, o foco e a semântica de "opção escolhida" vêm do navegador, não de JavaScript. O
+`<input>` fica transparente por cima do círculo inteiro: some da vista, mas continua focável e
+clicável em toda a área.
+
+**O contrato não mudou**: `#numRodadas` continua existindo (agora `type="hidden"`) e sendo a
+única fonte do valor. `sincronizarRodadas()` o mantém em dia, e
+`iniciarTorneio()` saiu **byte a byte idêntica** — lê o mesmo `.value` de sempre.
+
+Nenhuma opção nasce marcada, de propósito: o campo começa vazio e é isso que faz a validação
+existente barrar o início do torneio sem o número de rodadas. A seção 24 da suíte prova os dois
+lados chamando `iniciarTorneio()` de verdade — recusa sem escolha, e `totalRodadas === 4` com a
+opção 4 marcada.
+
 ### Pendências registradas
 
 - **Empates de game na correção**: a tela de correção renderiza os campos `emp-wrap` mas não o

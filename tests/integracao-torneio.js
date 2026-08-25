@@ -731,19 +731,42 @@ function criarTorneio(nomes, numRodadas, liga) {
 // (que pega o último bloco) não a alcança.
 // ---------------------------------------------------------------------------
 
+function htmlDaPagina() {
+  return fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+}
+
 function blocosDeScript() {
-  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
   var blocos = [], re = /<script>([\s\S]*?)<\/script>/g, m;
+  var html = htmlDaPagina();
   while ((m = re.exec(html))) blocos.push(m[1]);
   return blocos;
 }
 
-function coletarCheckboxes(el, saida) {
-  (el.children || []).forEach(function (f) {
-    if (f.type === "checkbox") saida.push(f);
-    coletarCheckboxes(f, saida);
+// Trecho do HTML que contém APENAS o grupo de rodadas: do container até o
+// campo escondido que vem logo depois. Escopar importa — uma busca por
+// `<input type="radio">` no arquivo inteiro pega também os comentários do
+// código, que citam a tag.
+function blocoDoSeletorDeRodadas(html) {
+  var i = html.indexOf('id="seletor-rodadas"');
+  if (i === -1) return "";
+  var fim = html.indexOf('id="numRodadas"', i);
+  return html.slice(i, fim === -1 ? html.length : fim);
+}
+
+function radiosNoHtml(html) {
+  return blocoDoSeletorDeRodadas(html).match(/<input[^>]*type="radio"[^>]*>/g) || [];
+}
+
+function coletarPorTipo(el, tipo, saida) {
+  ((el && el.children) || []).forEach(function (f) {
+    if (f.type === tipo) saida.push(f);
+    coletarPorTipo(f, tipo, saida);
   });
   return saida;
+}
+
+function coletarCheckboxes(el, saida) {
+  return coletarPorTipo(el, "checkbox", saida);
 }
 
 function criarDOMSelecao() {
@@ -815,20 +838,44 @@ function criarDOMSelecao() {
   // Elementos fixos da página
   ["lista-jogadores", "qtd-selecionados", "aviso-impar", "confirmacao-jogadores",
    "lista-confirmacao", "novo-jogador", "btn-iniciar", "btn-incluir-jogadores",
-   "liga", "data", "colecao", "numRodadas"]
+   "liga", "data", "colecao", "numRodadas", "seletor-rodadas",
+   "torneio-area", "torneio-header", "th-corpo"]
     .forEach(function (id) { novoEl("div").id = id; });
+
+  // Os radios de rodadas saem do HTML ESTÁTICO da página: assim o teste
+  // exercita as opções que estão de fato no arquivo — quantidade, valores e o
+  // `name` compartilhado — e não uma cópia escrita aqui.
+  (function () {
+    var grupo = elementos["seletor-rodadas"];
+    radiosNoHtml(htmlDaPagina()).forEach(function (tag) {
+      var r = novoEl("input");
+      r.type = "radio";
+      var mv = /value="([^"]*)"/.exec(tag);
+      var mn = /name="([^"]*)"/.exec(tag);
+      r.value = mv ? mv[1] : "";
+      r.name = mn ? mn[1] : "";
+      r._parent = grupo;
+      grupo.children.push(r);
+    });
+  })();
 
   var doc = {
     getElementById: function (id) { return elementos[id] || null; },
     createElement: function (tag) { return novoEl(tag); },
     querySelector: function () { return null; },
-    // Só os dois seletores que a tela realmente usa.
+    // Só os seletores que a tela realmente usa.
     querySelectorAll: function (sel) {
       var s = String(sel);
-      if (s.indexOf("#lista-jogadores") !== 0) return [];
-      var lista = elementos["lista-jogadores"];
-      if (!lista) return [];
-      var todos = coletarCheckboxes(lista, []);
+      var alvo = null, tipo = "";
+
+      if (s.indexOf("#lista-jogadores") === 0) {
+        alvo = elementos["lista-jogadores"]; tipo = "checkbox";
+      } else if (s.indexOf("#seletor-rodadas") === 0) {
+        alvo = elementos["seletor-rodadas"]; tipo = "radio";
+      }
+      if (!alvo) return [];
+
+      var todos = coletarPorTipo(alvo, tipo, []);
       return /:checked/.test(s)
         ? todos.filter(function (c) { return c.checked; })
         : todos;
@@ -954,11 +1001,42 @@ function criarSelecao(lista, agora) {
 
     campoNovoJogador: function () { return elementos["novo-jogador"].value; },
     valorDoCampo: function (id) { return elementos[id] ? elementos[id].value : null; },
+
+    // --- seletor de rodadas
+    opcoesDeRodadas: function () {
+      return coletarPorTipo(elementos["seletor-rodadas"], "radio", [])
+        .map(function (r) { return r.value; });
+    },
+    nomesDoGrupoDeRodadas: function () {
+      return coletarPorTipo(elementos["seletor-rodadas"], "radio", [])
+        .map(function (r) { return r.name; });
+    },
+    rodadasMarcadas: function () {
+      return coletarPorTipo(elementos["seletor-rodadas"], "radio", [])
+        .filter(function (r) { return r.checked; })
+        .map(function (r) { return r.value; });
+    },
+    // Clicar numa opção. A exclusividade dentro do grupo é do NAVEGADOR (vem do
+    // `name` compartilhado); aqui ela é reproduzida para o teste ficar fiel.
+    escolherRodadas: function (n) {
+      var radios = coletarPorTipo(elementos["seletor-rodadas"], "radio", []);
+      var alvo = radios.filter(function (r) { return r.value === String(n); })[0];
+      if (!alvo) throw new Error("opcao de rodadas inexistente: " + n);
+      radios.forEach(function (r) {
+        if (r.name === alvo.name) r.checked = (r === alvo);
+      });
+      alvo.dispararEvento("change");
+      return alvo;
+    },
+
+    iniciarTorneio: function () { run("iniciarTorneio();"); },
+    totalRodadas: function () { return run("totalRodadas"); },
     definirCampo: function (id, valor) {
       if (elementos[id]) elementos[id].value = String(valor);
     },
     preencherDataPadrao: function () { run("preencherDataPadrao();"); },
     alertas: function () { return sandbox.__alertas.slice(); },
+    limparAlertas: function () { sandbox.__alertas.length = 0; },
     elementos: elementos
   };
 }
@@ -966,7 +1044,8 @@ function criarSelecao(lista, agora) {
 module.exports = {
   validar: validar,
   criarTorneio: criarTorneio,
-  criarSelecao: criarSelecao
+  criarSelecao: criarSelecao,
+  radiosNoHtml: radiosNoHtml
 };
 
 // Execução direta

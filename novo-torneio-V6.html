@@ -125,7 +125,37 @@ p:last-child { margin-bottom: 0; }
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.field label { font-size: .82rem; color: var(--text-dim); font-weight: 600; }
+.field > label,
+.field-legenda { font-size: .82rem; color: var(--text-dim); font-weight: 600; }
+
+/* Seletor de rodadas: radios de verdade, desenhados como círculos.
+   O <input> fica transparente por cima do círculo inteiro — some da vista mas
+   continua focável, navegável pelas setas e clicável em toda a área. */
+.rodadas { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 2px; }
+.rodada-op { position: relative; display: inline-flex; }
+.rodada-op input[type=radio] {
+  position: absolute; inset: 0; margin: 0;
+  width: 100%; height: 100%;
+  opacity: 0; cursor: pointer;
+}
+.rodada-bola {
+  width: 46px; height: 46px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 1.05rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  transition: background var(--t), border-color var(--t), color var(--t);
+}
+.rodada-op:hover .rodada-bola { border-color: var(--border-strong); color: var(--text); }
+.rodada-op input[type=radio]:focus-visible + .rodada-bola {
+  border-color: var(--accent); color: var(--text);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.rodada-op input[type=radio]:checked + .rodada-bola {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-ink);
+}
 
 input[type=text], input[type=date], input[type=number] {
   width: 100%;
@@ -569,6 +599,10 @@ code { font-family: var(--mono); font-size: .9em;
   .players { max-height: none; grid-template-columns: 1fr; }
   button { padding: 12px 18px; }
   .rail-num { font-size: .68rem; }
+
+  /* 5×44 + 4×8 = 252px: cabe numa tela de 320px sem quebrar nem rolar. */
+  .rodadas { gap: 8px; }
+  .rodada-bola { width: 44px; height: 44px; }
 }
 
 @media (max-width: 480px) {
@@ -607,9 +641,37 @@ code { font-family: var(--mono); font-size: .9em;
         <label for="colecao">Coleção</label>
         <input id="colecao" type="text" placeholder="Ex: Chaos Draft Marvel&amp;Lorwyn"/>
       </div>
+      <!-- Os radios são o controle de verdade (semântica, teclado, foco). O
+           #numRodadas continua sendo a FONTE do valor lida por iniciarTorneio()
+           e é mantido em dia por sincronizarRodadas(). Nasce vazio de
+           propósito: o organizador tem de escolher, e é o vazio que faz a
+           validação existente barrar o início do torneio. -->
       <div class="field">
-        <label for="numRodadas">Número total de rodadas</label>
-        <input id="numRodadas" max="10" min="1" type="number" placeholder="Ex: 4"/>
+        <span class="field-legenda" id="rodadas-legenda">Número total de rodadas</span>
+        <div id="seletor-rodadas" class="rodadas"
+             role="radiogroup" aria-labelledby="rodadas-legenda">
+          <label class="rodada-op">
+            <input type="radio" name="rodadas" value="2" aria-label="2 rodadas">
+            <span class="rodada-bola">2</span>
+          </label>
+          <label class="rodada-op">
+            <input type="radio" name="rodadas" value="3" aria-label="3 rodadas">
+            <span class="rodada-bola">3</span>
+          </label>
+          <label class="rodada-op">
+            <input type="radio" name="rodadas" value="4" aria-label="4 rodadas">
+            <span class="rodada-bola">4</span>
+          </label>
+          <label class="rodada-op">
+            <input type="radio" name="rodadas" value="5" aria-label="5 rodadas">
+            <span class="rodada-bola">5</span>
+          </label>
+          <label class="rodada-op">
+            <input type="radio" name="rodadas" value="6" aria-label="6 rodadas">
+            <span class="rodada-bola">6</span>
+          </label>
+        </div>
+        <input type="hidden" id="numRodadas" value="">
       </div>
     </div>
   </section>
@@ -805,8 +867,45 @@ function preencherDataPadrao() {
   campo.value = dataDeHojeLocal();
 }
 
+// ---------------------------------------------------------------------------
+// Seletor de rodadas.
+//
+// Os <input type="radio"> são o controle real: a exclusividade vem do `name`
+// compartilhado, e com eles vêm de graça o foco, a navegação por setas e a
+// semântica de "opção escolhida". O #numRodadas continua sendo a única FONTE
+// do valor — iniciarTorneio() lê exatamente o mesmo `.value` de sempre e não
+// precisou mudar.
+// ---------------------------------------------------------------------------
+function radiosDeRodadas() {
+  return document.querySelectorAll("#seletor-rodadas input[type=radio]");
+}
+
+function sincronizarRodadas() {
+  const campo = document.getElementById("numRodadas");
+  if (!campo) return;
+
+  const marcados = document.querySelectorAll("#seletor-rodadas input[type=radio]:checked");
+  // Sem escolha, o campo fica VAZIO — é assim que a validação de
+  // iniciarTorneio() continua barrando o início do torneio.
+  campo.value = marcados.length ? marcados[0].value : "";
+}
+
+function ligarSeletorDeRodadas() {
+  const radios = radiosDeRodadas();
+  if (!radios || !radios.length) return;
+
+  Array.prototype.forEach.call(radios, r => {
+    if (r.dataset && r.dataset.listener === "1") return;
+    r.addEventListener("change", sincronizarRodadas);
+    if (r.dataset) r.dataset.listener = "1";
+  });
+
+  sincronizarRodadas();   // deixa o campo coerente com a tela desde o início
+}
+
 carregarJogadores();
 preencherDataPadrao();
+ligarSeletorDeRodadas();
 
 
 
