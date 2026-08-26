@@ -785,6 +785,10 @@ function criarDOMSelecao() {
       children: [],
       _html: "",
       _listeners: {},
+      // Medidas de rolagem: no stub são zero até o teste declarar outras.
+      scrollHeight: 0,
+      clientHeight: 0,
+      scrollTop: 0,
       style: { cssText: "" },
       classList: {
         add: function () {}, remove: function () {}, contains: function () { return false; }
@@ -839,6 +843,7 @@ function criarDOMSelecao() {
   ["lista-jogadores", "qtd-selecionados", "aviso-impar", "confirmacao-jogadores",
    "lista-confirmacao", "novo-jogador", "btn-iniciar", "btn-incluir-jogadores",
    "liga", "data", "colecao", "numRodadas", "seletor-rodadas",
+   "total-cadastrados", "area-participantes", "dica-rolagem",
    "torneio-area", "torneio-header", "th-corpo"]
     .forEach(function (id) { novoEl("div").id = id; });
 
@@ -1037,6 +1042,31 @@ function criarSelecao(lista, agora) {
     preencherDataPadrao: function () { run("preencherDataPadrao();"); },
     alertas: function () { return sandbox.__alertas.slice(); },
     limparAlertas: function () { sandbox.__alertas.length = 0; },
+
+    // --- afordância de rolagem da lista
+    totalCadastrados: function () {
+      return String(elementos["total-cadastrados"].textContent || "");
+    },
+    // Declara as medidas que o navegador calcularia e reavalia a dica.
+    medirLista: function (scrollHeight, clientHeight, scrollTop) {
+      var lista = elementos["lista-jogadores"];
+      lista.scrollHeight = scrollHeight;
+      lista.clientHeight = clientHeight;
+      lista.scrollTop = scrollTop || 0;
+      run("atualizarDicaDeRolagem();");
+    },
+    // Rola de verdade: mexe no scrollTop e dispara o EVENTO, para o teste
+    // passar pelo mesmo listener que o navegador usaria.
+    rolarLista: function (scrollTop) {
+      var lista = elementos["lista-jogadores"];
+      lista.scrollTop = scrollTop;
+      lista.dispararEvento("scroll");
+    },
+    // A dica e o véu são acesos pela classe do container (o resto é CSS).
+    temMaisAbaixo: function () {
+      return /\btem-mais\b/.test(elementos["area-participantes"].className || "");
+    },
+
     elementos: elementos
   };
 }

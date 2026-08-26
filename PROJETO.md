@@ -967,6 +967,26 @@ Detalhes que valem lembrar:
 minúsculas e o GitHub Pages sim — foi assim que `avatar_TRC.jpg` funcionou local e deu 404
 publicado.
 
+### Afordância de rolagem na lista de participantes (25/08/2026)
+
+No Safari/macOS a barra de rolagem é *overlay*: some quando não se está rolando. Com 24
+jogadores cadastrados e a lista limitada a 330px, ela parecia terminar na última linha visível.
+A altura e a rolagem interna continuam iguais — o que mudou foi a pista de que há mais coisa:
+
+- **`::-webkit-scrollbar` com `width` declarada.** Declarar a largura faz o Safari desenhar a
+  barra clássica, sempre à vista, em vez da overlay. Polegar em dourado contido, com
+  `border: 3px solid transparent` + `background-clip: padding-box` para afinar o polegar sem
+  afinar a pista.
+- **`PARTICIPANTES · N cadastrados`** no cabeçalho, contando as linhas que a lista realmente
+  tem (as do `jogadores.json` mais as acrescentadas à mão). Atualiza também ao incluir alguém.
+- **Véu e dica "Role para ver todos ↓"** enquanto `scrollHeight - clientHeight - scrollTop > 4`.
+  A folga de 4px evita que um arredondamento de subpixel deixe a dica acesa com a lista já no
+  fim. Só o JS liga uma classe no container; véu e dica são CSS.
+
+`atualizarTotalCadastrados()` e `atualizarDicaDeRolagem()` só leem o DOM. `criarLinhaJogador`,
+`vincularEventosCheckbox`, `atualizarContadorSelecionados` e `abrirConfirmacaoJogadores` saíram
+byte a byte idênticas; `carregarJogadores` e `adicionarJogador` só ganharam as chamadas.
+
 ### Pendências registradas
 
 - **Empates de game na correção**: a tela de correção renderiza os campos `emp-wrap` mas não o

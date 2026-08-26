@@ -2812,6 +2812,73 @@ testeAsync(function () {
   return Promise.resolve();
 });
 
+// ============ 28. Afordância de rolagem da lista de participantes
+testeAsync(function () {
+  grupo("28. Lista de participantes: total e pista de rolagem");
+
+  var integracao = require(path.join(__dirname, "integracao-torneio.js"));
+  var ELENCO = ["Alex", "Bruno Novaes", "Caio", "Daniel", "Eduardo",
+                "Flavio", "Gabriel", "Joca"];
+  var t = integracao.criarSelecao(ELENCO);
+
+  return t.pronto().then(function () {
+    // ---- total realmente carregado do cadastro
+    ok(/8 cadastrados/.test(t.totalCadastrados()),
+       "o cabecalho mostra quantos jogadores foram carregados",
+       t.totalCadastrados());
+    ok(t.nomes().length === 8,
+       "  ↳ e bate com o numero de linhas na lista", String(t.nomes().length));
+
+    // Acrescentar alguem atualiza o total.
+    t.adicionar("Nick");
+    ok(/9 cadastrados/.test(t.totalCadastrados()),
+       "acrescentar um participante atualiza o total",
+       t.totalCadastrados());
+
+    // ---- pista de rolagem
+    // Lista inteira visível: nada a indicar.
+    t.medirLista(300, 300, 0);
+    ok(!t.temMaisAbaixo(),
+       "lista que cabe inteira nao acende a pista de rolagem");
+
+    // Conteúdo abaixo da área visível: véu e dica acesos.
+    t.medirLista(600, 330, 0);
+    ok(t.temMaisAbaixo(),
+       "com gente abaixo da area visivel, a pista acende");
+
+    // Rolando pelo meio, ainda há conteúdo abaixo.
+    t.rolarLista(100);
+    ok(t.temMaisAbaixo(),
+       "no meio da lista a pista continua acesa");
+
+    // No fim, apaga.
+    t.rolarLista(270);                       // 600 - 330 = 270
+    ok(!t.temMaisAbaixo(),
+       "ao chegar ao fim, a pista apaga");
+
+    // Voltar ao topo acende de novo.
+    t.rolarLista(0);
+    ok(t.temMaisAbaixo(), "voltando ao topo, a pista acende de novo");
+
+    // Uma sobra de subpixel nao pode manter a dica acesa.
+    t.rolarLista(268);
+    ok(!t.temMaisAbaixo(),
+       "uma sobra de poucos pixels conta como fim da lista");
+
+    // ---- a rolagem interna e a altura maxima continuam de pe
+    var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+    var css = html.slice(html.indexOf("<style>"), html.indexOf("</style>"));
+    var regra = css.slice(css.indexOf(".players {"),
+                          css.indexOf("}", css.indexOf(".players {")));
+    ok(/max-height:\s*330px/.test(regra),
+       "a altura maxima da lista nao mudou", regra);
+    ok(/overflow-y:\s*auto/.test(regra),
+       "e a rolagem interna continua");
+    ok(/\.players::-webkit-scrollbar\s*{[^}]*width/.test(css),
+       "a barra de rolagem tem largura declarada (no macOS e o que a torna visivel)");
+  });
+});
+
 // ---------------------------------------------------------------- fim
 function imprimirResumo() {
 console.log("\n" + "=".repeat(60));
