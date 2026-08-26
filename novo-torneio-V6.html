@@ -417,8 +417,24 @@ button:disabled:hover { border-color: var(--border-strong); }
   font-size: .66rem; letter-spacing: .16em; text-transform: uppercase;
   color: var(--text-faint); font-weight: 700;
 }
-.match-side { display: flex; align-items: center; gap: 11px; min-width: 0; }
-.match-side--r { flex-direction: row-reverse; text-align: right; }
+/* Cada lado ocupa uma coluna larga (1fr), mas o CONTEÚDO se encosta na coluna
+   central. O resultado é um núcleo compacto — nome · avatar · placar · VS ·
+   placar · avatar · nome — em vez de dois jogadores presos às bordas do card.
+   A coluna do meio segue no centro geométrico, então o VS fica alinhado
+   verticalmente entre todos os confrontos da rodada.
+
+   A inversão faz duas coisas de uma vez: empurra o conteúdo para dentro e
+   coloca o avatar ao lado do placar, com o nome por fora. O DOM continua sendo
+   avatar + nome nos dois lados — nenhuma mudança de markup. */
+.match-side {
+  display: flex; align-items: center; gap: 11px; min-width: 0;
+  flex-direction: row-reverse;      /* esquerda: nome · avatar → */
+  text-align: right;
+}
+.match-side--r {
+  flex-direction: row;              /* direita: ← avatar · nome */
+  text-align: left;
+}
 .match-side .nome { font-weight: 600; min-width: 0;
                     overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -604,8 +620,10 @@ code { font-family: var(--mono); font-size: .9em;
   .app-header h1 { font-size: 1.3rem; }
   .app-header .mark { width: 46px; height: 46px; font-size: 22px; }
 
-  /* Confrontos empilhados, com alvo de toque confortável. */
+  /* Confrontos empilhados, com alvo de toque confortável. Sem colunas, os dois
+     lados voltam a ler no mesmo sentido: avatar · nome. */
   .match { grid-template-columns: 1fr; gap: 10px; padding: 28px 15px 16px; }
+  .match-side,
   .match-side--r { flex-direction: row; text-align: left; }
   .match-score { justify-content: flex-start; }
   .match-score input[type=number] { width: 64px; padding: 11px 4px; }

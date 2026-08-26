@@ -955,6 +955,12 @@ Detalhes que valem lembrar:
 - `confrontoFinalizado()` passou a receber o par devolvido por `MTR.parsePlacar()` em vez de um
   texto pronto, para os dois números ficarem de lados opostos do símbolo. A nota de games
   empatados saiu para uma linha própria embaixo.
+- A composição do card é **nome · avatar · placar · VS · placar · avatar · nome**, com o
+  conjunto concentrado no centro. Isso é só alinhamento: cada lado continua ocupando uma coluna
+  `1fr`, mas o conteúdo se encosta na coluna do meio, invertendo a direção do flex do lado
+  esquerdo. O DOM segue `avatar + nome` nos dois lados — nenhuma mudança de markup — e a coluna
+  central permanece no centro geométrico, então o VS fica alinhado verticalmente entre todos os
+  confrontos da rodada. No celular, sem colunas, os dois lados voltam a ler `avatar · nome`.
 
 **Seção 27 da suíte**: toda referência estática a `img/...` no HTML é conferida contra
 `readdirSync` do diretório, comparando o nome **exato**. O macOS não diferencia maiúsculas de
