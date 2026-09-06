@@ -1988,11 +1988,23 @@ grupo("17. Sugestão automática do próximo Dia");
     ok(r7.ultimoDia === 3 && r7.proximoDia === 4,
        "dias fora de ordem ainda resultam no maior + 1", JSON.stringify(r7));
 
-    // e o cenário real do projeto
+    // E o cenário real do projeto.
+    //
+    // O esperado sai do PRÓPRIO arquivo, não de um número escrito aqui: a
+    // versão anterior fixava "Dia 3" e passava a falhar assim que o Dia 3
+    // era publicado — envelhecia a cada dia de competição, sem que nada
+    // estivesse errado.
     var reais = JSON.parse(fs.readFileSync(path.join(RAIZ, "jogos.json"), "utf8"));
+    var maiorDia = reais
+      .filter(function (j) { return Number(j.liga || 1) === 4; })
+      .reduce(function (m, j) { return Math.max(m, Number(j.dia) || 0); }, 0);
+
+    ok(maiorDia >= 1, "a Liga 4 tem pelo menos um dia publicado", String(maiorDia));
+
     var r8 = t.run("calcularProximoDia(" + JSON.stringify(reais) + ", 4)");
-    ok(r8.ultimoDia === 2 && r8.proximoDia === 3,
-       "no jogos.json real, a Liga 4 sugere o Dia 3", JSON.stringify(r8));
+    ok(r8.ultimoDia === maiorDia && r8.proximoDia === maiorDia + 1,
+       "no jogos.json real, a Liga 4 sugere o dia seguinte ao ultimo publicado",
+       JSON.stringify(r8) + " (maior dia no arquivo: " + maiorDia + ")");
   })();
 
   // ---- o valor sugerido chega ao prompt, e continua editável
