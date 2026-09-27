@@ -60,8 +60,7 @@ const jogadoresOcultos = [
   "Bruno Carvalho",
   "João Vitor",
   "Dary Romano",
-  "Rafael Cajazeiras",
-  "Ewerton Lucas"
+  "Rafael Cajazeiras"
 
 ];
 
