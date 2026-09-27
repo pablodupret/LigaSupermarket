@@ -563,7 +563,8 @@ const infoPorLiga = {
   4: { // liga 4 (temporada atual) - adicionar uma linha a cada dia lançado
     1: { data: "09/08/2026", draft: "Pre Release Hobbit" },
     2: { data: "23/08/2026", draft: "Chaos Draft Marvel&Lorwyn" },
-    3: { data: "06/09/2026", draft: "Draft Marvel Super Heroes" }
+    3: { data: "06/09/2026", draft: "Draft Marvel Super Heroes" },
+    4: { data: "26/09/2026", draft: "Pre Release Reality Fracture" }
   }
 
 };
