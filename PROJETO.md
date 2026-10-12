@@ -18,10 +18,11 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 
 ```
 /
-├── index.html              → Página da liga ativa (Liga 4 atualmente)
+├── index.html              → Página da liga ativa (Liga 4, encerrada: mostra o resultado final até a Liga 5 abrir)
 ├── liga1.html              → Página histórica da Liga 1 (encerrada)
 ├── liga2.html              → Página histórica da Liga 2 (encerrada)
 ├── liga3.html              → Página histórica da Liga 3 (encerrada)
+├── liga4.html              → Página histórica da Liga 4 (encerrada, pódio com empates)
 ├── historico.html          → Página de listagem de temporadas anteriores
 ├── bookLiga1.html          → eBook da 1ª Liga (PDF embutido)
 ├── novo-torneio-V6.html    → Ferramenta de geração de dias de competição
@@ -33,6 +34,7 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
 ├── main-liga1.js           → Snapshot congelado da Liga 1 (NÃO EDITAR)
 ├── main-liga2.js           → Snapshot congelado da Liga 2 (NÃO EDITAR)
 ├── main-liga3.js           → Snapshot congelado da Liga 3 (NÃO EDITAR)
+├── main-liga4.js           → Snapshot congelado da Liga 4 (NÃO EDITAR; usa mtr.js)
 ├── appendix_c.js           → Ranking do dia da liga ativa (delega ao mtr.js)
 ├── appendix_c-encerradas.js→ Snapshot congelado usado por liga1/2/3 (NÃO EDITAR)
 ├── carta-do-dia.js         → Integração com API Scryfall
@@ -55,6 +57,7 @@ Site/sistema web estático para gerenciar e exibir informações da **Liga Magic
     ├── fundo-liga1.jpg     → Fundo específico da Liga 1
     ├── fundo-liga2.jpg     → Fundo específico da Liga 2
     ├── fundo-liga3.jpg     → Fundo específico da Liga 3 (Marvel Super Heroes)
+    ├── fundo-liga4.jpg     → Fundo específico da Liga 4 (cópia do fundo.jpg no encerramento)
     └── [ícones de mana]
 ```
 
@@ -110,13 +113,33 @@ Array de objetos, um por partida:
 - Controlado pela função `usaRegraPontosValidos()` que retorna `true` para ligas 2, 3 e 4
 - A coluna "Pontos válidos" mostra pontos totais menos o pior dia
 
-### Critérios de desempate do ranking geral (em ordem)
+### Critérios de desempate do ranking geral — depende da liga
+
+**Ligas 1 a 4** (`compararRanking()`, ordem herdada do código):
 1. Pontos válidos (ou pontos totais na Liga 1)
 2. Match Win % (MWP)
 3. Game Win % (GWP)
 4. OMWP (Opponents' Match Win Percentage)
 5. Pontos totais
 6. Ordem alfabética
+
+Essa ordem **nunca foi uma decisão do grupo**: é o que o código fazia, e só foi percebida
+no encerramento da Liga 4. Ela não segue o MTR (que põe OMW% antes de GW%).
+
+**Liga 4 — empates mantidos.** A temporada terminou com Bruno Novaes e Magno empatados em
+1º (36 pontos válidos) e Nagib e Pablo empatados em 4º (18). Decisão do organizador: sem
+desempate retroativo. `LIGAS_SEM_DESEMPATE = [4]` faz quem empata em pontos válidos
+**dividir a posição** na tabela (1, 1, 3, 4, 4, 6, 6...) e a coroa 👑 vai para todos no 1º.
+A ordem *dentro* de um empate continua a do comparador acima, só para a tabela ser estável.
+
+**Liga 5 em diante — critério oficial** (`usaDesempateMTR()` → `ligaAtualId >= 5`):
+1. Pontos válidos (com o descarte do pior dia, regra própria da liga)
+2. OMW% → GW% (com piso de 33%) → OGW% — a ordem do MTR Appendix C
+3. Nome, só para estabilizar a apresentação
+
+Implementado chamando `MTR.compararCriterios` com `matchPoints = pontosValidos`
+(`comoRegistroMTR()`), sem reconstruir a ordem fora do `mtr.js`. Só divide posição quem
+empata nos quatro critérios. A seção 29 da suíte cobre os dois regimes.
 
 ### Desempate oficial de um DIA de competição (MTR Appendix C)
 Ordem obrigatória, implementada em `mtr.js` → `compararMTR()`:
@@ -320,7 +343,11 @@ Projeto sólido e bem acima da média para uma stack sem framework. Funciona cor
 - [x] ~~Quando a Liga 3 encerrar: criar snapshot da Liga 3 e apontar o `main.js` para a Liga 4~~
       — feito em 23/08/2026 (ver seção 12)
 - [ ] Considerar mover dados do pódio do HTML para o JSON
-- [ ] Trocar `img/fundo.jpg` por um `img/fundo-liga4.jpg` com a arte da coleção da Liga 4
+- [ ] Ao abrir a Liga 5: trocar `img/fundo.jpg` pela arte da coleção nova (a Liga 4 já tem
+      o seu `fundo-liga4.jpg` congelado)
+- [ ] `style2.css` cita `img/bg-historico.jpg` em `.pagina-historico`, mas o arquivo nunca
+      existiu: a página de histórico cai no degradê e o navegador recebe um 404. Criar a
+      imagem ou remover a referência (exceção explícita na seção 27 da suíte)
 - [x] ~~Atualizar o set da Carta do Dia para a coleção da Liga 4~~ — feito em 23/08/2026
       (`set:hob`, The Hobbit)
 
@@ -347,8 +374,9 @@ Sempre `"N x N"` com espaços. O split em `main.js` usa `" x "` com espaços. O 
 Registrado como `"Bye"` (com maiúscula). O código verifica `j === "Bye"` e `j.toLowerCase() !== "bye"` em diferentes lugares — manter sempre com maiúscula no JSON.
 
 ### Liga ativa
-Controlada pela variável `ligaAtualId = 4` no topo do `main.js`. Quando iniciar a Liga 5,
-seguir o checklist de encerramento da seção 12.
+Controlada pela variável `ligaAtualId = 4` no topo do `main.js`. A Liga 4 já está encerrada
+e congelada em `liga4.html`, mas a página inicial continua nela (com o pódio) até a Liga 5
+começar. Ao iniciar a Liga 5, seguir a parte **B** do checklist da seção 12.
 
 ---
 
@@ -357,7 +385,7 @@ seguir o checklist de encerramento da seção 12.
 - **Liga 1** (2025): encerrada. Campeão Magno, vice Nagib, 3º Sérgio. 12 dias de competição.
 - **Liga 2** (2026): encerrada. Campeão Magno, vice Stenio, 3º Sérgio. 7 dias. Primeira liga com descarte do pior dia.
 - **Liga 3** (2026): encerrada. Campeão Magno, vice Flavio, 3º Eduardo. 6 dias, de 30/03/2026 (Chaos Draft Lorwyn/Turtles/Foundations) a 05/07/2026 (Draft Marvel Super Heroes).
-- **Liga 4** (2026): **em andamento**. Nenhum dia registrado até o momento.
+- **Liga 4** (2026): encerrada. **Co-campeões Bruno Novaes e Magno** (empate em 36 pontos válidos), 3º Flavio, 4º Nagib e Pablo (empate em 18). 5 dias, de 09/08/2026 (Pre Release Hobbit) a 11/10/2026 (Draft Reality Fracture).
 
 Jogadores regulares: Pablo, Magno, Nagib, Joca, Stenio, Marcelo, Qiu, Alex, Eduardo, Subzero, Vini, Igor, Sérgio, Will, Gabriel, Jun, Pedro, Rates, Caio, Marcos, Nick, Flavio, Bruno Novaes.
 
@@ -409,6 +437,18 @@ linkada no site).
 10. `carta-do-dia.js`: trocar o código do set no `set:xxx` da URL do Scryfall
 11. Atualizar este documento: seções 2, 4, 5, 6, 10 e 11
 
+### Encerramento da Liga 4 (12/10/2026) — o que foi diferente
+
+- A parte **A** foi feita (`liga4.html`, `main-liga4.js`, `fundo-liga4.jpg`, card no
+  histórico), mas a parte **B** ficou para quando a Liga 5 começar: a página inicial segue
+  mostrando a Liga 4 com o pódio. Ao abrir a Liga 5, além dos passos 6–11, **remover o
+  pódio do `index.html`** e trocar o subtítulo de volta para "temporada em andamento"
+- O pódio é em escada, com 5 posições (`.podio-escada`, `.podio-quarto`, `.podio-nota`):
+  1º 1º · 3º · 4º 4º. As classes são novas, então o pódio das Ligas 1–3 não mudou
+- Diferente do `main-liga3.js`, o `main-liga4.js` depende do `mtr.js` e do `appendix_c.js`
+  compartilhados. O congelamento da tabela é garantido pela seção 29 da suíte, que roda o
+  snapshot contra o `jogos.json`
+
 ### Como validar sem subir nada
 
 Rodar o ranking de cada liga em Node com um stub de DOM e conferir se o top 3 calculado bate com
@@ -430,7 +470,7 @@ vazia. Ranking e gráfico simplesmente aparecem vazios até o Dia 1 ser lançado
 ## 13. Como lançar um dia de competição
 
 ```
-1. node tests/run.js                          ← 331 passaram, 0 falharam
+1. node tests/run.js                          ← 490 passaram, 0 falharam
 2. Realizar o torneio (rodadas sempre automáticas)
 3. Finalizar a última rodada
 4. Exportar Resultados (JSON)                 ← o botão só aparece agora

@@ -38,10 +38,117 @@
 </div>
 
 <h1>Liga Magic Supermarket – Liga 4</h1>
-<p class="subtitulo-liga-atual">Temporada em andamento • Acompanhe o ranking a cada dia de competição</p>
+<p class="subtitulo-liga-atual">Temporada finalizada • Resultado final da Liga 4</p>
 
-<!-- O pódio da Liga 3 foi congelado em liga3.html (arquivo oficial da temporada encerrada).
-     Enquanto a Liga 4 estiver em andamento, esta página não exibe pódio. -->
+<!-- A Liga 4 terminou e esta página mostra o resultado final até a Liga 5 começar.
+     O mesmo pódio está congelado em liga4.html. Ao abrir a Liga 5, remover este bloco. -->
+<!-- Pódio da Liga 4: terminou com empates em pontos válidos e sem critério de
+     desempate combinado, então as posições empatadas foram mantidas.
+     Dentro de cada empate, os nomes seguem a ordem alfabética. -->
+<section class="podio-temporada">
+  <div class="podio-header">
+    <div class="podio-badge"> Quarta Liga Finalizada 🏆 </div>
+    <h2>Campeões da Temporada: <span class="campeao-nome">Bruno Novaes e Magno</span></h2>
+    <p class="podio-subtitulo">O pódio oficial da Liga Magic Supermarket</p>
+  </div>
+
+  <div class="podio-esports podio-escada">
+    <!-- 1º lugar (empate) -->
+    <div class="podio-card podio-ouro campeao">
+      <div class="faixa-campeao">CO-CAMPEÃO</div>
+      <div class="podio-posicao">1º</div>
+      <img src="img/avatar_brunonovaes.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Bruno Novaes"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Bruno Novaes</h3>
+        <p>Campeão da Liga 4</p>
+      </div>
+      <div class="podio-base ouro">
+        <span>🥇</span>
+      </div>
+    </div>
+
+    <!-- 1º lugar (empate) -->
+    <div class="podio-card podio-ouro campeao">
+      <div class="faixa-campeao">CO-CAMPEÃO</div>
+      <div class="podio-posicao">1º</div>
+      <img src="img/avatar_magno.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Magno"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Magno</h3>
+        <p>Campeão da Liga 4</p>
+      </div>
+      <div class="podio-base ouro">
+        <span>🥇</span>
+      </div>
+    </div>
+
+    <!-- 3º lugar -->
+    <div class="podio-card podio-bronze">
+      <div class="podio-posicao">3º</div>
+      <img src="img/avatar_flavio.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Flavio"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Flavio</h3>
+        <p>3º lugar</p>
+      </div>
+      <div class="podio-base bronze">
+        <span>🥉</span>
+      </div>
+    </div>
+
+    <!-- 4º lugar (empate) -->
+    <div class="podio-card podio-quarto">
+      <div class="podio-posicao">4º</div>
+      <img src="img/avatar_nagib.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Nagib"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Nagib</h3>
+        <p>4º lugar</p>
+      </div>
+      <div class="podio-base quarto">
+        <span class="medalha-4">4</span>
+      </div>
+    </div>
+
+    <!-- 4º lugar (empate) -->
+    <div class="podio-card podio-quarto">
+      <div class="podio-posicao">4º</div>
+      <img src="img/avatar_pablo.jpg"
+           onerror="this.onerror=null;this.src='img/avatar_padrao.jpg';"
+           alt="Pablo"
+           class="podio-avatar">
+      <div class="podio-info">
+        <h3>Pablo</h3>
+        <p>4º lugar</p>
+      </div>
+      <div class="podio-base quarto">
+        <span class="medalha-4">4</span>
+      </div>
+    </div>
+  </div>
+
+  <p class="podio-nota">
+    A Liga 4 terminou com empates em pontos válidos: <strong>Bruno Novaes e Magno</strong>
+    dividem o 1º lugar com 36 pontos, e <strong>Nagib e Pablo</strong> dividem o 4º com 18.
+    Como a temporada não tinha um critério de desempate definido, as posições empatadas
+    foram mantidas (dentro de cada empate, os nomes estão em ordem alfabética).
+    <br><br>
+    A partir da Liga 5, empates em pontos serão decididos pelos critérios oficiais do
+    <em>Magic Tournament Rules</em> (Wizards of the Coast), nesta ordem:
+    <strong>OMW%</strong> (aproveitamento médio dos adversários),
+    <strong>GW%</strong> (percentual de games vencidos) e
+    <strong>OGW%</strong> (aproveitamento médio dos adversários em games).
+  </p>
+</section>
 
 
 <!-- Exercicio para feature Carta do Dia -->

@@ -357,6 +357,15 @@ grupo("3. Regressão dos dados publicados");
        "obtido: " + porPontos[0].jogador);
   });
 
+  // A Liga 4 terminou empatada no topo: dois campeões, sem desempate.
+  var tabela4 = MTR.classificar(todos.filter(function (j) { return j.liga === 4; }))
+    .filter(function (l) { return !MTR.ehBye(l.jogador); })
+    .sort(function (a, b) { return b.matchPoints - a.matchPoints; });
+  ok(tabela4[0].matchPoints === tabela4[1].matchPoints &&
+     [tabela4[0].jogador, tabela4[1].jogador].sort().join(",") === "Bruno Novaes,Magno",
+     "Liga 4: Bruno Novaes e Magno continuam empatados no topo",
+     tabela4.slice(0, 3).map(function (l) { return l.jogador + " " + l.matchPoints; }).join(", "));
+
   // O "Bye" nunca pode aparecer como jogador na classificacao.
   var comBye = MTR.classificar(todos).some(function (l) { return MTR.ehBye(l.jogador); });
   ok(!comBye, "\"Bye\" nao aparece como jogador na classificacao");
@@ -2803,12 +2812,26 @@ testeAsync(function () {
 testeAsync(function () {
   grupo("27. Imagens estáticas com nome exato (case-sensitive)");
 
-  var html = fs.readFileSync(path.join(RAIZ, "novo-torneio-V6.html"), "utf8");
+  // A ferramenta de torneio e as páginas com pódio, que citam avatares à mão.
+  var html = ["novo-torneio-V6.html", "index.html", "liga4.html", "historico.html"]
+    .map(function (f) { return fs.readFileSync(path.join(RAIZ, f), "utf8"); })
+    .join("\n");
   var arquivos = fs.readdirSync(path.join(RAIZ, "img"));
 
   // Só as referências literais; as de avatar são montadas em tempo de execução.
   var refs = (html.match(/src="img\/[^"$]+"/g) || [])
     .map(function (s) { return s.slice(9, -1); });
+
+  // Fundos citados no CSS (fundo-liga4.jpg do arquivo da Liga 4, por exemplo).
+  var css = fs.readFileSync(path.join(RAIZ, "style2.css"), "utf8");
+  // bg-historico.jpg nunca existiu no repositório (pendência registrada no
+  // PROJETO.md): a página de histórico cai no degradê. Exceção explícita.
+  var PENDENTES = ["bg-historico.jpg"];
+  (css.match(/url\(["']?img\/[^"')]+/g) || []).forEach(function (s) {
+    var nome = s.replace(/url\(["']?img\//, "");
+    if (PENDENTES.indexOf(nome) === -1) refs.push(nome);
+  });
+  refs = refs.filter(function (nome, i) { return refs.indexOf(nome) === i; });
 
   ok(refs.length > 0, "ha referencias estaticas a imagens no HTML",
      refs.join(", "));
@@ -2889,6 +2912,82 @@ testeAsync(function () {
     ok(/\.players::-webkit-scrollbar\s*{[^}]*width/.test(css),
        "a barra de rolagem tem largura declarada (no macOS e o que a torna visivel)");
   });
+});
+
+// ================================== 29. Ranking da temporada (main.js)
+//
+// Carrega o main.js (e o snapshot main-liga4.js) num contexto isolado, com um
+// document mínimo e um fetch que nunca responde: initPagina() não renderiza
+// nada e as funções de ranking ficam disponíveis para chamada direta.
+testeAsync(function () {
+  grupo("29. Ranking da temporada: empates e critério da Liga 5");
+
+  var vm = require("vm");
+  var todos = JSON.parse(fs.readFileSync(path.join(RAIZ, "jogos.json"), "utf8"));
+  var jogos4 = todos.filter(function (j) { return j.liga === 4; });
+
+  function carregar(arquivo) {
+    var ctx = {
+      console: console,
+      MTR: MTR,
+      fetch: function () { return new Promise(function () {}); },
+      document: {
+        getElementById: function () { return null; },
+        querySelector: function () { return null; },
+        addEventListener: function () {},
+        body: { classList: { add: function () {}, remove: function () {} } }
+      }
+    };
+    vm.createContext(ctx);
+    vm.runInContext(fs.readFileSync(path.join(RAIZ, arquivo), "utf8"), ctx);
+    ctx.jogos = jogos4;
+    return ctx;
+  }
+
+  function tabela(ctx) {
+    return JSON.parse(vm.runInContext(
+      "(function () {" +
+      "  var r = calcularRankingArray(jogos);" +
+      "  var p = calcularPosicoesExibidas(r);" +
+      "  return JSON.stringify(r.map(function (e, i) { return [p[i], e.jogador]; }));" +
+      "})()", ctx));
+  }
+
+  // -- Liga 4: posições empatadas em pontos válidos são divididas
+  ["main.js", "main-liga4.js"].forEach(function (arquivo) {
+    var t = tabela(carregar(arquivo));
+    var topo = t.slice(0, 5);
+    ok(topo.map(function (l) { return l[0]; }).join(",") === "1,1,3,4,4",
+       arquivo + ": Liga 4 exibe 1, 1, 3, 4, 4 no topo", JSON.stringify(topo));
+    ok([topo[0][1], topo[1][1]].sort().join(",") === "Bruno Novaes,Magno",
+       arquivo + ": Bruno Novaes e Magno dividem o 1º lugar");
+    ok(topo[2][1] === "Flavio", arquivo + ": Flavio em 3º");
+    ok([topo[3][1], topo[4][1]].sort().join(",") === "Nagib,Pablo",
+       arquivo + ": Nagib e Pablo dividem o 4º lugar");
+  });
+
+  // -- Liga 5: empate em pontos válidos vai para OMW% antes de GW%.
+  // Os jogos da Liga 4 servem de caso real: Bruno tem GW% maior, Magno tem
+  // OMW% maior. Pela ordem antiga Bruno vinha antes; pelo MTR, Magno.
+  var ctx5 = carregar("main.js");
+  vm.runInContext("ligaAtualId = 5;", ctx5);
+  var t5 = tabela(ctx5);
+  ok(t5[0][1] === "Magno" && t5[1][1] === "Bruno Novaes",
+     "Liga 5: no empate em pontos, OMW% decide (Magno a frente)", JSON.stringify(t5.slice(0, 2)));
+  ok(t5[0][0] === 1 && t5[1][0] === 2,
+     "Liga 5: quem o MTR desempata nao divide posicao");
+
+  // -- Liga 5: só divide a posição quem empata nos quatro critérios
+  var p5 = JSON.parse(vm.runInContext(
+    "JSON.stringify(calcularPosicoesExibidas([" +
+    "  { jogador: 'A', pontosValidos: 9, omwp: 0.5, gameWinPerc: 0.6, ogwp: 0.5 }," +
+    "  { jogador: 'B', pontosValidos: 9, omwp: 0.5, gameWinPerc: 0.6, ogwp: 0.5 }," +
+    "  { jogador: 'C', pontosValidos: 9, omwp: 0.4, gameWinPerc: 0.6, ogwp: 0.5 }" +
+    "]))", ctx5));
+  ok(p5.join(",") === "1,1,3",
+     "Liga 5: empate total nos criterios do MTR divide a posicao", p5.join(","));
+
+  return Promise.resolve();
 });
 
 // ---------------------------------------------------------------- fim

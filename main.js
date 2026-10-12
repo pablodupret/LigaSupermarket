@@ -142,7 +142,27 @@ async function initPagina() {
   
 }
 
+// Da Liga 5 em diante, empate em pontos válidos é decidido pelos critérios
+// oficiais do MTR Appendix C (OMW% -> GW% -> OGW%), via mtr.js.
+function usaDesempateMTR() {
+  return ligaAtualId >= 5;
+}
+
+// Ligas encerradas sem critério de desempate combinado pelo grupo: quem empata
+// em pontos válidos divide a posição (a Liga 4 terminou assim).
+const LIGAS_SEM_DESEMPATE = [4];
+
+// Pontos válidos fazem o papel dos match points na ordem do MTR.
+function comoRegistroMTR(entry) {
+  return { ...entry, matchPoints: entry.pontosValidos };
+}
+
 function compararRanking(a, b) {
+  if (usaDesempateMTR()) {
+    return MTR.compararCriterios(comoRegistroMTR(a), comoRegistroMTR(b)) ||
+           a.jogador.localeCompare(b.jogador, 'pt-BR');
+  }
+
   const usaPontosValidos = usaRegraPontosValidos();
 
   if (usaPontosValidos) {
@@ -161,6 +181,28 @@ function compararRanking(a, b) {
   if (b.pontos !== a.pontos) return b.pontos - a.pontos;
 
   return a.jogador.localeCompare(b.jogador, 'pt-BR');
+}
+
+// Dois jogadores vizinhos no ranking dividem a mesma posição?
+function empatadosNaClassificacao(a, b) {
+  if (LIGAS_SEM_DESEMPATE.includes(ligaAtualId)) {
+    return a.pontosValidos === b.pontosValidos;
+  }
+  if (usaDesempateMTR()) {
+    return MTR.compararCriterios(comoRegistroMTR(a), comoRegistroMTR(b)) === 0;
+  }
+  return false;
+}
+
+// Posição exibida de cada linha de um ranking já ordenado, com empates
+// dividindo o número (1, 1, 3, 4, 4, 6...).
+function calcularPosicoesExibidas(ranking) {
+  const posicoes = [];
+  ranking.forEach((entry, i) => {
+    const empata = i > 0 && empatadosNaClassificacao(ranking[i - 1], entry);
+    posicoes.push(empata ? posicoes[i - 1] : i + 1);
+  });
+  return posicoes;
 }
 
 function calcularRankingArray(jogos) {
@@ -761,7 +803,8 @@ divDia.innerHTML += htmlRanking;
   
     // Calcula ranking anterior e cria um mapa jogador -> posição anterior (1-based)
     const rankingAnterior = calcularRankingArray(jogosAtePenultimo);
-    const posAnteriorMap = new Map(rankingAnterior.map((e, i) => [e.jogador, i + 1]));
+    const posicoesAnteriores = calcularPosicoesExibidas(rankingAnterior);
+    const posAnteriorMap = new Map(rankingAnterior.map((e, i) => [e.jogador, posicoesAnteriores[i]]));
   
     // Gera o ranking atual com informações de mudança de posição
     gerarRanking(jogos, posAnteriorMap);
@@ -1011,8 +1054,11 @@ divDia.innerHTML += htmlRanking;
   
     const corpo = document.getElementById('tabela-ranking');
     corpo.innerHTML = '';
-  
+
+    const posicoes = calcularPosicoesExibidas(ranking);
+
     ranking.forEach((entry, i) => {
+      const posAtual = posicoes[i];
       const tr = document.createElement('tr');
   
       // avatar
@@ -1030,7 +1076,6 @@ divDia.innerHTML += htmlRanking;
       let indicadorHTML = `<span class="delta neutro" title="sem variação">•</span>`;
       if (posAnteriorMap && posAnteriorMap.has(entry.jogador)) {
         const posAnterior = posAnteriorMap.get(entry.jogador);
-        const posAtual = i + 1;
         const delta = posAnterior - posAtual;
         const abs = Math.abs(delta);
   
@@ -1059,8 +1104,8 @@ divDia.innerHTML += htmlRanking;
     // ícones extra: líder + streaks de vitória + streaks de derrota
     let iconsHTML = '';
 
-    // líder da liga
-    if (i === 0) {
+    // líder da liga (todos que dividem o 1º lugar)
+    if (posAtual === 1) {
       iconsHTML += `
         <span class="icon-badge icon-leader"
               data-tooltip="Líder da Liga">
@@ -1143,7 +1188,7 @@ divDia.innerHTML += htmlRanking;
       `;
   
       tr.innerHTML = `
-      <td><span class="posicao">${i + 1}º</span> ${indicadorHTML}</td>
+      <td><span class="posicao">${posAtual}º</span> ${indicadorHTML}</td>
       <td class="td-nome">${imgHTML}<span>${entry.jogador}</span>${iconsHTML}</td>
       <td class="pontos-validos">${entry.pontosValidos}</td>
       <td>${entry.pontos}</td>
